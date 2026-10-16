@@ -1,0 +1,218 @@
+/* ==============================================================================
+   NeXooAi Virtual Saree Try-On — Luxury Showroom Kiosk Design System
+   ============================================================================== */
+
+:root {
+  --font-heading: 'Cinzel', 'Noto Sans Tamil', serif;
+  --font-body: 'Outfit', 'Noto Sans Tamil', sans-serif;
+
+  /* Luxury Color Palette */
+  --color-bg-primary: #0e0711;
+  --color-bg-secondary: #190c1d;
+  --color-bg-card: rgba(29, 13, 27, 0.75);
+  --color-bg-card-hover: rgba(43, 19, 40, 0.85);
+
+  --color-gold-light: #fbeea8;
+  --color-gold: #d4af37;
+  --color-gold-dark: #997c1c;
+
+  --color-crimson: #850f29;
+  --color-crimson-bright: #b8143a;
+  
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #e2d2df;
+  --color-text-muted: #9f8c9b;
+
+  --border-gold-subtle: rgba(212, 175, 55, 0.25);
+  --border-gold-bright: rgba(212, 175, 55, 0.6);
+
+  --shadow-gold-glow: 0 0 25px rgba(212, 175, 55, 0.2);
+  --shadow-card: 0 12px 40px rgba(0, 0, 0, 0.6);
+
+  /* Touch Screen Metrics */
+  --touch-target-min: 52px;
+  --radius-sm: 8px;
+  --radius-md: 16px;
+  --radius-lg: 24px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none; /* Kiosk touch experience */
+}
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  font-family: var(--font-body);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(133, 15, 41, 0.18) 0%, transparent 40%),
+    radial-gradient(circle at 85% 85%, rgba(212, 175, 55, 0.12) 0%, transparent 45%),
+    linear-gradient(180deg, #120715 0%, #08040a 100%);
+}
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+  outline: none;
+  touch-action: manipulation;
+}
+
+/* Glassmorphic Panel Utility */
+.glass-panel {
+  background: var(--color-bg-card);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid var(--border-gold-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+}
+
+/* Gold Gradient Button */
+.btn-gold {
+  background: linear-gradient(135deg, #f5e297 0%, #d4af37 50%, #9e7a17 100%);
+  color: #170914;
+  font-weight: 700;
+  font-size: 1.15rem;
+  padding: 16px 32px;
+  border-radius: 999px;
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  min-height: var(--touch-target-min);
+}
+
+.btn-gold:active {
+  transform: scale(0.97);
+  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.2);
+}
+
+/* Crimson Action Button */
+.btn-crimson {
+  background: linear-gradient(135deg, var(--color-crimson-bright) 0%, var(--color-crimson) 100%);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 1.15rem;
+  padding: 16px 32px;
+  border-radius: 999px;
+  box-shadow: 0 6px 20px rgba(184, 20, 58, 0.35);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: var(--touch-target-min);
+  transition: all 0.2s ease;
+}
+
+.btn-crimson:active {
+  transform: scale(0.97);
+}
+
+/* Ghost / Secondary Button */
+.btn-outline {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--color-gold-light);
+  border: 1px solid var(--border-gold-bright);
+  font-weight: 600;
+  font-size: 1.05rem;
+  padding: 14px 28px;
+  border-radius: 999px;
+  min-height: var(--touch-target-min);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-outline:active {
+  background: rgba(212, 175, 55, 0.15);
+  transform: scale(0.97);
+}
+
+/* Animations */
+@keyframes shimmer {
+  0% { opacity: 0.8; }
+  50% { opacity: 1; }
+  100% { opacity: 0.8; }
+}
+
+@keyframes pulseBorder {
+  0% { border-color: rgba(212, 175, 55, 0.3); }
+  50% { border-color: rgba(212, 175, 55, 0.8); }
+  100% { border-color: rgba(212, 175, 55, 0.3); }
+}
+
+/* ==============================================================================
+   LUXURY CHAMPAGNE & IVORY LIGHT THEME
+   (Sabyasachi / Manish Malhotra Ivory Pearl Showroom Edition)
+   ============================================================================== */
+body.light-theme,
+html[data-theme='light'],
+.kiosk-app-wrapper.light-theme {
+  --color-bg-primary: #fbf9f6;
+  --color-bg-secondary: #f4ede3;
+  --color-bg-card: rgba(255, 255, 255, 0.92);
+  --color-bg-card-hover: #ffffff;
+
+  --color-gold-light: #735005;
+  --color-gold: #b38728;
+  --color-gold-dark: #523802;
+
+  --color-crimson: #9e1b34;
+  --color-crimson-bright: #c42345;
+
+  --color-text-primary: #1e1320;
+  --color-text-secondary: #48384a;
+  --color-text-muted: #79667b;
+
+  --border-gold-subtle: rgba(179, 135, 40, 0.32);
+  --border-gold-bright: rgba(179, 135, 40, 0.72);
+
+  --shadow-gold-glow: 0 4px 20px rgba(179, 135, 40, 0.22);
+  --shadow-card: 0 12px 36px rgba(70, 35, 55, 0.08);
+
+  background: #fbf9f6;
+  color: #1e1320;
+  background-image: 
+    radial-gradient(circle at 15% 15%, rgba(158, 27, 52, 0.06) 0%, transparent 45%),
+    radial-gradient(circle at 85% 85%, rgba(179, 135, 40, 0.12) 0%, transparent 50%),
+    linear-gradient(180deg, #fdfbf8 0%, #efe7da 100%);
+}
+
+body.light-theme .glass-panel,
+.kiosk-app-wrapper.light-theme .glass-panel {
+  background: var(--color-bg-card);
+  border: 1px solid var(--border-gold-subtle);
+  box-shadow: var(--shadow-card);
+}
+
+body.light-theme .btn-outline,
+.kiosk-app-wrapper.light-theme .btn-outline {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--color-gold-light);
+  border: 1px solid var(--border-gold-bright);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
+}
+
+body.light-theme .btn-outline:hover,
+.kiosk-app-wrapper.light-theme .btn-outline:hover {
+  background: rgba(179, 135, 40, 0.1);
+  color: #523802;
+}
+
+body.light-theme .btn-outline:active,
+.kiosk-app-wrapper.light-theme .btn-outline:active {
+  background: rgba(179, 135, 40, 0.18);
+}
+

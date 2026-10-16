@@ -218,3 +218,57 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ==============================================================================
+# Node.js & Angular
+# ==============================================================================
+node_modules/
+.npm/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.angular/
+dist/
+tmp/
+out-tsc/
+.sass-cache/
+
+# ==============================================================================
+# Environment & Secrets (NEVER COMMIT CREDENTIALS)
+# ==============================================================================
+.env
+.env.*
+!.env.example
+secrets/
+*.pem
+*.key
+
+# ==============================================================================
+# Application Data, Customer Uploads & Media (Privacy & Retention)
+# ==============================================================================
+media/
+uploads/
+temp_results/
+backend/uploads/
+backend/media/
+backend/static/results/
+
+# ==============================================================================
+# Local Virtual Environments & Databases
+# ==============================================================================
+venv/
+.venv/
+backend/venv/
+backend/.venv/
+*.sqlite
+*.sqlite3
+backend/*.sqlite3
+
+# ==============================================================================
+# IDEs & Operating System
+# ==============================================================================
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
