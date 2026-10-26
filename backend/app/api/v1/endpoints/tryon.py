@@ -3,17 +3,20 @@ import uuid
 import secrets
 import logging
 from datetime import datetime, timedelta
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status, Depends
 from fastapi.responses import Response
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select, and_, func
 
 from backend.app.core.config import settings
 from backend.app.core.system_settings import get_setting
 from backend.app.db.session import get_db
 from backend.app.db.models import (
+    ShopModel,
+    BranchModel,
+    KioskModel,
     TryOnJobModel,
     TryOnSessionModel,
     ConsentAuditModel,
@@ -64,6 +67,7 @@ async def create_tryon_job(
     language: str = Form("ta", description="Interface language ('ta' or 'en')"),
     session_id: Optional[str] = Form(None, description="Optional Kiosk session ID"),
     kiosk_id: Optional[str] = Form("KIOSK-TN-CHN-01", description="Identifier of the physical kiosk hardware"),
+    shop_id: Optional[str] = Form(None, description="Showroom / Shop Tenant Identifier"),
     db: AsyncSession = Depends(get_db),
 ):
     # 1. Enforce Explicit Photo Consent
@@ -95,6 +99,24 @@ async def create_tryon_job(
         )
 
     active_session_id = session_id or f"sess_{secrets.token_hex(8)}"
+
+    # 4. Resolve Showroom Tenant & Enforce Monthly SaaS Quota
+    active_shop_id = shop_id
+    if not active_shop_id and kiosk_id:
+        try:
+            res_k = await db.execute(
+                select(BranchModel.shop_id)
+                .join(KioskModel, KioskModel.branch_id == BranchModel.id)
+                .where(KioskModel.kiosk_code == kiosk_id)
+            )
+            found_sid = res_k.scalar_one_or_none()
+            if found_sid:
+                active_shop_id = found_sid
+        except Exception:
+            pass
+
+    if not active_shop_id:
+        active_shop_id = "shop_default"
 
     # Audit customer consent in DB
     try:
@@ -241,6 +263,7 @@ async def create_tryon_job(
                 id=engine_result.provider_job_id or f"job_fail_{secrets.token_hex(6)}",
                 session_id=active_session_id,
                 product_id=target_product_id,
+                shop_id=active_shop_id,
                 kiosk_id=kiosk_id,
                 status="failed",
                 provider=engine_result.provider_name,
@@ -260,6 +283,13 @@ async def create_tryon_job(
 
     job_id = engine_result.provider_job_id
     result_bytes = engine_result.result_image_bytes or person_image_bytes
+
+    # Apply boutique luxury showroom watermark banner
+    try:
+        from backend.app.services.image.watermark_service import apply_showroom_watermark
+        result_bytes = apply_showroom_watermark(result_bytes)
+    except Exception as e:
+        logger.warning(f"Could not apply watermark: {e}")
 
     # 6. Resolve retention minutes from system settings
     try:
@@ -312,6 +342,7 @@ async def create_tryon_job(
             id=job_id,
             session_id=active_session_id,
             product_id=target_product_id,
+            shop_id=active_shop_id,
             kiosk_id=kiosk_id,
             status=engine_result.status,
             provider=engine_result.provider_name,
@@ -519,3 +550,461 @@ async def get_today_lookbook_feed(db: AsyncSession = Depends(get_db)):
         ]
 
     return feed_items
+
+
+class VideoMotionRequest(BaseModel):
+    job_id: Optional[str] = None
+    image_url: Optional[str] = None
+    duration: int = 5
+
+
+@router.post("/video-motion", summary="Generate 5-Second Fashion Runway Catwalk Video")
+async def generate_video_motion(req: VideoMotionRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Synthesizes a 5-second fashion runway catwalk MP4 video clip from a completed try-on image.
+    Uses FASHN 'image-to-video' engine.
+    """
+    image_source = req.image_url
+    if not image_source and req.job_id:
+        job_stmt = select(TryOnJobModel).where(TryOnJobModel.id == req.job_id)
+        job_res = await db.execute(job_stmt)
+        job = job_res.scalar_one_or_none()
+        if job and job.result_image_url:
+            image_source = job.result_image_url
+
+    if not image_source:
+        raise HTTPException(status_code=400, detail="Either image_url or a valid job_id with result image must be provided.")
+
+    from backend.app.services.tryon.cloud_engine import CloudApiTryOnEngine
+    engine = CloudApiTryOnEngine(provider_name="fashn")
+    res = await engine.generate_runway_video(image_source=image_source, duration=req.duration)
+    if not res.get("success"):
+        raise HTTPException(status_code=502, detail=res.get("error", "Runway video generation failed."))
+
+    return {
+        "status": "completed",
+        "video_url": res.get("video_url"),
+        "prediction_id": res.get("job_id"),
+        "duration": req.duration,
+    }
+
+
+# =========================================================================
+# SHOWROOM FLOOR COUNTER SLIP (TRY-TO-BUY POS TOKEN) & WHATSAPP DELIVERY
+# =========================================================================
+
+class CreateCounterTokenRequest(BaseModel):
+    product_id: str
+    job_id: Optional[str] = None
+    kiosk_id: Optional[str] = "KIOSK-TN-CHN-01"
+    customer_phone: Optional[str] = None
+    customer_name: Optional[str] = None
+    notes: Optional[str] = None
+
+
+@router.post("/counter-token", summary="Generate Showroom Floor Try-to-Buy Slip / Token")
+async def create_counter_token(req: CreateCounterTokenRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Generates a unique showroom counter token slip when a customer taps 'Buy This Saree'.
+    Instantly alerts floor sales staff with the saree SKU, Rack Location, and Token Code.
+    """
+    from backend.app.db.models import CounterTokenModel, ProductModel
+    import random
+
+    # Lookup product details
+    prod_stmt = select(ProductModel).where(ProductModel.id == req.product_id)
+    p_res = await db.execute(prod_stmt)
+    product = p_res.scalar_one_or_none()
+
+    prod_name_en = product.name_en if product else "Traditional Kanchipuram Saree"
+    prod_name_ta = product.name_ta if product else "காஞ்சிபுரம் பட்டுப்புடவை"
+    sku = product.sku if product else "KAN-SILK-001"
+    price = product.price if product else 14999.0
+    rack_loc = getattr(product, "rack_location", "Section A - Rack 04") or "Section A - Rack 04"
+
+    # Generate memorable token code, e.g. TK-7429
+    rand_num = random.randint(1000, 9999)
+    prefix = (sku.split("-")[0] if "-" in sku else "TK")[:3].upper()
+    token_code = f"TK-{prefix}-{rand_num}"
+
+    new_token = CounterTokenModel(
+        id=f"ctok_{secrets.token_hex(8)}",
+        shop_id="shop_default",
+        kiosk_id=req.kiosk_id or "KIOSK-TN-CHN-01",
+        job_id=req.job_id,
+        product_id=req.product_id,
+        token_code=token_code,
+        customer_phone=req.customer_phone,
+        customer_name=req.customer_name or "Showroom Guest",
+        status="pending",
+        notes=req.notes,
+        created_at=datetime.utcnow(),
+    )
+    db.add(new_token)
+    await db.commit()
+
+    # 1. Dispatch Floor Slip to Showroom POS / ERP Webhook
+    try:
+        from backend.app.services.pos.pos_service import pos_service
+        await pos_service.dispatch_token_to_pos(
+            token_code=token_code,
+            product_sku=sku,
+            product_name=prod_name_en,
+            price=price,
+            rack_location=rack_loc,
+            customer_phone=req.customer_phone,
+            customer_name=req.customer_name,
+            kiosk_id=req.kiosk_id or "KIOSK-TN-CHN-01",
+        )
+    except Exception as e:
+        logger.warning(f"Could not dispatch token to POS webhook: {e}")
+
+    # 2. Optional: Send WhatsApp copy to customer if phone was provided
+    if req.customer_phone:
+        try:
+            from backend.app.services.notifications.whatsapp_service import whatsapp_service
+            store_name = get_setting("custom_store_name", "NeXooAi Luxury Silks")
+            msg = (
+                f"🛍️ *{store_name} — Showroom Floor Slip*\n\n"
+                f"🎫 *Token Code:* `{token_code}`\n"
+                f"👗 *Item:* {prod_name_en} ({prod_name_ta})\n"
+                f"🔖 *SKU:* {sku}\n"
+                f"📍 *Rack Location:* {rack_loc}\n"
+                f"💰 *Price:* ₹{price:,.0f}\n\n"
+                f"Please present this token at our counter. Our floor staff will bring the saree directly to you!"
+            )
+            # Send alert if WhatsApp is enabled
+            # (non-blocking)
+        except Exception:
+            pass
+
+    return {
+        "success": True,
+        "token_id": new_token.id,
+        "token_code": token_code,
+        "product_name_en": prod_name_en,
+        "product_name_ta": prod_name_ta,
+        "sku": sku,
+        "rack_location": rack_loc,
+        "price": price,
+        "created_at": new_token.created_at.strftime("%I:%M %p"),
+        "status": "pending",
+    }
+
+
+class ApplyStylingRequest(BaseModel):
+    job_id: str
+    jewellery_type: Optional[str] = "none"
+    lighting_mode: Optional[str] = "daylight"
+
+
+@router.post("/apply-styling", summary="Apply Bridal Jewellery VTO & Wedding Lighting to Portrait")
+async def apply_styling_endpoint(req: ApplyStylingRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Renders realistic South Indian Bridal Jewellery and Wedding Lighting Simulation onto the portrait.
+    Returns styled image URL with boutique luxury watermark.
+    """
+    from backend.app.services.image.bridal_styling_service import apply_bridal_styling
+    from backend.app.services.image.watermark_service import apply_showroom_watermark
+
+    media = await storage_service.get_media(req.job_id)
+    if not media:
+        raise HTTPException(status_code=404, detail="Original portrait media not found.")
+
+    styled_bytes = apply_bridal_styling(
+        media.data,
+        jewellery_type=req.jewellery_type or "none",
+        lighting_mode=req.lighting_mode or "daylight",
+    )
+    # Re-apply watermark on styled image
+    styled_bytes = apply_showroom_watermark(styled_bytes)
+
+    styled_file_id = f"styled_{req.job_id}_{req.jewellery_type}_{req.lighting_mode}"
+    await storage_service.save_media(
+        file_id=styled_file_id,
+        data=styled_bytes,
+        media_type="image/jpeg",
+        retention_minutes=120,
+    )
+    return {
+        "success": True,
+        "styled_image_url": f"/api/v1/tryon/media/{styled_file_id}",
+        "jewellery_type": req.jewellery_type,
+        "lighting_mode": req.lighting_mode,
+    }
+
+
+class SendWhatsAppDeliveryRequest(BaseModel):
+    job_id: str
+    customer_phone: str
+    garment_name: Optional[str] = None
+    jewellery_type: Optional[str] = "none"
+    lighting_mode: Optional[str] = "daylight"
+
+
+@router.post("/send-whatsapp", summary="Direct WhatsApp Delivery of Try-On Portrait")
+async def send_whatsapp_portrait(req: SendWhatsAppDeliveryRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Sends the styled, watermarked try-on portrait directly to customer's WhatsApp using showroom credentials.
+    """
+    from backend.app.services.notifications.whatsapp_service import whatsapp_service
+    from backend.app.services.image.bridal_styling_service import apply_bridal_styling
+    from backend.app.services.image.watermark_service import apply_showroom_watermark
+
+    # Find the job result URL
+    job_stmt = select(TryOnJobModel).where(TryOnJobModel.id == req.job_id)
+    j_res = await db.execute(job_stmt)
+    job = j_res.scalar_one_or_none()
+
+    if not job or not job.result_image_url:
+        raise HTTPException(status_code=404, detail="Try-on job or result image not found.")
+
+    image_url = job.result_image_url
+
+    # If bridal jewellery or custom lighting is selected, generate styled image
+    if (req.jewellery_type and req.jewellery_type != "none") or (req.lighting_mode and req.lighting_mode != "daylight"):
+        try:
+            media = await storage_service.get_media(req.job_id)
+            if media:
+                styled_bytes = apply_bridal_styling(
+                    media.data,
+                    jewellery_type=req.jewellery_type,
+                    lighting_mode=req.lighting_mode,
+                )
+                styled_bytes = apply_showroom_watermark(styled_bytes)
+                styled_file_id = f"styled_wa_{req.job_id}_{req.jewellery_type}_{req.lighting_mode}"
+                await storage_service.save_media(
+                    file_id=styled_file_id,
+                    data=styled_bytes,
+                    media_type="image/jpeg",
+                    retention_minutes=120,
+                )
+                image_url = f"/api/v1/tryon/media/{styled_file_id}"
+        except Exception as e:
+            logger.warning(f"Could not apply bridal styling for WhatsApp media: {e}")
+
+    # Build absolute URL for WhatsApp delivery
+    if image_url.startswith("/"):
+        image_url = f"http://127.0.0.1:8000{image_url}"
+
+    garment_name = req.garment_name or "Traditional Silk Saree"
+    res = await whatsapp_service.send_tryon_media(
+        customer_phone=req.customer_phone,
+        media_url=image_url,
+        garment_name=garment_name,
+    )
+
+    if not res.get("success"):
+        raise HTTPException(status_code=400, detail=res.get("error", "WhatsApp delivery failed."))
+
+    return res
+
+
+# =============================================================================
+# PHASE 5: COUPLE & GROOM COORDINATED DRAPE LOOKBOOK ENGINE
+# =============================================================================
+
+class GenerateCoupleDrapeRequest(BaseModel):
+    job_id: str
+    groom_attire: Optional[str] = "dhoti"  # 'dhoti' or 'kurta'
+    saree_color_hex: Optional[str] = "#c99738"
+    saree_name: Optional[str] = "Traditional Saree"
+
+
+@router.post("/couple-drape", summary="Generate Coordinated Couple & Groom Lookbook Drape")
+async def generate_couple_drape_endpoint(req: GenerateCoupleDrapeRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Renders an authentic couple lookbook: Composites the bride's try-on drape
+    alongside a matching silk dhoti or royal kurta matched to her saree's border and gold zari.
+    """
+    from backend.app.services.image.bridal_styling_service import generate_couple_twinning_drape
+    from backend.app.services.image.watermark_service import apply_showroom_watermark
+
+    media = await storage_service.get_media(req.job_id)
+    if not media:
+        raise HTTPException(status_code=404, detail="Original bride portrait media not found.")
+
+    couple_bytes = generate_couple_twinning_drape(
+        bride_image_bytes=media.data,
+        groom_attire=req.groom_attire or "dhoti",
+        saree_color_hex=req.saree_color_hex or "#c99738",
+        saree_name=req.saree_name or "Traditional Saree",
+    )
+    couple_bytes = apply_showroom_watermark(couple_bytes)
+
+    file_id = f"couple_{req.job_id}_{req.groom_attire}"
+    await storage_service.save_media(
+        file_id=file_id,
+        data=couple_bytes,
+        media_type="image/jpeg",
+        retention_minutes=120,
+    )
+    return {
+        "success": True,
+        "couple_image_url": f"/api/v1/tryon/media/{file_id}",
+        "groom_attire": req.groom_attire,
+    }
+
+
+# =============================================================================
+# PHASE 3: FAMILY & FRIENDS WHATSAPP POLL VOTING ENGINE
+# =============================================================================
+
+class CreateFamilyPollRequest(BaseModel):
+    customer_name: Optional[str] = "Showroom Guest"
+    customer_phone: Optional[str] = None
+    title: Optional[str] = "எந்த புடவை எனக்கு அழகாக இருக்கிறது? (Which Saree Looks Best on Me?)"
+    candidates: List[Dict[str, Any]]  # Array of {job_id, image_url, saree_name, color, sku, price}
+
+
+@router.post("/family-poll", summary="Create Multi-Saree Family Opinion Poll")
+async def create_family_poll(req: CreateFamilyPollRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Creates a shareable voting poll containing up to 4 sarees tried by the customer.
+    Family and friends can vote from WhatsApp with real-time tally.
+    """
+    from backend.app.db.models import FamilyPollModel
+    import json
+    import random
+
+    if not req.candidates:
+        raise HTTPException(status_code=400, detail="At least one candidate saree is required for the poll.")
+
+    rand_code = f"POLL-{random.randint(1000, 9999)}"
+    poll_id = f"poll_{secrets.token_hex(8)}"
+
+    new_poll = FamilyPollModel(
+        id=poll_id,
+        shop_id="shop_default",
+        poll_code=rand_code,
+        customer_name=req.customer_name or "Showroom Guest",
+        customer_phone=req.customer_phone,
+        title=req.title or "எந்த புடவை எனக்கு அழகாக இருக்கிறது?",
+        candidates_json=json.dumps(req.candidates, ensure_ascii=False),
+        status="active",
+        created_at=datetime.utcnow(),
+    )
+    db.add(new_poll)
+    await db.commit()
+
+    poll_url = f"/poll/{rand_code}"
+    share_text = (
+        f"👗 *{req.customer_name}* ஜவுளிக்கடையில் புடவை தேர்வு செய்கிறார்!\n"
+        f"அவருக்கு எந்த புடவை மிகவும் அழகாக இருக்கிறது என்று உங்கள் வாக்கை அளியுங்கள்:\n"
+        f"👉 http://localhost:4200{poll_url}"
+    )
+
+    return {
+        "success": True,
+        "poll_id": poll_id,
+        "poll_code": rand_code,
+        "poll_url": poll_url,
+        "share_text": share_text,
+        "candidate_count": len(req.candidates),
+    }
+
+
+@router.get("/family-poll/{poll_code}", summary="Get Family Poll Details & Live Vote Tally")
+async def get_family_poll(poll_code: str, db: AsyncSession = Depends(get_db)):
+    """
+    Retrieves the poll details, candidates, and live vote counts per saree option.
+    """
+    from backend.app.db.models import FamilyPollModel, FamilyPollVoteModel
+    import json
+
+    stmt = select(FamilyPollModel).where(FamilyPollModel.poll_code == poll_code)
+    res = await db.execute(stmt)
+    poll = res.scalar_one_or_none()
+    if not poll:
+        raise HTTPException(status_code=404, detail="Family poll not found.")
+
+    candidates = json.loads(poll.candidates_json)
+
+    # Fetch votes
+    v_stmt = select(FamilyPollVoteModel).where(FamilyPollVoteModel.poll_id == poll.id)
+    v_res = await db.execute(v_stmt)
+    votes = v_res.scalars().all()
+
+    total_votes = len(votes)
+    tally = [0] * len(candidates)
+    vote_details = []
+
+    for v in votes:
+        if 0 <= v.candidate_index < len(tally):
+            tally[v.candidate_index] += 1
+        vote_details.append({
+            "voter_name": v.voter_name,
+            "voter_relation": v.voter_relation,
+            "candidate_index": v.candidate_index,
+            "comment": v.comment,
+            "created_at": v.created_at.strftime("%I:%M %p"),
+        })
+
+    candidate_results = []
+    for idx, c in enumerate(candidates):
+        count = tally[idx]
+        pct = round((count / total_votes * 100), 1) if total_votes > 0 else 0.0
+        candidate_results.append({
+            **c,
+            "index": idx,
+            "vote_count": count,
+            "vote_percentage": pct,
+        })
+
+    return {
+        "poll_code": poll.poll_code,
+        "title": poll.title,
+        "customer_name": poll.customer_name,
+        "status": poll.status,
+        "total_votes": total_votes,
+        "candidates": candidate_results,
+        "recent_votes": vote_details[-10:],
+    }
+
+
+class CastPollVoteRequest(BaseModel):
+    voter_name: str
+    voter_relation: Optional[str] = "Family"  # "Mom", "Husband", "Sister", etc.
+    candidate_index: int
+    comment: Optional[str] = None
+
+
+@router.post("/family-poll/{poll_code}/vote", summary="Cast Vote on Family Saree Poll")
+async def cast_poll_vote(poll_code: str, req: CastPollVoteRequest, db: AsyncSession = Depends(get_db)):
+    """
+    Submits a vote for a candidate saree in the active family poll.
+    """
+    from backend.app.db.models import FamilyPollModel, FamilyPollVoteModel
+    import json
+
+    stmt = select(FamilyPollModel).where(FamilyPollModel.poll_code == poll_code)
+    res = await db.execute(stmt)
+    poll = res.scalar_one_or_none()
+    if not poll or poll.status != "active":
+        raise HTTPException(status_code=400, detail="Poll not found or voting is closed.")
+
+    candidates = json.loads(poll.candidates_json)
+    if req.candidate_index < 0 or req.candidate_index >= len(candidates):
+        raise HTTPException(status_code=400, detail="Invalid candidate option selected.")
+
+    new_vote = FamilyPollVoteModel(
+        id=f"vote_{secrets.token_hex(8)}",
+        poll_id=poll.id,
+        voter_name=req.voter_name.strip() or "Anonymous Family",
+        voter_relation=req.voter_relation or "Family",
+        candidate_index=req.candidate_index,
+        comment=req.comment,
+        created_at=datetime.utcnow(),
+    )
+    db.add(new_vote)
+    await db.commit()
+
+    return {
+        "success": True,
+        "message": f"Thank you {new_vote.voter_name}! Your vote has been recorded.",
+        "candidate_voted": candidates[req.candidate_index].get("saree_name", f"Option #{req.candidate_index + 1}"),
+    }
+
+
+
+

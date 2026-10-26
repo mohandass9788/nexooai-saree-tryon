@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: nexooai_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-nexooai_saree}
+      POSTGRES_USER: ${POSTGRES_USER:-nexooai_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-nexooai_secure_2026}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-nexooai_admin} -d ${POSTGRES_DB:-nexooai_saree}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: nexooai_backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      - APP_ENV=production
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-nexooai_admin}:${POSTGRES_PASSWORD:-nexooai_secure_2026}@db:5432/${POSTGRES_DB:-nexooai_saree}
+      - SECRET_KEY=${SECRET_KEY:-nexooai_super_secret_jwt_key_2026_change_in_prod}
+      - FASHN_API_KEY=${FASHN_API_KEY:-}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - ACTIVE_AI_PROVIDER=${ACTIVE_AI_PROVIDER:-mock}
+      - FRONTEND_ORIGINS=http://localhost,http://localhost:80,http://localhost:4200
+    volumes:
+      - ./media:/app/media
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nexooai_frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+
+volumes:
+  postgres_data:

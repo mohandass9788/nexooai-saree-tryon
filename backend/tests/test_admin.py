@@ -52,8 +52,25 @@ async def test_admin_list_and_create_product():
 @pytest.mark.asyncio
 async def test_admin_toggle_product_status():
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        prods = await client.get("/api/v1/admin/products")
+        items = prods.json()
+        if not items:
+            cr = await client.post("/api/v1/admin/products", json={
+                "sku": "TOGGLE-TEST-001",
+                "name_en": "Test Saree",
+                "name_ta": "சோதனை புடவை",
+                "category": "Silk",
+                "fabric": "Silk",
+                "color": "Red",
+                "price": 5000.0,
+                "primary_image_url": "https://example.com/saree.jpg",
+            })
+            prod_id = cr.json()["id"]
+        else:
+            prod_id = items[0]["id"]
+
         response = await client.put(
-            "/api/v1/admin/products/saree_001/status",
+            f"/api/v1/admin/products/{prod_id}/status",
             params={"is_active": False},
         )
         assert response.status_code == 200
@@ -61,10 +78,11 @@ async def test_admin_toggle_product_status():
 
         # Reset back to True
         reset_resp = await client.put(
-            "/api/v1/admin/products/saree_001/status",
+            f"/api/v1/admin/products/{prod_id}/status",
             params={"is_active": True},
         )
         assert reset_resp.status_code == 200
+
         assert reset_resp.json()["is_active"] is True
 
 

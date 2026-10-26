@@ -11,10 +11,28 @@ class ShopModel(Base):
     name = Column(String(255), nullable=False)
     slug = Column(String(100), unique=True, index=True, nullable=False)
     logo_url = Column(String(500), nullable=True)
+    contact_person = Column(String(255), nullable=True)
+    contact_email = Column(String(255), nullable=True)
+    contact_phone = Column(String(50), nullable=True)
+    is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
+
+    # B2B SaaS Tenancy & Billing Fields
+    plan_tier = Column(String(50), default="silver", nullable=False)  # 'silver', 'gold', 'platinum'
+    subscription_price_inr = Column(Float, default=9999.0, nullable=False)
+    monthly_token_quota = Column(Integer, default=500, nullable=False)
+    tokens_used_this_month = Column(Integer, default=0, nullable=False)
+    payment_status = Column(String(50), default="paid", nullable=False)  # 'paid', 'due', 'trial'
+    billing_cycle = Column(String(50), default="monthly", nullable=False)
+    api_key = Column(String(128), unique=True, index=True, nullable=True)  # private catalog ingestion API key
+    catalog_feed_url = Column(String(500), nullable=True)  # external JSON catalog feed URL
+    last_catalog_sync_at = Column(DateTime, nullable=True)
 
     branches = relationship("BranchModel", back_populates="shop")
     categories = relationship("CategoryModel", back_populates="shop")
+    tryon_jobs = relationship("TryOnJobModel", back_populates="shop")
+    admin_users = relationship("AdminUserModel", back_populates="shop")
+    counter_tokens = relationship("CounterTokenModel", back_populates="shop")
 
 
 class BranchModel(Base):
@@ -79,6 +97,7 @@ class ProductModel(Base):
     description_ta = Column(Text, nullable=True)
     primary_image_url = Column(String(500), nullable=False)
     pallu_type = Column(String(150), nullable=True)
+    rack_location = Column(String(100), nullable=True, default="Section A - Rack 04")
     is_active = Column(Boolean, default=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -117,6 +136,7 @@ class TryOnJobModel(Base):
     id = Column(String(64), primary_key=True, index=True)
     session_id = Column(String(64), ForeignKey("tryon_sessions.id"), nullable=True)
     product_id = Column(String(64), ForeignKey("products.id"), nullable=False)
+    shop_id = Column(String(64), ForeignKey("shops.id"), nullable=True, index=True)
     kiosk_id = Column(String(64), nullable=True)
     status = Column(String(32), index=True, nullable=False, default="pending")
     provider = Column(String(32), nullable=False, default="gemini")
@@ -131,6 +151,7 @@ class TryOnJobModel(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     product = relationship("ProductModel", back_populates="tryon_jobs")
+    shop = relationship("ShopModel", back_populates="tryon_jobs")
     tokens = relationship("DownloadTokenModel", back_populates="job")
 
 
@@ -153,6 +174,7 @@ class AdminUserModel(Base):
     __tablename__ = "admin_users"
 
     id = Column(String(64), primary_key=True, index=True)
+    shop_id = Column(String(64), ForeignKey("shops.id"), nullable=True, index=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     name = Column(String(255), nullable=False)
     hashed_password = Column(String(255), nullable=False)
@@ -160,6 +182,7 @@ class AdminUserModel(Base):
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    shop = relationship("ShopModel", back_populates="admin_users")
     audit_logs = relationship("AuditLogModel", back_populates="admin_user")
 
 
@@ -195,3 +218,55 @@ class SystemSettingModel(Base):
     value = Column(Text, nullable=False)
     description = Column(String(255), nullable=True)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+
+class CounterTokenModel(Base):
+    __tablename__ = "counter_tokens"
+
+    id = Column(String(64), primary_key=True, index=True)
+    shop_id = Column(String(64), ForeignKey("shops.id"), nullable=True, index=True)
+    kiosk_id = Column(String(64), nullable=True)
+    job_id = Column(String(64), ForeignKey("tryon_jobs.id"), nullable=True)
+    product_id = Column(String(64), ForeignKey("products.id"), nullable=False)
+    token_code = Column(String(32), unique=True, index=True, nullable=False)  # e.g. "TK-B1-104"
+    customer_phone = Column(String(32), nullable=True)
+    customer_name = Column(String(100), nullable=True)
+    status = Column(String(32), default="pending", index=True)  # "pending", "attending", "completed", "cancelled"
+    notes = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    shop = relationship("ShopModel", back_populates="counter_tokens")
+    product = relationship("ProductModel")
+    job = relationship("TryOnJobModel")
+
+
+class FamilyPollModel(Base):
+    __tablename__ = "family_polls"
+
+    id = Column(String(64), primary_key=True, index=True)
+    shop_id = Column(String(64), ForeignKey("shops.id"), nullable=True, index=True)
+    poll_code = Column(String(32), unique=True, index=True, nullable=False)  # e.g. "POLL-7A39"
+    customer_name = Column(String(100), nullable=True)
+    customer_phone = Column(String(32), nullable=True)
+    title = Column(String(255), default="எந்த புடவை எனக்கு அழகாக இருக்கிறது? (Which Saree Looks Best on Me?)")
+    candidates_json = Column(Text, nullable=False)  # JSON array of candidates
+    status = Column(String(32), default="active", index=True)  # "active", "closed"
+    expires_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    votes = relationship("FamilyPollVoteModel", back_populates="poll", cascade="all, delete-orphan")
+
+
+class FamilyPollVoteModel(Base):
+    __tablename__ = "family_poll_votes"
+
+    id = Column(String(64), primary_key=True, index=True)
+    poll_id = Column(String(64), ForeignKey("family_polls.id"), nullable=False, index=True)
+    voter_name = Column(String(100), nullable=False)
+    voter_relation = Column(String(50), nullable=True)  # "Mom", "Husband", "Sister", "Friend", etc.
+    candidate_index = Column(Integer, nullable=False)
+    comment = Column(String(255), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    poll = relationship("FamilyPollModel", back_populates="votes")
+

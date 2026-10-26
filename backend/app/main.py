@@ -1,11 +1,22 @@
 import os
+import sys
 import asyncio
+import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from backend.app.core.config import settings
 from backend.app.api.v1.router import api_router
+
+if sys.platform == "win32":
+    import io
+    if hasattr(sys.stdout, "buffer"):
+        sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+    if hasattr(sys.stderr, "buffer"):
+        sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding="utf-8", errors="replace")
+
+logger = logging.getLogger("main")
 
 
 async def retention_purge_worker():
@@ -29,7 +40,7 @@ async def lifespan(app: FastAPI):
     try:
         await init_database()
     except Exception as e:
-        print(f"Database init note: {e}")
+        logger.warning("Database init note: %s", e)
 
     purge_task = asyncio.create_task(retention_purge_worker())
     yield

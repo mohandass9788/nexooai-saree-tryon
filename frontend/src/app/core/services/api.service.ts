@@ -153,7 +153,74 @@ export interface SystemSettingsDTO {
   kiosk_admin_pin_masked: string;
   kiosk_admin_pin: string;
   custom_ai_prompt_template: string;
+  // B2B Client Feature Toggles
+  feature_tryon_max?: boolean;
+  feature_runway_video?: boolean;
+  feature_selfie_mode?: boolean;
+  feature_privacy_base64?: boolean;
+  feature_split_slider?: boolean;
+  feature_portrait_916?: boolean;
+  fashn_resolution?: string;
+  fashn_generation_mode?: string;
+  saree_pleat_prompt?: string;
+  custom_store_name?: string;
+  custom_store_logo_url?: string;
+  custom_store_ad_video_url?: string;
 }
+
+export interface PublicKioskFeatures {
+  tryon_max: boolean;
+  runway_video: boolean;
+  selfie_mode: boolean;
+  privacy_base64: boolean;
+  split_slider: boolean;
+  portrait_916: boolean;
+  active_provider: string;
+  custom_store_name?: string;
+  custom_store_logo_url?: string;
+  custom_store_ad_video_url?: string;
+}
+
+export interface ShowroomSettingsItem {
+  custom_store_name: string;
+  custom_store_tagline: string;
+  custom_store_logo_url: string;
+  custom_store_ad_video_url: string;
+  store_contact_phone: string;
+  store_city: string;
+  watermark_enabled: boolean;
+  watermark_text: string;
+  watermark_subtext: string;
+  watermark_position: string;
+  whatsapp_enabled: boolean;
+  whatsapp_provider: string;
+  whatsapp_phone_number_id: string;
+  whatsapp_business_account_id: string;
+  whatsapp_access_token_masked: string;
+  whatsapp_template_name: string;
+  whatsapp_sales_desk_phone: string;
+  counter_token_enabled: boolean;
+  counter_auto_notify_sales: boolean;
+}
+
+export interface CounterTokenItem {
+  id: string;
+  token_code: string;
+  kiosk_id?: string;
+  job_id?: string;
+  product_id: string;
+  product_name_en: string;
+  product_name_ta: string;
+  sku: string;
+  price: number;
+  rack_location: string;
+  customer_phone?: string;
+  customer_name?: string;
+  status: string;
+  notes?: string;
+  created_at: string;
+}
+
 
 @Injectable({
   providedIn: 'root'
@@ -421,5 +488,300 @@ export class ApiService {
 
   deleteAdminUser(userId: string): Observable<{ message: string }> {
     return this.http.delete<{ message: string }>(`${this.baseUrl}/admin/users/${userId}`);
+  }
+
+  // --- Public Kiosk Feature Configuration & Video Motion ---
+  getPublicFeatures(): Observable<PublicKioskFeatures> {
+    return this.http.get<PublicKioskFeatures>(`${this.baseUrl}/admin/features-public`);
+  }
+
+  generateVideoMotion(payload: { job_id?: string; image_url?: string; duration?: number }): Observable<{ status: string; video_url: string; prediction_id: string; duration: number }> {
+    return this.http.post<{ status: string; video_url: string; prediction_id: string; duration: number }>(`${this.baseUrl}/tryon/video-motion`, payload);
+  }
+
+  // --- Dynamic Showroom Branding & WhatsApp Gateway ---
+  getShowroomSettings(): Observable<ShowroomSettingsItem> {
+    return this.http.get<ShowroomSettingsItem>(`${this.baseUrl}/admin/showroom/settings`);
+  }
+
+  updateShowroomSettings(data: Partial<ShowroomSettingsItem> & { whatsapp_access_token?: string }): Observable<any> {
+    return this.http.put(`${this.baseUrl}/admin/showroom/settings`, data);
+  }
+
+  testWhatsAppConnection(testPhone: string): Observable<any> {
+    return this.http.post(`${this.baseUrl}/admin/whatsapp/test`, { test_phone: testPhone });
+  }
+
+  // --- Showroom Floor Counter Slips / POS Tokens ---
+  createCounterToken(payload: {
+    product_id: string;
+    job_id?: string;
+    kiosk_id?: string;
+    customer_phone?: string;
+    customer_name?: string;
+    notes?: string;
+  }): Observable<{
+    success: boolean;
+    token_id: string;
+    token_code: string;
+    product_name_en: string;
+    product_name_ta: string;
+    sku: string;
+    rack_location: string;
+    price: number;
+    created_at: string;
+    status: string;
+  }> {
+    return this.http.post<any>(`${this.baseUrl}/tryon/counter-token`, payload);
+  }
+
+  getCounterTokens(): Observable<CounterTokenItem[]> {
+    return this.http.get<CounterTokenItem[]>(`${this.baseUrl}/admin/counter-tokens`);
+  }
+
+  updateCounterTokenStatus(tokenId: string, status: string, notes?: string): Observable<any> {
+    return this.http.patch(`${this.baseUrl}/admin/counter-tokens/${tokenId}`, { status, notes });
+  }
+
+  sendTryOnWhatsApp(payload: {
+    job_id: string;
+    customer_phone: string;
+    garment_name?: string;
+    jewellery_type?: string;
+    lighting_mode?: string;
+  }): Observable<any> {
+    return this.http.post(`${this.baseUrl}/tryon/send-whatsapp`, payload);
+  }
+
+  // --- Phase 2: Bridal Styling Transformation ---
+  applyBridalStyling(payload: {
+    job_id: string;
+    jewellery_type?: string;
+    lighting_preset?: string;
+    blouse_tone?: string;
+    drape_style?: string;
+  }): Observable<{
+    status: string;
+    job_id: string;
+    styled_image_url: string;
+    jewellery_applied: string;
+    lighting_applied: string;
+  }> {
+    return this.http.post<any>(`${this.baseUrl}/tryon/apply-styling`, payload);
+  }
+
+  // --- Phase 5: Showroom Sales Analytics & Rack Heatmap ---
+  getShowroomInsights(): Observable<{
+    total_tryons: number;
+    total_tokens: number;
+    conversion_rate_percent: number;
+    rack_heatmap: Array<{
+      rack: string;
+      tokens: number;
+      tryons: number;
+      conversion_percent: number;
+      revenue_inr: number;
+      heat_level: string;
+    }>;
+    color_trends: Array<{
+      color_name: string;
+      percentage: number;
+      color_hex: string;
+    }>;
+    restock_alerts: Array<{
+      sku: string;
+      name: string;
+      rack: string;
+      tryons_today: number;
+      token_demand: number;
+      alert_level: string;
+      advice: string;
+    }>;
+  }> {
+    return this.http.get<any>(`${this.baseUrl}/admin/analytics/showroom-insights`);
+  }
+
+  // --- Phase 5: Couple & Groom Coordinated Drape Lookbook ---
+  generateCoupleDrape(payload: {
+    job_id: string;
+    groom_attire?: string;
+    saree_color_hex?: string;
+    saree_name?: string;
+  }): Observable<{
+    success: boolean;
+    couple_image_url: string;
+    groom_attire: string;
+  }> {
+    return this.http.post<any>(`${this.baseUrl}/tryon/couple-drape`, payload);
+  }
+
+  // --- Phase 3: Family Poll & Opinion Voting Engine ---
+  createFamilyPoll(payload: {
+    customer_name?: string;
+    customer_phone?: string;
+    title?: string;
+    candidates: Array<{
+      job_id: string;
+      image_url: string;
+      saree_name: string;
+      color: string;
+      sku: string;
+      price: number;
+    }>;
+  }): Observable<{
+    success: boolean;
+    poll_id: string;
+    poll_code: string;
+    poll_url: string;
+    share_text: string;
+    candidate_count: number;
+  }> {
+    return this.http.post<any>(`${this.baseUrl}/tryon/family-poll`, payload);
+  }
+
+  getFamilyPoll(pollCode: string): Observable<{
+    poll_code: string;
+    title: string;
+    customer_name: string;
+    status: string;
+    total_votes: number;
+    candidates: Array<{
+      index: number;
+      job_id: string;
+      image_url: string;
+      saree_name: string;
+      color: string;
+      sku: string;
+      price: number;
+      vote_count: number;
+      vote_percentage: number;
+    }>;
+    recent_votes: Array<{
+      voter_name: string;
+      voter_relation: string;
+      candidate_index: number;
+      comment?: string;
+      created_at: string;
+    }>;
+  }> {
+    return this.http.get<any>(`${this.baseUrl}/tryon/family-poll/${pollCode}`);
+  }
+
+  castPollVote(pollCode: string, payload: {
+    voter_name: string;
+    voter_relation?: string;
+    candidate_index: number;
+    comment?: string;
+  }): Observable<{
+    success: boolean;
+    message: string;
+    candidate_voted: string;
+  }> {
+    return this.http.post<any>(`${this.baseUrl}/tryon/family-poll/${pollCode}/vote`, payload);
+  }
+
+  testPOSSync(test_url?: string): Observable<{
+    success: boolean;
+    http_status?: number;
+    response?: string;
+    error?: string;
+  }> {
+    return this.http.post<any>(`${this.baseUrl}/admin/pos/test-sync`, { test_url });
+  }
+
+  // --- B2B SaaS Multi-Tenant Customers & Catalog Ingestion ---
+  getSaaSCustomers(): Observable<{
+    customers: Array<{
+      id: string;
+      name: string;
+      code: string;
+      contact_email: string;
+      contact_phone?: string;
+      address?: string;
+      is_active: boolean;
+      plan_tier: string;
+      subscription_price_inr: number;
+      monthly_token_quota: number;
+      tokens_used_this_month: number;
+      payment_status: string;
+      billing_cycle: string;
+      api_key?: string;
+      catalog_feed_url?: string;
+      last_catalog_sync_at?: string;
+      branch_count: number;
+      kiosk_count: number;
+      manager_count: number;
+      created_at: string;
+    }>;
+    metrics: {
+      total_customers: number;
+      active_customers: number;
+      total_mrr_inr: number;
+      total_tokens_consumed_this_month: number;
+    };
+  }> {
+    return this.http.get<any>(`${this.baseUrl}/admin/customers`);
+  }
+
+  onboardCustomer(payload: {
+    name: string;
+    code: string;
+    manager_name: string;
+    manager_email: string;
+    manager_password?: string;
+    contact_phone?: string;
+    address?: string;
+    plan_tier?: string;
+    subscription_price_inr?: number;
+    monthly_token_quota?: number;
+    billing_cycle?: string;
+    catalog_feed_url?: string;
+  }): Observable<{
+    success: boolean;
+    shop_id: string;
+    name: string;
+    api_key: string;
+    manager_email: string;
+    default_password_generated: boolean;
+    message: string;
+  }> {
+    return this.http.post<any>(`${this.baseUrl}/admin/customers`, payload);
+  }
+
+  updateCustomer(shopId: string, payload: any): Observable<{ success: boolean; message: string }> {
+    return this.http.patch<any>(`${this.baseUrl}/admin/customers/${shopId}`, payload);
+  }
+
+  deleteCustomer(shopId: string): Observable<{ success: boolean; message: string }> {
+    return this.http.delete<any>(`${this.baseUrl}/admin/customers/${shopId}`);
+  }
+
+
+  syncTenantCatalog(items: any[], apiKey: string): Observable<{
+    success: boolean;
+    shop_name: string;
+    items_received: number;
+    created: number;
+    updated: number;
+    skipped: number;
+  }> {
+    return this.http.post<any>(`${this.baseUrl}/tenant/catalog/sync`, { items }, {
+      headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' }
+    });
+  }
+
+  importTenantCatalogUrl(feedUrl: string, apiKey: string): Observable<{
+    success: boolean;
+    shop_name: string;
+    items_imported: number;
+    feed_url: string;
+  }> {
+    return this.http.post<any>(`${this.baseUrl}/tenant/catalog/import-url`, { feed_url: feedUrl }, {
+      headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' }
+    });
+  }
+
+  getTenantCatalogSample(): Observable<any> {
+    return this.http.get<any>(`${this.baseUrl}/tenant/catalog/feed-sample`);
   }
 }

@@ -7,6 +7,7 @@ import logging
 from typing import Dict, Any, Optional
 import httpx
 from backend.app.core.config import settings
+from backend.app.core.system_settings import get_setting
 from backend.app.services.tryon.base import BaseTryOnEngine, TryOnEngineResult
 
 logger = logging.getLogger("tryon.cloud_engine")
@@ -104,6 +105,51 @@ class CloudApiTryOnEngine(BaseTryOnEngine):
             else:
                 fashn_category = "auto"
 
+            # Check if using direct FASHN.ai API (with fa-... key or direct URL)
+            is_direct_fashn = bool(self.api_key and self.api_key.startswith("fa-")) or "api.fashn.ai" in (self.api_url or "")
+
+            if is_direct_fashn:
+                is_tryon_max = str(get_setting("feature_tryon_max", "false")).lower() == "true" or options.get("model_name") == "tryon-max"
+                is_privacy_b64 = str(get_setting("feature_privacy_base64", "false")).lower() == "true"
+                is_portrait_916 = str(get_setting("feature_portrait_916", "true")).lower() == "true"
+                saree_prompt = str(get_setting("saree_pleat_prompt", "traditional Indian silk saree drape, pleated pallu pinned neatly over left shoulder, crisp zari border, matching blouse"))
+                resolution = str(get_setting("fashn_resolution", "1k"))
+                gen_mode = str(get_setting("fashn_generation_mode", "balanced"))
+
+                if is_tryon_max:
+                    # FASHN OpenAPI 3.1.1: TryOnMaxRequest
+                    inputs = {
+                        "model_image": f"data:image/jpeg;base64,{person_b64}",
+                        "product_image": f"data:image/jpeg;base64,{saree_b64}" if saree_b64 else "",
+                        "prompt": saree_prompt,
+                        "resolution": resolution,
+                        "generation_mode": gen_mode,
+                        "output_format": "png",
+                        "return_base64": is_privacy_b64,
+                    }
+                    if is_portrait_916:
+                        inputs["aspect_ratio"] = "9:16"
+                    return {
+                        "model_name": "tryon-max",
+                        "inputs": inputs,
+                    }
+                else:
+                    # FASHN OpenAPI 3.1.1: TryOnRequest (tryon-v1.6)
+                    return {
+                        "model_name": "tryon-v1.6",
+                        "inputs": {
+                            "model_image": f"data:image/jpeg;base64,{person_b64}",
+                            "garment_image": f"data:image/jpeg;base64,{saree_b64}" if saree_b64 else "",
+                            "category": fashn_category,
+                            "mode": options.get("mode", "performance"),
+                            "segmentation_free": True,
+                            "moderation_level": "permissive",
+                            "output_format": "png",
+                            "return_base64": is_privacy_b64,
+                        },
+                    }
+
+            # Otherwise, proxy format for fal.ai
             return {
                 "model_image": f"data:image/jpeg;base64,{person_b64}",
                 "garment_image": f"data:image/jpeg;base64,{saree_b64}" if saree_b64 else "",
@@ -207,8 +253,10 @@ class CloudApiTryOnEngine(BaseTryOnEngine):
                             or f"{self.provider_name}_{uuid.uuid4().hex[:12]}"
                         )
 
-                        # Support direct Fashn.ai async status polling
-                        if data.get("status") in ("starting", "in_progress") and "output" not in data:
+                        # Support direct FASHN.ai async status polling (OpenAPI 3.1.1 spec)
+                        # When POST /v1/run succeeds, it returns { "id": "...", "error": null }
+                        # Poll /v1/status/{id} until status is "completed" or "failed"
+                        if "id" in data and ("output" not in data or not data["output"]):
                             poll_url = f"https://api.fashn.ai/v1/status/{job_id}"
                             poll_start = time.time()
                             while time.time() - poll_start < float(self.timeout):
@@ -217,17 +265,19 @@ class CloudApiTryOnEngine(BaseTryOnEngine):
                                     poll_resp = await client.get(poll_url, headers=headers)
                                     if poll_resp.status_code == 200:
                                         poll_data = poll_resp.json()
-                                        if poll_data.get("status") == "completed":
+                                        current_status = poll_data.get("status")
+                                        if current_status == "completed":
                                             data = poll_data
                                             break
-                                        elif poll_data.get("status") == "failed":
+                                        elif current_status in ("failed", "canceled", "time_out"):
                                             err_details = poll_data.get("error") or {}
+                                            err_msg = err_details.get("message") if isinstance(err_details, dict) else str(err_details)
                                             return TryOnEngineResult(
                                                 status="failed",
                                                 provider_name=self.provider_name,
                                                 provider_job_id=job_id,
                                                 error_code="PROVIDER_PROCESSING_FAILED",
-                                                error_message=err_details.get("message", "FASHN.ai virtual try-on processing failed."),
+                                                error_message=err_msg or "FASHN.ai virtual try-on processing failed.",
                                                 processing_time_ms=int((time.time() - start_time) * 1000),
                                             )
                                 except Exception as poll_err:
@@ -237,17 +287,23 @@ class CloudApiTryOnEngine(BaseTryOnEngine):
                         output_url = None
                         output_b64 = None
 
-                        # Check FASHN direct list output: {"output": ["https://..."]}
+                        # Check FASHN direct list output: {"output": ["https://..."] or ["data:image/..."]}
                         if "output" in data and isinstance(data["output"], list) and len(data["output"]) > 0:
-                            output_url = data["output"][0]
+                            raw_out = data["output"][0]
+                            if raw_out.startswith("data:image/"):
+                                output_b64 = raw_out
+                            else:
+                                output_url = raw_out
 
                         # Check FASHN schema: {"images": [{"url": "https://..."}]}
-                        if not output_url and "images" in data and isinstance(data["images"], list) and len(data["images"]) > 0:
+                        if not output_url and not output_b64 and "images" in data and isinstance(data["images"], list) and len(data["images"]) > 0:
                             first_img = data["images"][0]
                             if isinstance(first_img, dict):
                                 output_url = first_img.get("url")
                             elif isinstance(first_img, str):
-                                if first_img.startswith("http"):
+                                if first_img.startswith("data:image/"):
+                                    output_b64 = first_img
+                                elif first_img.startswith("http"):
                                     output_url = first_img
                                 else:
                                     output_b64 = first_img
@@ -416,3 +472,61 @@ class CloudApiTryOnEngine(BaseTryOnEngine):
             error_message="Maximum retry attempts exceeded connecting to AI provider.",
             processing_time_ms=int((time.time() - start_time) * 1000),
         )
+
+    async def generate_runway_video(self, image_source: str, duration: int = 5) -> Dict[str, Any]:
+        """
+        Generates a 5-second fashion runway catwalk video clip using FASHN OpenAPI 3.1.1 'image-to-video'.
+        Accepts a public URL or data:image/png;base64,... string.
+        """
+        if not self.api_key:
+            return {"success": False, "error": "FASHN API credentials are not configured"}
+
+        auth_header = f"Bearer {self.api_key}" if self.api_key.startswith("fa-") else f"Key {self.api_key}"
+        headers = {
+            "Authorization": auth_header,
+            "Content-Type": "application/json",
+            "User-Agent": "NeXooAi-TryOn/1.0",
+        }
+        payload = {
+            "model_name": "image-to-video",
+            "inputs": {
+                "image": image_source,
+                "duration": duration,
+                "resolution": "720p",
+            },
+        }
+
+        api_url = "https://api.fashn.ai/v1/run"
+        try:
+            async with httpx.AsyncClient(timeout=120.0) as client:
+                resp = await client.post(api_url, json=payload, headers=headers)
+                if resp.status_code not in (200, 201):
+                    return {"success": False, "error": f"FASHN API error {resp.status_code}: {resp.text[:200]}"}
+
+                res_data = resp.json()
+                job_id = res_data.get("id")
+                if not job_id:
+                    return {"success": False, "error": "FASHN did not return a prediction ID for video generation."}
+
+                poll_url = f"https://api.fashn.ai/v1/status/{job_id}"
+                poll_start = time.time()
+                while time.time() - poll_start < 90.0:
+                    await asyncio.sleep(2.5)
+                    poll_resp = await client.get(poll_url, headers=headers)
+                    if poll_resp.status_code == 200:
+                        p_data = poll_resp.json()
+                        st = p_data.get("status")
+                        if st == "completed":
+                            outputs = p_data.get("output", [])
+                            if outputs and len(outputs) > 0:
+                                return {"success": True, "video_url": outputs[0], "job_id": job_id}
+                        elif st in ("failed", "canceled", "time_out"):
+                            err_dict = p_data.get("error", {})
+                            msg = err_dict.get("message") if isinstance(err_dict, dict) else str(err_dict)
+                            return {"success": False, "error": msg or "Runway video synthesis failed."}
+
+                return {"success": False, "error": "Runway video synthesis timed out (exceeded 90s)."}
+        except Exception as e:
+            logger.error("Runway video generation exception: %s", e)
+            return {"success": False, "error": str(e)}
+

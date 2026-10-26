@@ -16,8 +16,13 @@ elif db_url.startswith("postgresql://"):
 
 is_sqlite = "sqlite" in db_url
 
+import os
+from sqlalchemy.pool import NullPool
+
 engine_kwargs = {"echo": False, "future": True}
-if not is_sqlite:
+if settings.APP_ENV == "testing" or os.getenv("PYTEST_CURRENT_TEST"):
+    engine_kwargs["poolclass"] = NullPool
+elif not is_sqlite:
     engine_kwargs.update({
         "pool_pre_ping": True,
         "pool_size": 10,
@@ -25,6 +30,7 @@ if not is_sqlite:
     })
 
 engine = create_async_engine(db_url, **engine_kwargs)
+
 
 if is_sqlite:
     @event.listens_for(engine.sync_engine, "connect")

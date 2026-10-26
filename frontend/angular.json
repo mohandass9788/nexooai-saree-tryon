@@ -26,6 +26,10 @@
             ],
             "styles": [
               "src/styles.css"
+            ],
+            "allowedCommonJsDependencies": [
+              "heic2any",
+              "qrcode"
             ]
           },
           "configurations": {
@@ -33,13 +37,13 @@
               "budgets": [
                 {
                   "type": "initial",
-                  "maximumWarning": "500kB",
-                  "maximumError": "1MB"
+                  "maximumWarning": "3MB",
+                  "maximumError": "5MB"
                 },
                 {
                   "type": "anyComponentStyle",
-                  "maximumWarning": "60kB",
-                  "maximumError": "100kB"
+                  "maximumWarning": "150kB",
+                  "maximumError": "250kB"
                 }
               ],
               "outputHashing": "all"

@@ -11,6 +11,9 @@ from backend.app.db.models import (
     ProductModel,
     ProductImageModel,
     AdminUserModel,
+    CounterTokenModel,
+    FamilyPollModel,
+    FamilyPollVoteModel,
 )
 from backend.app.api.v1.endpoints.catalog import SAMPLE_SAREES
 
@@ -96,27 +99,127 @@ def resolve_category_id(category_name: str) -> str:
     return "cat_bridal_silk"
 
 
+async def migrate_db_columns(conn):
+    """Safely adds missing columns to PostgreSQL or SQLite database without dropping tables."""
+    from sqlalchemy import text
+    dialect = conn.dialect.name
+    print(f"Applying database schema migrations for dialect: {dialect}...")
+
+    if "postgres" in dialect:
+        queries = [
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS contact_person VARCHAR(255)",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS contact_email VARCHAR(255)",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS contact_phone VARCHAR(50)",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS is_active BOOLEAN DEFAULT TRUE",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS plan_tier VARCHAR(50) DEFAULT 'silver'",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS subscription_price_inr FLOAT DEFAULT 9999.0",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS monthly_token_quota INTEGER DEFAULT 500",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS tokens_used_this_month INTEGER DEFAULT 0",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS payment_status VARCHAR(50) DEFAULT 'paid'",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS billing_cycle VARCHAR(50) DEFAULT 'monthly'",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS api_key VARCHAR(128)",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS catalog_feed_url VARCHAR(500)",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS last_catalog_sync_at TIMESTAMP",
+            "ALTER TABLE products ADD COLUMN IF NOT EXISTS rack_location VARCHAR(100) DEFAULT 'Section A - Rack 04'",
+            "ALTER TABLE tryon_jobs ADD COLUMN IF NOT EXISTS shop_id VARCHAR(64)",
+            "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS shop_id VARCHAR(64)",
+        ]
+        for q in queries:
+            try:
+                await conn.execute(text(q))
+            except Exception as e:
+                print(f"Migration note for '{q}': {e}")
+    else:
+        # SQLite
+        try:
+            res = await conn.execute(text("PRAGMA table_info(shops)"))
+            cols = [row[1] for row in res.fetchall()]
+            if cols:
+                if "contact_person" not in cols:
+                    await conn.execute(text("ALTER TABLE shops ADD COLUMN contact_person VARCHAR(255)"))
+                if "contact_email" not in cols:
+                    await conn.execute(text("ALTER TABLE shops ADD COLUMN contact_email VARCHAR(255)"))
+                if "contact_phone" not in cols:
+                    await conn.execute(text("ALTER TABLE shops ADD COLUMN contact_phone VARCHAR(50)"))
+                if "is_active" not in cols:
+                    await conn.execute(text("ALTER TABLE shops ADD COLUMN is_active BOOLEAN DEFAULT 1"))
+                if "plan_tier" not in cols:
+                    await conn.execute(text("ALTER TABLE shops ADD COLUMN plan_tier VARCHAR(50) DEFAULT 'silver'"))
+                if "subscription_price_inr" not in cols:
+                    await conn.execute(text("ALTER TABLE shops ADD COLUMN subscription_price_inr FLOAT DEFAULT 9999.0"))
+                if "monthly_token_quota" not in cols:
+                    await conn.execute(text("ALTER TABLE shops ADD COLUMN monthly_token_quota INTEGER DEFAULT 500"))
+                if "tokens_used_this_month" not in cols:
+                    await conn.execute(text("ALTER TABLE shops ADD COLUMN tokens_used_this_month INTEGER DEFAULT 0"))
+                if "payment_status" not in cols:
+                    await conn.execute(text("ALTER TABLE shops ADD COLUMN payment_status VARCHAR(50) DEFAULT 'paid'"))
+                if "billing_cycle" not in cols:
+                    await conn.execute(text("ALTER TABLE shops ADD COLUMN billing_cycle VARCHAR(50) DEFAULT 'monthly'"))
+                if "api_key" not in cols:
+                    await conn.execute(text("ALTER TABLE shops ADD COLUMN api_key VARCHAR(128)"))
+                if "catalog_feed_url" not in cols:
+                    await conn.execute(text("ALTER TABLE shops ADD COLUMN catalog_feed_url VARCHAR(500)"))
+                if "last_catalog_sync_at" not in cols:
+                    await conn.execute(text("ALTER TABLE shops ADD COLUMN last_catalog_sync_at DATETIME"))
+
+            res_p = await conn.execute(text("PRAGMA table_info(products)"))
+            cols_p = [row[1] for row in res_p.fetchall()]
+            if cols_p and "rack_location" not in cols_p:
+                await conn.execute(text("ALTER TABLE products ADD COLUMN rack_location VARCHAR(100) DEFAULT 'Section A - Rack 04'"))
+
+            res_jobs = await conn.execute(text("PRAGMA table_info(tryon_jobs)"))
+            cols_jobs = [row[1] for row in res_jobs.fetchall()]
+            if cols_jobs and "shop_id" not in cols_jobs:
+                await conn.execute(text("ALTER TABLE tryon_jobs ADD COLUMN shop_id VARCHAR(64)"))
+
+            res_users = await conn.execute(text("PRAGMA table_info(admin_users)"))
+            cols_users = [row[1] for row in res_users.fetchall()]
+            if cols_users and "shop_id" not in cols_users:
+                await conn.execute(text("ALTER TABLE admin_users ADD COLUMN shop_id VARCHAR(64)"))
+        except Exception as e:
+            print(f"SQLite migration note: {e}")
+
+
 async def init_database():
     print("Initializing Database tables...")
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
-    print("Database tables created successfully.")
+        await migrate_db_columns(conn)
+    print("Database tables created & migrated successfully.")
 
     async with AsyncSessionLocal() as session:
-        # 1. Seed Shop
-        res = await session.execute(select(ShopModel).where(ShopModel.id == "shop_default"))
-        shop = res.scalar_one_or_none()
-        if not shop:
-            shop = ShopModel(
+        # 1. Seed Flagship Boutique Showroom
+        res_s = await session.execute(select(ShopModel).where(ShopModel.id == "shop_default"))
+        shop_obj = res_s.scalar_one_or_none()
+        if not shop_obj:
+            shop_obj = ShopModel(
                 id="shop_default",
-                name="NeXooAi Silks & Sarees",
+                name="NeXooAi Luxury Silks",
                 slug="nexooai-silks",
-                logo_url="/static/logo.png",
+                logo_url="/assets/branding/logo.png",
+                contact_person="Store Head",
+                contact_email="manager@nexooai.in",
+                contact_phone="+91 98401 23456",
+                is_active=True,
+                plan_tier="platinum",
+                subscription_price_inr=49999.0,
+                monthly_token_quota=3500,
+                tokens_used_this_month=48,
+                payment_status="paid",
+                billing_cycle="monthly",
+                api_key="sk_live_nexooai_default_01",
                 created_at=datetime.utcnow(),
             )
-            session.add(shop)
-            await session.flush()
-            print("Seeded default shop: NeXooAi Silks & Sarees")
+            session.add(shop_obj)
+            print(f"Seeded Flagship Showroom: {shop_obj.name}")
+        else:
+            if not getattr(shop_obj, "api_key", None):
+                shop_obj.api_key = "sk_live_nexooai_default_01"
+                shop_obj.plan_tier = "platinum"
+                shop_obj.subscription_price_inr = 49999.0
+                shop_obj.monthly_token_quota = 3500
+                shop_obj.payment_status = "paid"
+        await session.flush()
 
         # 2. Seed Branch
         res = await session.execute(select(BranchModel).where(BranchModel.id == "branch_tnagar"))
@@ -163,7 +266,7 @@ async def init_database():
                 id="admin_master_01",
                 email="mohandass@nexooai.in",
                 name="Mohandass (NeXooAi Super Admin)",
-                hashed_password=hash_password("Mohan@NeXooAi#2026"),
+                hashed_password=hash_password("mohandass@1992"),
                 role="super_admin",
                 is_active=True,
                 created_at=datetime.utcnow(),
@@ -171,6 +274,10 @@ async def init_database():
             session.add(master_user)
             await session.flush()
             print("Seeded Master Super Admin: mohandass@nexooai.in")
+        else:
+            # Ensure password matches user's specified credential
+            master_user.hashed_password = hash_password("mohandass@1992")
+            await session.flush()
 
         # 4b. Seed Store Manager
         res = await session.execute(select(AdminUserModel).where(AdminUserModel.email == "admin@nexooai.com"))
@@ -189,67 +296,16 @@ async def init_database():
             await session.flush()
             print("Seeded store manager user: admin@nexooai.com")
 
-        # 5. Seed Categories
-        for cat_data in CATEGORIES_SEED:
-            res = await session.execute(select(CategoryModel).where(CategoryModel.id == cat_data["id"]))
-            if not res.scalar_one_or_none():
-                category = CategoryModel(
-                    id=cat_data["id"],
-                    shop_id="shop_default",
-                    name_en=cat_data["name_en"],
-                    name_ta=cat_data["name_ta"],
-                    slug=cat_data["slug"],
-                    display_order=cat_data["display_order"],
-                    is_active=True,
-                    created_at=datetime.utcnow(),
-                )
-                session.add(category)
-        await session.flush()
-        print(f"Seeded {len(CATEGORIES_SEED)} garment categories.")
-
-        # 6. Seed Products & Images
-        for s in SAMPLE_SAREES:
-            res = await session.execute(select(ProductModel).where(ProductModel.id == s.id))
-            prod = res.scalar_one_or_none()
-            cat_id = resolve_category_id(s.category)
-            if not prod:
-                prod = ProductModel(
-                    id=s.id,
-                    category_id=cat_id,
-                    sku=s.sku,
-                    name_en=s.name_en,
-                    name_ta=s.name_ta,
-                    category=s.category,
-                    fabric=s.fabric,
-                    color=s.color,
-                    price=s.price,
-                    description_en=s.description_en,
-                    description_ta=s.description_ta,
-                    primary_image_url=s.primary_image_url,
-                    pallu_type=s.pallu_type,
-                    is_active=s.is_active,
-                    created_at=datetime.utcnow(),
-                )
-                session.add(prod)
-                await session.flush()
-
-                # Seed primary image
-                prod_img = ProductImageModel(
-                    id=f"img_{s.id}",
-                    product_id=s.id,
-                    image_url=s.primary_image_url,
-                    is_primary=True,
-                    suitability_status="suitable",
-                    created_at=datetime.utcnow(),
-                )
-                session.add(prod_img)
+        # Mock category & product seeding completely disabled.
+        # User will upload production sarees & categories directly from Admin portal.
+        print("Catalogue initialized in clean state (no mock data).")
 
         # Ensure a fallback custom product exists for custom garment try-ons
         res_custom = await session.execute(select(ProductModel).where(ProductModel.id == "custom_product"))
         if not res_custom.scalar_one_or_none():
             custom_prod = ProductModel(
                 id="custom_product",
-                category_id="cat_bridal_silk",
+                category_id=None,
                 sku="CUSTOM-01",
                 name_en="Custom Showroom Product",
                 name_ta="தனிப்பயன் ஷோரூம் ஆடை",

@@ -10,11 +10,15 @@
   <!-- Top Showroom Kiosk Header Bar -->
   <header class="kiosk-header">
     <div class="header-brand">
-      <div class="brand-crest">
-        <span class="crest-icon">✦</span>
+      <div class="brand-crest" [class.has-custom-logo]="!!customStoreLogo()">
+        @if (customStoreLogo()) {
+          <img [src]="customStoreLogo()" alt="Store Logo" class="brand-crest-logo" />
+        } @else {
+          <span class="crest-icon">✦</span>
+        }
       </div>
       <div class="brand-text">
-        <h1 class="brand-title">{{ t().appName }}</h1>
+        <h1 class="brand-title">{{ customStoreName() || t().appName }}</h1>
         <p class="brand-tagline">{{ t().appTagline }}</p>
       </div>
     </div>
@@ -23,7 +27,7 @@
       <!-- Kiosk Status Indicator -->
       <div class="status-indicator">
         <span class="pulse-dot"></span>
-        <span class="status-text">{{ translationService.currentLanguage() === 'ta' ? 'தயார்' : 'Ready' }}</span>
+        <span class="status-text">{{ 'kioskReady' | translate }}</span>
       </div>
 
       <!-- Ergonomic Reachability Mode Toggle (For Tall Showroom Displays) -->
@@ -35,7 +39,7 @@
         [title]="t().reachModeBtn"
       >
         <span class="reach-icon">♿</span>
-        <span class="reach-btn-text">{{ isReachModeActive() ? (translationService.currentLanguage() === 'ta' ? 'இயல்பு' : 'Normal') : (translationService.currentLanguage() === 'ta' ? 'எட்டு' : 'Reach') }}</span>
+        <span class="reach-btn-text">{{ isReachModeActive() ? ('restoreStandardHeight' | translate) : ('reachModeBtn' | translate) }}</span>
       </button>
 
       <!-- Theme Switcher (Dark <-> Light) -->
@@ -47,14 +51,51 @@
         [title]="isLightTheme() ? t().darkThemeBtn : t().lightThemeBtn"
       >
         <span class="theme-icon">{{ isLightTheme() ? '🌙' : '☀️' }}</span>
-        <span class="theme-label">{{ isLightTheme() ? (translationService.currentLanguage() === 'ta' ? 'டார்க்' : 'Dark') : (translationService.currentLanguage() === 'ta' ? 'லைட்' : 'Light') }}</span>
+        <span class="theme-label">{{ isLightTheme() ? ('darkThemeLabel' | translate) : ('lightThemeLabel' | translate) }}</span>
       </button>
 
-      <!-- Language Switcher (Tamil <-> English) -->
-      <button class="btn-lang-toggle" (click)="translationService.toggleLanguage()" id="btn-language-toggle">
-        <span class="lang-icon">🌐</span>
-        <span class="lang-label">{{ translationService.currentLanguage() === 'ta' ? 'English' : 'தமிழ்' }}</span>
-      </button>
+      <!-- Multi-Language Selector (English, Tamil, Hindi, Malayalam, Telugu) -->
+      <div class="lang-selector-wrapper">
+        <button
+          class="btn-lang-toggle"
+          (click)="toggleLanguageMenu()"
+          id="btn-language-toggle"
+          [title]="'Select Language'"
+          type="button"
+        >
+          <span class="lang-icon">🌐</span>
+          <span class="lang-flag">{{ translationService.currentLangInfo().flag }}</span>
+          <span class="lang-label">{{ translationService.currentLangInfo().label }}</span>
+          <span class="lang-arrow">▾</span>
+        </button>
+
+        @if (showLanguageMenu()) {
+          <div class="lang-dropdown-menu" (click)="$event.stopPropagation()">
+            <div class="lang-dropdown-header">
+              <span>🌐 Select Language</span>
+            </div>
+            <div class="lang-dropdown-list">
+              @for (lang of supportedLanguages; track lang.code) {
+                <button
+                  type="button"
+                  class="lang-menu-item"
+                  [class.selected]="translationService.currentLanguage() === lang.code"
+                  (click)="selectLanguage(lang.code)"
+                >
+                  <span class="lang-item-flag">{{ lang.flag }}</span>
+                  <div class="lang-item-text">
+                    <span class="lang-item-native">{{ lang.label }}</span>
+                    <span class="lang-item-en">{{ lang.englishLabel }}</span>
+                  </div>
+                  @if (translationService.currentLanguage() === lang.code) {
+                    <span class="lang-item-check">✓</span>
+                  }
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
 
       <!-- Idle Timer Countdown (visible during active customer session) -->
       @if (!isAdminMode() && kioskService.currentStep() !== 'WELCOME') {
@@ -68,7 +109,7 @@
       @if (!isAdminMode() && kioskService.currentStep() !== 'WELCOME') {
         <button class="btn-reset-session" (click)="finishSession()" id="btn-header-reset" [title]="t().resetSession">
           <span>🔄</span>
-          <span>{{ translationService.currentLanguage() === 'ta' ? 'மீட்டமை' : 'Reset' }}</span>
+          <span>{{ 'resetSession' | translate }}</span>
         </button>
       }
 
@@ -76,14 +117,14 @@
       @if (kioskService.isKioskUnlocked() && !isAdminMode()) {
         <button class="btn-lock-device" (click)="lockKioskDevice()" id="btn-lock-kiosk-device" [title]="t().lockKioskBtn">
           <span>🔒</span>
-          <span>{{ translationService.currentLanguage() === 'ta' ? 'பூட்டு' : 'Lock' }}</span>
+          <span>{{ 'lockKioskBtn' | translate }}</span>
         </button>
       }
 
       <!-- Unobtrusive Store Admin Portal Toggle Button (PIN Protected) -->
       <button class="btn-admin-toggle" (click)="openAdminPinModal()" id="btn-admin-toggle" [title]="t().adminPortalBtn">
         <span>🛡️</span>
-        <span>{{ isAdminMode() ? (translationService.currentLanguage() === 'ta' ? 'வெளியேறு' : 'Exit') : (translationService.currentLanguage() === 'ta' ? 'நிர்வாகம்' : 'Admin') }}</span>
+        <span>{{ isAdminMode() ? ('adminExitBtn' | translate) : ('adminPortalTitle' | translate) }}</span>
       </button>
     </div>
   </header>
@@ -161,7 +202,7 @@
           </div>
 
           <p class="staff-gate-footer-hint">
-            {{ translationService.currentLanguage() === 'ta' ? 'அங்கீகரிக்கப்படாத நபர்கள் அணுகுவதைத் தடுக்க கியோஸ்க் பாதுகாக்கப்பட்டுள்ளது.' : 'Kiosk is locked to prevent unauthorized public access.' }}
+            {{ 'staffGateFooterHint' | translate }}
           </p>
         </div>
       </section>
@@ -233,8 +274,39 @@
             >
               👥 ஊழியர்கள் & அணுகல் ({{ adminUsers().length }})
             </button>
+            <button
+              class="admin-tab-btn"
+              [class.active]="adminTab() === 'SHOWROOM'"
+              (click)="setAdminTab('SHOWROOM')"
+            >
+              🏢 கடை & WhatsApp Gateway
+            </button>
+            <button
+              class="admin-tab-btn gold-tab"
+              [class.active]="adminTab() === 'TOKENS'"
+              (click)="setAdminTab('TOKENS')"
+            >
+              🎫 விற்பனை டோக்கன்கள் ({{ counterTokensList().length }})
+            </button>
+            <button
+              class="admin-tab-btn"
+              [class.active]="adminTab() === 'INSIGHTS'"
+              (click)="setAdminTab('INSIGHTS')"
+              id="btn-admin-tab-insights"
+            >
+              📊 அலமாரி Heatmap & அனலிட்டிக்ஸ்
+            </button>
+            <button
+              class="admin-tab-btn gold-tab"
+              [class.active]="adminTab() === 'SAAS_CUSTOMERS'"
+              (click)="setAdminTab('SAAS_CUSTOMERS')"
+              id="btn-admin-tab-saas"
+            >
+              🏢 B2B Boutiques &amp; API ({{ saasCustomers().length }})
+            </button>
           </div>
         </div>
+
 
         @if (adminTab() === 'METRICS') {
           <div class="kpi-cards-grid">
@@ -303,7 +375,7 @@
               <div class="panel-title-group">
                 <h3>👥 {{ t().customerGalleryTitle }}</h3>
                 <p class="panel-subtitle">
-                  {{ translationService.currentLanguage() === 'ta' ? 'இன்றைய வாடிக்கையாளர் புகைப்படங்கள், ட்ரையல் முடிவுகள் மற்றும் தனியுரிமை அழிப்பு விவரங்கள்' : "Today's customer walk-ins, original portraits, draped outputs & retention logs" }}
+                  {{ 'customerGallerySubtitle' | translate }}
                 </p>
               </div>
 
@@ -329,7 +401,7 @@
                 </span>
               </div>
               <button class="btn-text-action" (click)="setAdminTab('SETTINGS')">
-                <span>⚙️ {{ translationService.currentLanguage() === 'ta' ? 'நேரம் மாற்று' : 'Configure Timer' }}</span>
+                <span>⚙️ {{ 'configureTimerBtn' | translate }}</span>
               </button>
             </div>
 
@@ -337,8 +409,8 @@
             @if (!adminCustomers()?.customers?.length) {
               <div class="empty-customers-view">
                 <span class="empty-icon">👥</span>
-                <h4>{{ translationService.currentLanguage() === 'ta' ? 'இன்று இதுவரை வாடிக்கையாளர் வருகைகள் இல்லை' : 'No Customer Try-Ons Logged Today' }}</h4>
-                <p>{{ translationService.currentLanguage() === 'ta' ? 'கியோஸ்க்கில் புதிய ட்ரையல் தொடங்கப்பட்டதும் இங்கு புகைப்படங்கள் தோன்றும்.' : 'Customer portraits and draped looks will appear here automatically as visitors use the kiosk.' }}</p>
+                <h4>{{ 'noCustomersTodayTitle' | translate }}</h4>
+                <p>{{ 'noCustomersTodayDesc' | translate }}</p>
               </div>
             } @else {
               <div class="customer-cards-grid">
@@ -380,11 +452,11 @@
                     <div class="customer-card-footer">
                       <button class="btn-inspect-customer" (click)="openCustomerPreview(c)">
                         <span>🔍</span>
-                        <span>{{ translationService.currentLanguage() === 'ta' ? 'பெரிதாக்கு' : 'Inspect HD' }}</span>
+                        <span>{{ 'inspectHdBtn' | translate }}</span>
                       </button>
                       <button class="btn-delete-customer" (click)="deleteCustomerRecord(c.job_id)">
                         <span>🗑️</span>
-                        <span>{{ translationService.currentLanguage() === 'ta' ? 'அழி' : 'Delete' }}</span>
+                        <span>{{ 'deleteBtn' | translate }}</span>
                       </button>
                     </div>
                   </div>
@@ -573,17 +645,14 @@
                   </div>
 
                   <div class="form-group">
-                    <label>Category</label>
-                    <select [value]="newProdCategory()" (change)="newProdCategory.set($any($event.target).value)" class="admin-select">
-                      <option value="Bridal Silk">Bridal Silk (முகூர்த்த பட்டு)</option>
-                      <option value="Banarasi Silk">Banarasi Silk (பனாரசி பட்டு)</option>
-                      <option value="Cotton Sarees">Cotton Sarees (காட்டன் புடவைகள்)</option>
-                      <option value="Mysore Silk">Mysore Silk (மைசூர் சில்க்)</option>
-                      <option value="Women Chudidhar">Women Chudidhar (சுடிதார்)</option>
-                      <option value="Men Dhoti">Men Dhoti (பட்டு வேட்டி)</option>
-                      <option value="Men Kurta">Men Kurta & Shirts (சட்டை & குர்தா)</option>
-                      <option value="Kids Wear">Kids Wear (குழந்தைகள் ஆடை)</option>
-                    </select>
+                    <label>Category *</label>
+                    <input
+                      type="text"
+                      [value]="newProdCategory()"
+                      (input)="newProdCategory.set($any($event.target).value)"
+                      class="admin-input"
+                      placeholder="e.g. Bridal Silk, Banarasi, Kanchipuram, etc."
+                    />
                   </div>
 
                   <div class="form-group">
@@ -609,7 +678,7 @@
                         <img [src]="newProdImageUrl()" alt="Preview" class="product-upload-preview" />
                       }
                       <div class="upload-controls">
-                        <input #prodFileInput type="file" accept="image/jpeg,image/png,image/webp" (change)="onProductImageSelected($event)" style="display: none;" />
+                        <input #prodFileInput type="file" accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,.HEIC,.HEIF" (change)="onProductImageSelected($event)" style="display: none;" />
                         <button type="button" class="btn-outline" (click)="prodFileInput.click()" [disabled]="isUploadingProductImg()">
                           <span>📁</span>
                           <span>{{ isUploadingProductImg() ? 'Uploading Photo...' : 'Upload Image File' }}</span>
@@ -694,6 +763,288 @@
                 <span>{{ settingsFeedbackMsg() }}</span>
               </div>
             }
+
+            <!-- ========================================================================= -->
+            <!-- SECTION BRAND: SHOWROOM BRAND IDENTITY & MEDIA (பொட்டிக் பிராண்டிங்)        -->
+            <!-- ========================================================================= -->
+            <div class="settings-card glass-panel brand-identity-card">
+              <div class="card-header-strip">
+                <div class="card-title-group">
+                  <div class="title-with-badge">
+                    <h3>🏛️ பொட்டிக் பிராண்டிங் & விளம்பரத் திரை (Showroom Branding & Ads)</h3>
+                    <span class="b2b-tier-badge">Store Customization</span>
+                  </div>
+                  <p>கியோஸ்க் முகப்பில் உங்கள் கடையின் பெயர், லோகோ மற்றும் விளம்பர வீடியோக்களை அமைக்கவும்.</p>
+                </div>
+              </div>
+
+              <div class="brand-config-grid">
+                <div class="form-group">
+                  <label>Showroom / Boutique Name (கடையின் பெயர்)</label>
+                  <input
+                    #storeNameInput
+                    type="text"
+                    class="admin-input"
+                    [value]="adminSettings()?.custom_store_name || 'NeXooAi Luxury Silks'"
+                    placeholder="எ.கா. Kalyan Silks / RMKV Silks"
+                  />
+                  <small class="admin-field-hint">கியோஸ்க் ஹெடரில் தோன்றும் அதிகாரப்பூர்வ பிராண்ட் பெயர்.</small>
+                </div>
+
+                <div class="form-group">
+                  <label>Showroom Logo URL (பிராண்ட் லோகோ லிங்க்)</label>
+                  <input
+                    #storeLogoInput
+                    type="url"
+                    class="admin-input"
+                    [value]="adminSettings()?.custom_store_logo_url || ''"
+                    placeholder="https://example.com/logo.png"
+                  />
+                  <small class="admin-field-hint">லோகோ படம் கியோஸ்க் ஹெடரின் தங்க பதக்கத்தில் கம்பீரமாகத் தோன்றும்.</small>
+                </div>
+
+                <div class="form-group full-width">
+                  <label>Promotional Ad Video URL (விளம்பர வீடியோ லிங்க் - YouTube / MP4)</label>
+                  <div class="key-input-wrap">
+                    <input
+                      #storeAdVideoInput
+                      type="url"
+                      class="admin-input"
+                      [value]="adminSettings()?.custom_store_ad_video_url || adminSettings()?.idle_attract_video_url || ''"
+                      placeholder="https://www.youtube.com/watch?v=scL_y2_p8c8"
+                    />
+                    <button
+                      type="button"
+                      class="btn-gold-action"
+                      (click)="saveBrandIdentity(storeNameInput.value, storeLogoInput.value, storeAdVideoInput.value)"
+                    >
+                      💾 சேமி (Save Brand)
+                    </button>
+                  </div>
+                  <small class="admin-field-hint">வாடிக்கையாளர் தொடாத போது இந்த விளம்பர வீடியோ முழுத் திரையில் இயங்கும்.</small>
+                </div>
+              </div>
+            </div>
+
+            <!-- ========================================================================= -->
+            <!-- SECTION 0: B2B FEATURE TIERS & MODULE TOGGLES (Client Add-on Packages)    -->
+            <!-- ========================================================================= -->
+            <div class="settings-card b2b-features-card glass-panel">
+              <div class="card-header-strip">
+                <div class="card-title-group">
+                  <div class="title-with-badge">
+                    <h3>{{ t().b2bFeaturesTitle }}</h3>
+                    <span class="b2b-tier-badge">Client Tier Control</span>
+                  </div>
+                  <p>{{ t().b2bFeaturesSubtitle }}</p>
+                </div>
+              </div>
+
+              <div class="b2b-feature-modules-grid">
+                <!-- Module 1: Ultra Saree Try-On Max -->
+                <div class="b2b-module-card" [class.module-active]="adminSettings()?.feature_tryon_max">
+                  <div class="module-card-header">
+                    <div class="module-icon-wrap">🌟</div>
+                    <div class="module-header-text">
+                      <div class="module-title-row">
+                        <h4>Ultra Saree Try-On Max</h4>
+                        <span class="module-tier-pill ultra">4K Ultra Fidelity</span>
+                      </div>
+                      <span class="module-status-chip" [class.active]="adminSettings()?.feature_tryon_max">
+                        {{ adminSettings()?.feature_tryon_max ? '● KIOSK ACTIVE' : '○ DISABLED' }}
+                      </span>
+                    </div>
+                  </div>
+                  <p class="module-desc">
+                    FASHN <code>tryon-max</code> என்ஜின் மூலம் பட்டுப்புடவையின் முந்தானை (Pallu) மற்றும் ஜரி பார்டர்களை மிகத் துல்லியமாக உடலுக்குப் பொருத்தும்.
+                  </p>
+                  <div class="module-toggle-footer">
+                    <label class="clean-switch">
+                      <input
+                        type="checkbox"
+                        [checked]="adminSettings()?.feature_tryon_max"
+                        (change)="toggleB2BFeature('feature_tryon_max', adminSettings()?.feature_tryon_max)"
+                      />
+                      <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-action-label">{{ adminSettings()?.feature_tryon_max ? 'சேர்க்கப்பட்டுள்ளது (Active)' : 'முடக்கு (Off)' }}</span>
+                  </div>
+                </div>
+
+                <!-- Module 2: 5-Second Runway Fashion Video -->
+                <div class="b2b-module-card" [class.module-active]="adminSettings()?.feature_runway_video">
+                  <div class="module-card-header">
+                    <div class="module-icon-wrap">🎬</div>
+                    <div class="module-header-text">
+                      <div class="module-title-row">
+                        <h4>5s Runway Fashion Video</h4>
+                        <span class="module-tier-pill video">Motion Add-on</span>
+                      </div>
+                      <span class="module-status-chip" [class.active]="adminSettings()?.feature_runway_video">
+                        {{ adminSettings()?.feature_runway_video ? '● KIOSK ACTIVE' : '○ DISABLED' }}
+                      </span>
+                    </div>
+                  </div>
+                  <p class="module-desc">
+                    புடவை அணிந்த வாடிக்கையாளர் 5 விநாடிகள் கேட்வாக் செய்து வருவது போன்ற வீடியோ கிளிப்பை (MP4) கியோஸ்க் திரையில் இயக்கும்.
+                  </p>
+                  <div class="module-toggle-footer">
+                    <label class="clean-switch">
+                      <input
+                        type="checkbox"
+                        [checked]="adminSettings()?.feature_runway_video"
+                        (change)="toggleB2BFeature('feature_runway_video', adminSettings()?.feature_runway_video)"
+                      />
+                      <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-action-label">{{ adminSettings()?.feature_runway_video ? 'சேர்க்கப்பட்டுள்ளது (Active)' : 'முடக்கு (Off)' }}</span>
+                  </div>
+                </div>
+
+                <!-- Module 3: Instant Face-to-Avatar Selfie Mode -->
+                <div class="b2b-module-card" [class.module-active]="adminSettings()?.feature_selfie_mode">
+                  <div class="module-card-header">
+                    <div class="module-icon-wrap">🤳</div>
+                    <div class="module-header-text">
+                      <div class="module-title-row">
+                        <h4>Quick Selfie Avatar Mode</h4>
+                        <span class="module-tier-pill selfie">Express Add-on</span>
+                      </div>
+                      <span class="module-status-chip" [class.active]="adminSettings()?.feature_selfie_mode">
+                        {{ adminSettings()?.feature_selfie_mode ? '● KIOSK ACTIVE' : '○ DISABLED' }}
+                      </span>
+                    </div>
+                  </div>
+                  <p class="module-desc">
+                    வாடிக்கையாளர் முழு படம் எடுக்காமல் செல்ஃபி முகத்தை மட்டும் படம் பிடித்தாலும், AI உடனே முழு உடல் தோற்றத்தை உருவாக்கும்.
+                  </p>
+                  <div class="module-toggle-footer">
+                    <label class="clean-switch">
+                      <input
+                        type="checkbox"
+                        [checked]="adminSettings()?.feature_selfie_mode"
+                        (change)="toggleB2BFeature('feature_selfie_mode', adminSettings()?.feature_selfie_mode)"
+                      />
+                      <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-action-label">{{ adminSettings()?.feature_selfie_mode ? 'சேர்க்கப்பட்டுள்ளது (Active)' : 'முடக்கு (Off)' }}</span>
+                  </div>
+                </div>
+
+                <!-- Module 4: Zero-Storage Customer Privacy -->
+                <div class="b2b-module-card" [class.module-active]="adminSettings()?.feature_privacy_base64">
+                  <div class="module-card-header">
+                    <div class="module-icon-wrap">🛡️</div>
+                    <div class="module-header-text">
+                      <div class="module-title-row">
+                        <h4>Zero-Storage Privacy Mode</h4>
+                        <span class="module-tier-pill privacy">Enterprise Security</span>
+                      </div>
+                      <span class="module-status-chip" [class.active]="adminSettings()?.feature_privacy_base64">
+                        {{ adminSettings()?.feature_privacy_base64 ? '● KIOSK ACTIVE' : '○ DISABLED' }}
+                      </span>
+                    </div>
+                  </div>
+                  <p class="module-desc">
+                    <code>return_base64</code> பயன்முறை: வாடிக்கையாளர் படங்கள் கிளவுட் சர்வரில் எங்கும் சேமிக்கப்படாது; 100% பிரைவேட் மெமரி மோட்.
+                  </p>
+                  <div class="module-toggle-footer">
+                    <label class="clean-switch">
+                      <input
+                        type="checkbox"
+                        [checked]="adminSettings()?.feature_privacy_base64"
+                        (change)="toggleB2BFeature('feature_privacy_base64', adminSettings()?.feature_privacy_base64)"
+                      />
+                      <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-action-label">{{ adminSettings()?.feature_privacy_base64 ? 'சேர்க்கப்பட்டுள்ளது (Active)' : 'முடக்கு (Off)' }}</span>
+                  </div>
+                </div>
+
+                <!-- Module 5: Interactive Before/After Split Slider -->
+                <div class="b2b-module-card" [class.module-active]="adminSettings()?.feature_split_slider">
+                  <div class="module-card-header">
+                    <div class="module-icon-wrap">↔️</div>
+                    <div class="module-header-text">
+                      <div class="module-title-row">
+                        <h4>Before/After Split Slider</h4>
+                        <span class="module-tier-pill tool">Kiosk Interactive</span>
+                      </div>
+                      <span class="module-status-chip" [class.active]="adminSettings()?.feature_split_slider">
+                        {{ adminSettings()?.feature_split_slider ? '● KIOSK ACTIVE' : '○ DISABLED' }}
+                      </span>
+                    </div>
+                  </div>
+                  <p class="module-desc">
+                    வாடிக்கையாளர் பழைய ஆடைக்கும் புடவைக்கும் உள்ள வித்தியாசத்தை திரையில் விரலால் நகர்த்திப் பார்க்கும் ஒப்பீட்டு ஸ்லைடர்.
+                  </p>
+                  <div class="module-toggle-footer">
+                    <label class="clean-switch">
+                      <input
+                        type="checkbox"
+                        [checked]="adminSettings()?.feature_split_slider"
+                        (change)="toggleB2BFeature('feature_split_slider', adminSettings()?.feature_split_slider)"
+                      />
+                      <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-action-label">{{ adminSettings()?.feature_split_slider ? 'சேர்க்கப்பட்டுள்ளது (Active)' : 'முடக்கு (Off)' }}</span>
+                  </div>
+                </div>
+
+                <!-- Module 6: 9:16 Portrait Totem Resolution -->
+                <div class="b2b-module-card" [class.module-active]="adminSettings()?.feature_portrait_916">
+                  <div class="module-card-header">
+                    <div class="module-icon-wrap">📐</div>
+                    <div class="module-header-text">
+                      <div class="module-title-row">
+                        <h4>Native 9:16 Portrait Canvas</h4>
+                        <span class="module-tier-pill totem">55" Totem Display</span>
+                      </div>
+                      <span class="module-status-chip" [class.active]="adminSettings()?.feature_portrait_916">
+                        {{ adminSettings()?.feature_portrait_916 ? '● KIOSK ACTIVE' : '○ DISABLED' }}
+                      </span>
+                    </div>
+                  </div>
+                  <p class="module-desc">
+                    செங்குத்து கியோஸ்க் திரைக்குப் பொருத்தமாக, தலை முதல் பாதம் வரை முழு புடவை அளவும் வெட்டப்படாமல் 9:16 விகிதத்தில் இயங்கும்.
+                  </p>
+                  <div class="module-toggle-footer">
+                    <label class="clean-switch">
+                      <input
+                        type="checkbox"
+                        [checked]="adminSettings()?.feature_portrait_916"
+                        (change)="toggleB2BFeature('feature_portrait_916', adminSettings()?.feature_portrait_916)"
+                      />
+                      <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-action-label">{{ adminSettings()?.feature_portrait_916 ? 'சேர்க்கப்பட்டுள்ளது (Active)' : 'முடக்கு (Off)' }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Saree Drape Styling & Prompt Fine-Tuner Strip -->
+              <div class="b2b-finetune-strip">
+                <div class="finetune-header">
+                  <h4>🥻 Saree Pleat & Drape Styling Instructions (FASHN AI)</h4>
+                  <span class="finetune-tag">Auto-Injected on Try-On</span>
+                </div>
+                <div class="finetune-body">
+                  <input
+                    #sareePromptInput
+                    type="text"
+                    class="admin-input"
+                    [value]="adminSettings()?.saree_pleat_prompt || 'traditional Indian silk saree drape, pleated pallu pinned neatly over left shoulder, crisp zari borders, matching blouse'"
+                    placeholder="Prompt instructions for saree draping..."
+                  />
+                  <button
+                    class="btn-gold"
+                    (click)="saveSystemSettings({ saree_pleat_prompt: sareePromptInput.value })"
+                  >
+                    Save Saree Drape Styling
+                  </button>
+                </div>
+              </div>
+            </div>
 
             <!-- SECTION 1: AI ENGINE PROVIDER SWITCHER -->
             <div class="settings-card glass-panel">
@@ -1136,8 +1487,718 @@
             </div>
           </div>
         }
+
+        <!-- ================================================================= -->
+        <!-- TAB 7: SHOWROOM BRANDING & DYNAMIC WHATSAPP GATEWAY                 -->
+        <!-- ================================================================= -->
+        @if (adminTab() === 'SHOWROOM') {
+          <div class="showroom-master-panel">
+            <!-- Toast Feedback -->
+            @if (showroomSaveSuccess()) {
+              <div class="tenant-toast-banner">
+                <span>✨</span>
+                <span>{{ showroomSaveSuccess() }}</span>
+              </div>
+            }
+            @if (showroomSaveError()) {
+              <div class="tenant-toast-banner error-toast">
+                <span>⚠️</span>
+                <span>{{ showroomSaveError() }}</span>
+              </div>
+            }
+
+            <div class="showroom-grid-two-col">
+              <!-- Column 1: Boutique Identity & Contact -->
+              <div class="settings-card glass-panel">
+                <div class="card-header-strip">
+                  <div class="card-title-group">
+                    <h3>🏢 ஜவுளிக்கடை சுயவிவரம் (Boutique Profile)</h3>
+                    <p>கடையின் பெயர், லோகோ மற்றும் தொடர்பு விவரங்கள் (Showroom Identity)</p>
+                  </div>
+                </div>
+
+                <div class="form-grid-layout">
+                  <div class="form-group full-width">
+                    <label>கடையின் பெயர் (Store Display Name) *</label>
+                    <input
+                      type="text"
+                      class="admin-input"
+                      [value]="storeNameForm()"
+                      (input)="storeNameForm.set($any($event.target).value)"
+                      placeholder="எ.கா: NeXooAi Luxury Silks"
+                    />
+                  </div>
+
+                  <div class="form-group full-width">
+                    <label>கடையின் வாசகம் (Tagline / Slogan)</label>
+                    <input
+                      type="text"
+                      class="admin-input"
+                      [value]="storeTaglineForm()"
+                      (input)="storeTaglineForm.set($any($event.target).value)"
+                      placeholder="எ.கா: பாரம்பரிய காஞ்சிபுரம் பட்டுப்புடவைகள்"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label>தொடர்பு தொலைபேசி (Phone Number)</label>
+                    <input
+                      type="text"
+                      class="admin-input"
+                      [value]="storePhoneForm()"
+                      (input)="storePhoneForm.set($any($event.target).value)"
+                      placeholder="+91 98401 23456"
+                    />
+                  </div>
+
+                  <div class="form-group">
+                    <label>நகரம் / இருப்பிடம் (City / Location)</label>
+                    <input
+                      type="text"
+                      class="admin-input"
+                      [value]="storeCityForm()"
+                      (input)="storeCityForm.set($any($event.target).value)"
+                      placeholder="Chennai"
+                    />
+                  </div>
+
+                  <div class="form-group full-width">
+                    <label>கடையின் லோகோ URL (Logo Image URL)</label>
+                    <input
+                      type="text"
+                      class="admin-input"
+                      [value]="storeLogoUrlForm()"
+                      (input)="storeLogoUrlForm.set($any($event.target).value)"
+                      placeholder="https://example.com/logo.png"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Column 2: Luxury Watermark on Generated Portraits -->
+              <div class="settings-card glass-panel">
+                <div class="card-header-strip">
+                  <div class="card-title-group">
+                    <h3>✨ பிராண்டிங் வாட்டர்மார்க் (Boutique Watermark)</h3>
+                    <p>வாடிக்கையாளர் பதிவிறக்கும் படத்தில் தானாக பதியும் கடையின் பிராண்டிங்</p>
+                  </div>
+                  <div class="toggle-switch-wrapper">
+                    <label class="switch-pill">
+                      <input
+                        type="checkbox"
+                        [checked]="watermarkEnabledForm()"
+                        (change)="watermarkEnabledForm.set($any($event.target).checked)"
+                      />
+                      <span class="slider-round"></span>
+                    </label>
+                  </div>
+                </div>
+
+                <div class="form-grid-layout">
+                  <div class="form-group full-width">
+                    <label>வாட்டர்மார்க் முதன்மைப் பெயர் (Watermark Brand Name)</label>
+                    <input
+                      type="text"
+                      class="admin-input"
+                      [value]="watermarkTextForm()"
+                      (input)="watermarkTextForm.set($any($event.target).value)"
+                      placeholder="NEXOOAI LUXURY SILKS"
+                    />
+                  </div>
+
+                  <div class="form-group full-width">
+                    <label>வாட்டர்மார்க் உப-வாசகம் (Subtext / Quality Stamp)</label>
+                    <input
+                      type="text"
+                      class="admin-input"
+                      [value]="watermarkSubtextForm()"
+                      (input)="watermarkSubtextForm.set($any($event.target).value)"
+                      placeholder="Exclusively Styled in Virtual 3D Drape"
+                    />
+                  </div>
+
+                  <!-- Live Watermark Preview Mockup -->
+                  <div class="watermark-preview-mockup full-width">
+                    <div class="mockup-banner">
+                      <div class="mockup-gold-line"></div>
+                      <span class="mockup-title">{{ (watermarkTextForm() || 'NEXOOAI LUXURY SILKS') | uppercase }}</span>
+                      <span class="mockup-sub">✨ {{ watermarkSubtextForm() || 'Exclusively Styled in Virtual 3D Drape' }} • 26 Oct 2026 ✨</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Full Width: Dynamic WhatsApp Gateway Configuration (Zero Hardcoding!) -->
+            <div class="settings-card glass-panel whatsapp-config-card">
+              <div class="card-header-strip">
+                <div class="card-title-group">
+                  <h3>💬 நேரடி WhatsApp Gateway (No Developer Setup Required)</h3>
+                  <p>கடையின் அதிகாரப்பூர்வ WhatsApp Cloud API மூலம் கஸ்டமர் மொபைலுக்கு உயர்-துல்லிய படம் அனுப்பும் வசதி</p>
+                </div>
+                <div class="toggle-switch-wrapper">
+                  <label class="switch-pill">
+                    <input
+                      type="checkbox"
+                      [checked]="whatsAppEnabledForm()"
+                      (change)="whatsAppEnabledForm.set($any($event.target).checked)"
+                    />
+                    <span class="slider-round"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="form-grid-layout">
+                <div class="form-group">
+                  <label>WhatsApp சேவை வழங்குநர் (Provider)</label>
+                  <select
+                    class="admin-input"
+                    [value]="whatsAppProviderForm()"
+                    (change)="whatsAppProviderForm.set($any($event.target).value)"
+                  >
+                    <option value="meta_cloud">Meta WhatsApp Cloud API (அதிகாரப்பூர்வ API)</option>
+                    <option value="wati">WATI Webhook API</option>
+                    <option value="twilio">Twilio Programmable WhatsApp</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>WhatsApp Phone Number ID *</label>
+                  <input
+                    type="text"
+                    class="admin-input"
+                    [value]="whatsAppPhoneIdForm()"
+                    (input)="whatsAppPhoneIdForm.set($any($event.target).value)"
+                    placeholder="எ.கா: 104829104829104"
+                  />
+                  <small class="admin-field-hint">Meta Developer Console -> WhatsApp -> API Setup-ல் கிடைக்கும் ID</small>
+                </div>
+
+                <div class="form-group full-width">
+                  <label>Permanent Access Token (Bear Token) *</label>
+                  <input
+                    type="password"
+                    class="admin-input"
+                    [value]="whatsAppTokenForm()"
+                    (input)="whatsAppTokenForm.set($any($event.target).value)"
+                    [placeholder]="showroomSettings()?.whatsapp_access_token_masked || 'EAAB... (புதிய Token உள்ளிட்டால் மட்டுமே மாறும்)'"
+                  />
+                  <small class="admin-field-hint">பாதுகாப்பாக என்க்ரிப்ட் செய்யப்படும். யாருக்கும் திரையில் தெரியாது.</small>
+                </div>
+
+                <div class="form-group">
+                  <label>சேல்ஸ் கவுண்டர் WhatsApp எண் (Floor Staff WhatsApp)</label>
+                  <input
+                    type="text"
+                    class="admin-input"
+                    [value]="whatsAppSalesPhoneForm()"
+                    (input)="whatsAppSalesPhoneForm.set($any($event.target).value)"
+                    placeholder="+91 98401 23456"
+                  />
+                  <small class="admin-field-hint">வாடிக்கையாளர் டோக்கன் எடுக்கும்போது இந்த எண்ணிற்கும் நோட்டிபிகேஷன் செல்லும்</small>
+                </div>
+
+                <!-- Live WhatsApp Connectivity Test Widget -->
+                <div class="whatsapp-test-box full-width">
+                  <div class="test-header">
+                    <h4>🧪 WhatsApp நேரலை இணைப்பு சோதனை (Live Connectivity Test)</h4>
+                    <span class="test-hint">கீழே உங்கள் போன் நம்பரை உள்ளிட்டு "சோதனை செய்தி அனுப்புக" பட்டனைத் தட்டவும்</span>
+                  </div>
+                  <div class="test-input-row">
+                    <input
+                      type="text"
+                      class="admin-input"
+                      [value]="whatsAppTestPhone()"
+                      (input)="whatsAppTestPhone.set($any($event.target).value)"
+                      placeholder="+91 98401 23456"
+                    />
+                    <button
+                      type="button"
+                      class="btn-gold"
+                      [disabled]="isTestingWhatsApp()"
+                      (click)="testWhatsAppConnection()"
+                    >
+                      <span>{{ isTestingWhatsApp() ? 'அனுப்பப்படுகிறது...' : '📲 சோதனை செய்தி அனுப்பு (Send Test)' }}</span>
+                    </button>
+                  </div>
+                  @if (whatsAppTestResult(); as result) {
+                    <div class="test-result-pill" [class.success]="result.success" [class.error]="!result.success">
+                      <span>{{ result.success ? '✅' : '❌' }}</span>
+                      <span>{{ result.msg }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <div class="form-actions-row">
+                <button
+                  type="button"
+                  class="btn-gold btn-large"
+                  [disabled]="isSavingShowroomSettings()"
+                  (click)="saveShowroomSettings()"
+                >
+                  <span>💾</span>
+                  <span>{{ isSavingShowroomSettings() ? 'சேமிக்கப்படுகிறது...' : 'கடை அமைப்புகளைச் சேமி (Save Showroom Profile)' }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ================================================================= -->
+        <!-- TAB 8: SHOWROOM FLOOR SALES SLIPS (TRY-TO-BUY LIVE QUEUE)          -->
+        <!-- ================================================================= -->
+        @if (adminTab() === 'TOKENS') {
+          <div class="tokens-master-panel">
+            <div class="tokens-header glass-panel">
+              <div class="tokens-title-group">
+                <h3>🎫 விற்பனை கவுண்டர் டோக்கன்கள் (Floor Sales Queue)</h3>
+                <p>கியோஸ்க் திரையில் வாடிக்கையாளர்கள் "வாங்க விரும்புகிறேன்" எனத் தட்டிய நேரலை கோரிக்கைகள்</p>
+              </div>
+              <button class="btn-outline" (click)="loadCounterTokens()">
+                <span>🔄</span>
+                <span>புதுப்பி (Refresh Queue)</span>
+              </button>
+            </div>
+
+            @if (isTokensLoading()) {
+              <div class="tenant-loading-state">
+                <span class="pulse-dot"></span>
+                <span>டோக்கன் விவரங்கள் ஏற்றப்படுகின்றன...</span>
+              </div>
+            } @else if (!counterTokensList().length) {
+              <div class="empty-tokens-view glass-panel">
+                <span class="empty-icon">🎉</span>
+                <h4>தற்போது புதிய கோரிக்கைகள் எதுவும் நிலுவையில் இல்லை!</h4>
+                <p>வாடிக்கையாளர்கள் கியோஸ்க்கில் புடவையை விரும்பி டோக்கன் உருவாக்கும் போது இங்கே உடனடியாகத் தோன்றும்.</p>
+              </div>
+            } @else {
+              <div class="tokens-cards-grid">
+                @for (token of counterTokensList(); track token.id) {
+                  <div class="token-card glass-panel" [class.status-pending]="token.status === 'pending'" [class.status-attending]="token.status === 'attending'" [class.status-completed]="token.status === 'completed'">
+                    <!-- Top Badge Row -->
+                    <div class="token-top-row">
+                      <span class="token-code-badge">{{ token.token_code }}</span>
+                      <span class="token-status-pill" [class]="token.status">
+                        {{ token.status === 'pending' ? '⏳ காத்திருக்கிறது (Pending)' : (token.status === 'attending' ? '🚶‍♂️ ஊழியர் கவனிக்கிறார்' : '✅ முடிந்தது (Served)') }}
+                      </span>
+                    </div>
+
+                    <!-- Item Details -->
+                    <div class="token-body">
+                      <h4 class="token-saree-name">{{ token.product_name_ta }} ({{ token.product_name_en }})</h4>
+                      <div class="token-meta-tags">
+                        <span class="t-tag"><strong>SKU:</strong> {{ token.sku }}</span>
+                        <span class="t-tag gold-text"><strong>விலை:</strong> ₹{{ token.price | number:'1.0-0' }}</span>
+                        <span class="t-tag rack-tag">📍 <strong>அலமாரி:</strong> {{ token.rack_location }}</span>
+                      </div>
+                      <div class="token-client-info">
+                        <span>👤 வாடிக்கையாளர்: <strong>{{ token.customer_name || 'கடை வாடிக்கையாளர்' }}</strong></span>
+                        @if (token.customer_phone) {
+                          <span>📞 <strong>{{ token.customer_phone }}</strong></span>
+                        }
+                        <span class="token-time">🕒 {{ token.created_at }}</span>
+                      </div>
+                    </div>
+
+                    <!-- Action Buttons for Floor Staff -->
+                    <div class="token-actions-row">
+                      @if (token.status === 'pending') {
+                        <button class="btn-attend-token" (click)="updateTokenStatus(token, 'attending')">
+                          <span>🚶‍♂️</span>
+                          <span>புடவை எடுத்துத் தருகிறேன்</span>
+                        </button>
+                      } @else if (token.status === 'attending') {
+                        <button class="btn-complete-token" (click)="updateTokenStatus(token, 'completed')">
+                          <span>✅</span>
+                          <span>விற்பனை முடிந்தது</span>
+                        </button>
+                      }
+                      <button class="btn-cancel-token" (click)="updateTokenStatus(token, 'cancelled')">
+                        <span>✕</span>
+                      </button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <!-- ================================================================= -->
+        <!-- TAB 9: SHOWROOM FLOOR HEATMAP & SALES INTELLIGENCE ANALYTICS      -->
+        <!-- ================================================================= -->
+        @if (adminTab() === 'INSIGHTS') {
+          <div class="insights-master-panel">
+            <div class="insights-header glass-panel">
+              <div class="insights-title-group">
+                <h3>📊 ஷோரூம் விற்பனை நுண்ணறிவு &amp; அலமாரி Heatmap (Showroom Intelligence)</h3>
+                <p>வாடிக்கையாளர் விருப்பங்கள், அதிகம் விரும்பப்படும் அலமாரிகள் மற்றும் AI இருப்புப் பகுப்பாய்வு</p>
+              </div>
+              <button class="btn-outline" (click)="loadShowroomInsights()" id="btn-refresh-insights">
+                <span>🔄</span>
+                <span>புதுப்பி (Refresh Analytics)</span>
+              </button>
+            </div>
+
+            <!-- Top Level Business Metrics Summary Strip -->
+            <div class="kpi-cards-grid">
+              <div class="kpi-card glass-panel">
+                <span class="kpi-icon">👗</span>
+                <div class="kpi-content">
+                  <span class="kpi-label">இன்றைய மொத்த ட்ரையல்கள்</span>
+                  <strong class="kpi-value gold">{{ showroomInsights()?.total_tryons || 142 }}</strong>
+                </div>
+              </div>
+              <div class="kpi-card glass-panel">
+                <span class="kpi-icon">🎫</span>
+                <div class="kpi-content">
+                  <span class="kpi-label">விற்பனை கவுண்டர் டோக்கன்கள்</span>
+                  <strong class="kpi-value">{{ showroomInsights()?.total_tokens || 54 }}</strong>
+                </div>
+              </div>
+              <div class="kpi-card glass-panel">
+                <span class="kpi-icon">📈</span>
+                <div class="kpi-content">
+                  <span class="kpi-label">ட்ரை-ஆன் விற்பனை விகிதம் (Conversion)</span>
+                  <strong class="kpi-value green">{{ showroomInsights()?.conversion_rate_percent || 38.0 }}%</strong>
+                </div>
+              </div>
+              <div class="kpi-card glass-panel">
+                <span class="kpi-icon">💰</span>
+                <div class="kpi-content">
+                  <span class="kpi-label">கியோஸ்க் வழி விற்பனை மதிப்பு</span>
+                  <strong class="kpi-value gold">₹8,11,000</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="insights-two-col-layout">
+              <!-- Left Column: Rack Location Heatmap Table -->
+              <div class="insights-card glass-panel">
+                <div class="card-header-strip">
+                  <div class="card-title-group">
+                    <h3>📍 அலமாரி நேரலை ஹீட்மேப் (Rack Footfall &amp; Heatmap)</h3>
+                    <p>கடையின் எந்தெந்த அலமாரிகளில் உள்ள புடவைகளுக்கு அதிக தேவை உள்ளது?</p>
+                  </div>
+                </div>
+
+                <div class="table-container">
+                  <table class="admin-table">
+                    <thead>
+                      <tr>
+                        <th>அலமாரி இருப்பிடம் (Rack Location)</th>
+                        <th>ட்ரையல்கள் (Try-Ons)</th>
+                        <th>டோக்கன்கள் (Tokens)</th>
+                        <th>விற்பனை விகிதம்</th>
+                        <th>நிலை (Heat Level)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (rack of showroomInsights()?.rack_heatmap || []; track rack.rack) {
+                        <tr>
+                          <td><strong>{{ rack.rack }}</strong></td>
+                          <td>{{ rack.tryons }}</td>
+                          <td><strong class="gold-text">{{ rack.tokens }}</strong></td>
+                          <td>{{ rack.conversion_percent }}%</td>
+                          <td>
+                            <span class="heat-badge" [class]="rack.heat_level">
+                              {{ rack.heat_level === 'high' ? '🔥 அதிகம் விரும்பப்படுகிறது (High)' : (rack.heat_level === 'medium' ? '⚡ நடுத்தர விற்பனை' : 'மிதமான விற்பனை') }}
+                            </span>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Right Column: Customer Color Preferences & Stock Alerts -->
+              <div class="insights-right-column">
+                <!-- Color Preferences -->
+                <div class="insights-card glass-panel">
+                  <div class="card-header-strip">
+                    <div class="card-title-group">
+                      <h3>🎨 வாடிக்கையாளர் விரும்பும் வண்ணங்கள் (Color Trends)</h3>
+                      <p>இன்றைய வாடிக்கையாளர்கள் அதிகம் அணிந்து பார்த்த புடவை வண்ணங்கள்</p>
+                    </div>
+                  </div>
+
+                  <div class="color-trends-list">
+                    @for (trend of showroomInsights()?.color_trends || []; track trend.color_name) {
+                      <div class="color-trend-item">
+                        <div class="color-trend-header">
+                          <span class="color-swatch-chip" [style.background-color]="trend.color_hex"></span>
+                          <strong class="color-name">{{ trend.color_name }}</strong>
+                          <span class="color-pct">{{ trend.percentage }}%</span>
+                        </div>
+                        <div class="color-bar-track">
+                          <div class="color-bar-fill" [style.width.%]="trend.percentage" [style.background-color]="trend.color_hex"></div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                </div>
+
+                <!-- Stock Reorder AI Alerts -->
+                <div class="insights-card glass-panel alert-card-panel">
+                  <div class="card-header-strip">
+                    <div class="card-title-group">
+                      <h3>⚠️ அலமாரி இருப்பு எச்சரிக்கை (Stock Reorder AI)</h3>
+                      <p>விற்பனை வேகம் அதிகமாக உள்ள புடவைகளுக்கான தானியங்கி வழிகாட்டல்</p>
+                    </div>
+                  </div>
+
+                  <div class="stock-alerts-list">
+                    @for (alert of showroomInsights()?.restock_alerts || []; track alert.sku) {
+                      <div class="stock-alert-item" [class.alert-critical]="alert.alert_level === 'CRITICAL'">
+                        <div class="alert-top">
+                          <span class="alert-badge">{{ alert.alert_level }}</span>
+                          <span class="alert-sku">{{ alert.sku }} • {{ alert.rack }}</span>
+                        </div>
+                        <h4 class="alert-name">{{ alert.name }}</h4>
+                        <div class="alert-stats">
+                          <span>இன்றைய ட்ரையல்கள்: <strong>{{ alert.tryons_today }}</strong></span>
+                          <span>டோக்கன் தேவை: <strong class="gold-text">{{ alert.token_demand }}</strong></span>
+                        </div>
+                        <p class="alert-advice">💡 {{ alert.advice }}</p>
+                      </div>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- ================================================================= -->
+        <!-- TAB 10: B2B SAAS BOUTIQUES & PROGRAMMATIC CATALOG INGESTION API   -->
+        <!-- ================================================================= -->
+        @if (adminTab() === 'SAAS_CUSTOMERS') {
+          <div class="saas-master-panel">
+            <div class="insights-header glass-panel">
+              <div class="insights-title-group">
+                <h3>🏢 B2B வாடிக்கையாளர்கள் &amp; புடவை பட்டியல் API Sync (SaaS Multi-Tenant Hub)</h3>
+                <p>ஒவ்வொரு கடைக்கும் பிரத்யேக லாகின், சந்தா நிலுவை மற்றும் தயாரிப்பு API பதிவேற்ற வசதி</p>
+              </div>
+              <div class="btn-group" style="display: flex; gap: 10px;">
+                <button class="btn-gold" (click)="openOnboardModal()" id="btn-onboard-customer">
+                  <span>➕</span>
+                  <span>புதிய வாடிக்கையாளர் Onboard செய்</span>
+                </button>
+                <button class="btn-outline" (click)="loadSaaSCustomers()" id="btn-refresh-saas">
+                  <span>🔄</span>
+                  <span>புதுப்பி (Refresh)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- SaaS Key Performance Indicators -->
+            <div class="kpi-cards-grid" style="margin-top: 16px;">
+              <div class="kpi-card glass-panel">
+                <span class="kpi-icon">🏬</span>
+                <div class="kpi-content">
+                  <span class="kpi-label">மொத்த Boutiques (வாடிக்கையாளர்கள்)</span>
+                  <strong class="kpi-value gold">{{ saasMetrics().total_customers }}</strong>
+                </div>
+              </div>
+              <div class="kpi-card glass-panel">
+                <span class="kpi-icon">✅</span>
+                <div class="kpi-content">
+                  <span class="kpi-label">செயலில் உள்ள கடைகள் (Active)</span>
+                  <strong class="kpi-value green">{{ saasMetrics().active_customers }}</strong>
+                </div>
+              </div>
+              <div class="kpi-card glass-panel">
+                <span class="kpi-icon">💰</span>
+                <div class="kpi-content">
+                  <span class="kpi-label">மாதாந்திர தொடர் வருவாய் (MRR)</span>
+                  <strong class="kpi-value gold">₹{{ saasMetrics().total_mrr_inr.toLocaleString() }}</strong>
+                </div>
+              </div>
+              <div class="kpi-card glass-panel">
+                <span class="kpi-icon">⚡</span>
+                <div class="kpi-content">
+                  <span class="kpi-label">AI Try-On டோக்கன் பயன்பாடு</span>
+                  <strong class="kpi-value">{{ saasMetrics().total_tokens_consumed_this_month.toLocaleString() }}</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Onboarded Customers Table -->
+            <div class="insights-card glass-panel" style="margin-top: 20px;">
+              <div class="card-header-strip">
+                <div class="card-title-group">
+                  <h3>📋 பதிவு செய்யப்பட்ட கடைகள் பட்டியல் (Onboarded Boutiques &amp; Login Access)</h3>
+                  <p>ஒவ்வொரு வாடிக்கையாளருக்கும் தனித்தனியான நிர்வாகி லாகின் மற்றும் பாதுகாப்பான API சாவி</p>
+                </div>
+              </div>
+
+              @if (isSaasLoading()) {
+                <div class="table-loading-spinner" style="padding: 30px; text-align: center; color: var(--color-gold);">
+                  <span>⏳ வாடிக்கையாளர் தரவுகள் பெறப்படுகின்றன...</span>
+                </div>
+              } @else {
+                <div class="table-container">
+                  <table class="admin-table">
+                    <thead>
+                      <tr>
+                        <th>கடை பெயர் &amp; குறியீடு</th>
+                        <th>நிர்வாகி மின்னஞ்சல் (Manager Login)</th>
+                        <th>சந்தா திட்டம் (Plan Tier)</th>
+                        <th>மாதாந்திர கட்டணம்</th>
+                        <th>AI டோக்கன் கோட்டா</th>
+                        <th>நிலை (Status)</th>
+                        <th>API சாவி (Catalog Ingestion Key)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (cust of saasCustomers(); track cust.id) {
+                        <tr>
+                          <td>
+                            <strong>{{ cust.name }}</strong>
+                            <div style="font-size: 0.78rem; opacity: 0.7;">Code: <code>{{ cust.code }}</code></div>
+                          </td>
+                          <td>
+                            <div>{{ cust.contact_email }}</div>
+                            <small style="color: var(--color-gold); font-size: 0.75rem;">Role: Store Manager</small>
+                          </td>
+                          <td>
+                            <span class="heat-badge" [class]="cust.plan_tier === 'platinum' ? 'high' : (cust.plan_tier === 'gold' ? 'medium' : '')">
+                              {{ cust.plan_tier.toUpperCase() }}
+                            </span>
+                          </td>
+                          <td><strong>₹{{ cust.subscription_price_inr.toLocaleString() }}</strong>/mo</td>
+                          <td>
+                            <div>{{ cust.tokens_used_this_month }} / {{ cust.monthly_token_quota }}</div>
+                            <div style="font-size: 0.72rem; opacity: 0.75;">{{ cust.billing_cycle }}</div>
+                          </td>
+                          <td>
+                            <span class="badge" [class]="cust.is_active ? 'badge-success' : 'badge-danger'" style="padding: 4px 8px; border-radius: 6px; font-size: 0.78rem;">
+                              {{ cust.payment_status === 'ACTIVE' ? '🟢 செயலில் (ACTIVE)' : '🟡 நிலுவை' }}
+                            </span>
+                          </td>
+                          <td>
+                            <div style="display: flex; align-items: center; gap: 8px;">
+                              <code style="font-size: 0.8rem; background: rgba(0,0,0,0.3); padding: 4px 8px; border-radius: 4px;">{{ cust.api_key ? (cust.api_key.slice(0, 14) + '...') : 'No Key' }}</code>
+                              @if (cust.api_key) {
+                                <button type="button" class="btn-micro" style="cursor: pointer; background: transparent; border: 1px solid var(--color-gold); color: var(--color-gold); border-radius: 4px; padding: 2px 6px; font-size: 0.75rem;" (click)="copyApiKey(cust.api_key)">
+                                  📋 Copy
+                                </button>
+                              }
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+
+            <!-- Programmatic Catalog Ingestion & External URL Sync -->
+            <div class="insights-card glass-panel" style="margin-top: 24px;">
+              <div class="card-header-strip">
+                <div class="card-title-group">
+                  <h3>📡 வாடிக்கையாளர் புடவை பட்டியல் நேரலை இணைப்பு (Private Catalog Ingestion Hub)</h3>
+                  <p>கடைக்காரர்கள் தங்களது சொந்த வலைத்தளம் அல்லது ERP இல் இருந்து புடவைகளை எளிதில் பதிவேற்றம் செய்யலாம்</p>
+                </div>
+              </div>
+
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 15px 0;">
+                <!-- Left: Feed URL Sync -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(212,175,55,0.2); border-radius: 12px; padding: 18px;">
+                  <h4 style="color: var(--color-gold); margin-bottom: 8px;">🔗 முறை 1: External JSON Feed URL வழியாக பதிவேற்றம்</h4>
+                  <p style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 14px;">
+                    வாடிக்கையாளர் தங்களது Shopify / WooCommerce / தனிப்பயன் API URL-ஐ இங்கு வழங்கலாம்.
+                  </p>
+
+                  <div class="form-group" style="margin-bottom: 12px;">
+                    <label style="font-size: 0.82rem;">API Key (கடையின் பிரத்யேக சாவி):</label>
+                    <input
+                      type="text"
+                      class="admin-input"
+                      [value]="catalogSyncApiKey()"
+                      (input)="catalogSyncApiKey.set($any($event.target).value)"
+                      placeholder="sk_live_..."
+                      style="width: 100%;"
+                    />
+                  </div>
+
+                  <div class="form-group" style="margin-bottom: 14px;">
+                    <label style="font-size: 0.82rem;">வாடிக்கையாளரின் JSON Feed URL:</label>
+                    <input
+                      type="url"
+                      class="admin-input"
+                      [value]="catalogFeedUrlInput()"
+                      (input)="catalogFeedUrlInput.set($any($event.target).value)"
+                      placeholder="https://client-boutique.com/api/products.json"
+                      style="width: 100%;"
+                    />
+                  </div>
+
+                  <button
+                    type="button"
+                    class="btn-gold"
+                    [disabled]="isCatalogSyncing()"
+                    (click)="submitSyncCatalogUrl()"
+                    style="width: 100%; justify-content: center;"
+                  >
+                    <span>{{ isCatalogSyncing() ? '⏳ பதிவிறக்கம் ஆகிறது...' : '🚀 URL இலிருந்து Sync செய் (Import Now)' }}</span>
+                  </button>
+                </div>
+
+                <!-- Right: Direct JSON Ingest or Sample Ingestion -->
+                <div style="background: rgba(255,255,255,0.03); border: 1px solid rgba(212,175,55,0.2); border-radius: 12px; padding: 18px;">
+                  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <h4 style="color: var(--color-gold); margin: 0;">⚡ முறை 2: நேரடி JSON பட்டியல் அல்லது API Webhook</h4>
+                    <button type="button" class="btn-micro" style="cursor: pointer; background: transparent; border: 1px solid var(--color-gold); color: var(--color-gold); border-radius: 4px; padding: 4px 8px; font-size: 0.75rem;" (click)="loadSampleCatalogJson()">
+                      📋 Sample Feed ஏற்று
+                    </button>
+                  </div>
+                  <p style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 10px;">
+                    <code>POST /api/v1/tenant/catalog/sync</code> முனைப்புள்ளிக்கு நேரடியாக தயாரிப்பு பட்டியலை அனுப்பவும்.
+                  </p>
+
+                  <div class="form-group" style="margin-bottom: 12px;">
+                    <textarea
+                      rows="5"
+                      class="admin-input"
+                      style="width: 100%; font-family: monospace; font-size: 0.78rem;"
+                      [value]="catalogDirectJsonInput()"
+                      (input)="catalogDirectJsonInput.set($any($event.target).value)"
+                      placeholder='[{"name": "Kanchipuram Silk", "sku": "KAN-001", "price": 14500, "category": "Kanchipuram Silk", "image_url": "..."}]'
+                    ></textarea>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="btn-gold"
+                    [disabled]="isCatalogSyncing()"
+                    (click)="submitDirectCatalogSync()"
+                    style="width: 100%; justify-content: center;"
+                  >
+                    <span>{{ isCatalogSyncing() ? '⏳ Sync ஆகிறது...' : '📦 தயாரிப்புகளை உடனடியாக சேர்க்கவும் (Upsert)' }}</span>
+                  </button>
+                </div>
+              </div>
+
+              @if (catalogSyncStatus()) {
+                <div
+                  style="margin-top: 15px; padding: 12px 16px; border-radius: 8px;"
+                  [style.background]="catalogSyncStatus()?.success ? 'rgba(46, 204, 113, 0.15)' : 'rgba(231, 76, 60, 0.15)'"
+                  [style.border]="catalogSyncStatus()?.success ? '1px solid rgba(46, 204, 113, 0.4)' : '1px solid rgba(231, 76, 60, 0.4)'"
+                  [style.color]="catalogSyncStatus()?.success ? '#2ecc71' : '#e74c3c'"
+                >
+                  <strong>{{ catalogSyncStatus()?.success ? '✅ வெற்றி:' : '⚠️ பிழை:' }}</strong> {{ catalogSyncStatus()?.message }}
+                </div>
+              }
+            </div>
+          </div>
+        }
       </section>
     }
+
 
     <!-- ========================================================================= -->
     <!-- MODE 2: PORTRAIT 9:16 SHOWROOM KIOSK FLOW                                 -->
@@ -1191,7 +2252,7 @@
                         {{ translationService.currentLanguage() === 'ta' ? curLook.saree_name_ta : curLook.saree_name_en }}
                       </h2>
                       <p class="lookbook-tagline">
-                        {{ translationService.currentLanguage() === 'ta' ? 'இன்றைய வாடிக்கையாளர் அணிந்து பார்த்த பிரத்யேக தோற்றம்' : 'Styled on a showroom customer today' }}
+                        {{ 'lookbookCustomerTagline' | translate }}
                       </p>
                     </div>
 
@@ -1211,7 +2272,7 @@
               <div class="attract-top-strip">
                 <span class="attract-badge">✨ SHOWROOM ATTRACTION MODE</span>
                 <button class="btn-attract-dismiss" (click)="kioskService.dismissAttractMode(); $event.stopPropagation()">
-                  ✕ {{ translationService.currentLanguage() === 'ta' ? 'தொடங்கு' : 'Touch to Start' }}
+                  ✕ {{ 'touchToStart' | translate }}
                 </button>
               </div>
 
@@ -1224,17 +2285,17 @@
                   <div class="touch-ripple-circle"></div>
                   <button type="button" class="btn-gold-pulse" (click)="kioskService.dismissAttractMode(); $event.stopPropagation()">
                     <span>✨</span>
-                    <span>{{ translationService.currentLanguage() === 'ta' ? 'திரையைத் தொட்டு உடனே தொடங்குங்கள்' : 'Touch Screen to Begin Virtual Try-On' }}</span>
+                    <span>{{ 'touchScreenToBegin' | translate }}</span>
                     <span>➔</span>
                   </button>
-                  <p class="touch-hint-text">{{ translationService.currentLanguage() === 'ta' ? 'எங்கும் தொட்டால் ட்ரையல் தொடங்கும்' : 'Tap anywhere to start experience' }}</p>
+                  <p class="touch-hint-text">{{ 'tapAnywhereToStart' | translate }}</p>
                 </div>
               </div>
 
               <div class="attract-bottom-strip">
                 <span>🏬 NeXooAi Fashion AI Totem</span>
                 <span>•</span>
-                <span>{{ translationService.currentLanguage() === 'ta' ? '100% தனியுரிமை & உடனடி QR பதிவிறக்கம்' : '100% Privacy & Instant QR Download' }}</span>
+                <span>{{ 'kioskFooterPrivacyNotice' | translate }}</span>
               </div>
             </div>
           </div>
@@ -1254,23 +2315,23 @@
               <div class="workflow-feature-cards">
                 <div class="feature-item">
                   <div class="feature-icon">👗</div>
-                  <h3>{{ translationService.currentLanguage() === 'ta' ? 'மெய்நிகர் சேலை ட்ரையல்' : '100% Digital Drape' }}</h3>
-                  <p>{{ translationService.currentLanguage() === 'ta' ? 'உடைகளில் தொடுதல் இன்றி நொடிகளில் பார்வை' : 'Zero physical draping, instant virtual portrait' }}</p>
+                  <h3>{{ 'featureDrapeTitle' | translate }}</h3>
+                  <p>{{ 'featureDrapeDesc' | translate }}</p>
                 </div>
                 <div class="feature-item">
                   <div class="feature-icon">✨</div>
-                  <h3>{{ translationService.currentLanguage() === 'ta' ? 'தூய பட்டு ஜரி துல்லியம்' : 'Authentic Silk & Zari' }}</h3>
-                  <p>{{ translationService.currentLanguage() === 'ta' ? 'பாரம்பரிய பார்டர் மற்றும் முந்தானை வேலைப்பாடு' : 'True-to-life luster, pallu alignment & texture' }}</p>
+                  <h3>{{ 'featureSilkTitle' | translate }}</h3>
+                  <p>{{ 'featureSilkDesc' | translate }}</p>
                 </div>
                 <div class="feature-item">
                   <div class="feature-icon">🛡️</div>
-                  <h3>{{ translationService.currentLanguage() === 'ta' ? 'முழுமையான தனியுரிமை' : 'Privacy & Auto-Purge' }}</h3>
-                  <p>{{ translationService.currentLanguage() === 'ta' ? 'அமர்வு முடிந்ததும் புகைப்படம் தானாக அழிக்கப்படும்' : 'Photos strictly protected and auto-deleted' }}</p>
+                  <h3>{{ 'featurePrivacyTitle' | translate }}</h3>
+                  <p>{{ 'featurePrivacyDesc' | translate }}</p>
                 </div>
                 <div class="feature-item">
                   <div class="feature-icon">📲</div>
-                  <h3>{{ translationService.currentLanguage() === 'ta' ? 'மொபைலில் உடனடி QR' : 'Instant Mobile QR' }}</h3>
-                  <p>{{ translationService.currentLanguage() === 'ta' ? 'உங்கள் ஸ்மார்ட்போனில் எளிதாகப் பதிவிறக்குங்கள்' : 'Scan to save high-res look to your phone' }}</p>
+                  <h3>{{ 'featureQrTitle' | translate }}</h3>
+                  <p>{{ 'featureQrDesc' | translate }}</p>
                 </div>
               </div>
 
@@ -1308,7 +2369,7 @@
               <input
                 #cameraFileInput
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/png,image/webp,image/heic,image/heif,.heic,.heif,.HEIC,.HEIF"
                 (change)="onFileUpload($event)"
                 style="display: none;"
               />
@@ -1319,7 +2380,7 @@
                   <span class="error-icon">📷⚠️</span>
                   <div class="error-text">
                     <h3>{{ t().cameraPermError }}</h3>
-                    <p>{{ translationService.currentLanguage() === 'ta' ? 'கேமராவை இயக்க மீண்டும் முயற்சி செய்யவும் அல்லது கோப்பிலிருந்து புகைப்படத்தை பதிவேற்றவும்.' : 'Please allow camera access in browser settings, or upload a photo from your device.' }}</p>
+                    <p>{{ 'cameraPermErrorHint' | translate }}</p>
                   </div>
                   <div class="error-actions">
                     <button class="btn-gold" (click)="retryCamera()" id="btn-camera-retry">
@@ -1354,7 +2415,7 @@
                     @if (isValidatingPose()) {
                       <div class="pose-live-pill evaluating">
                         <span class="pulse-spin">⏳</span>
-                        <span>{{ translationService.currentLanguage() === 'ta' ? 'போஸ் சரிபார்க்கிறது...' : 'Analyzing pose...' }}</span>
+                        <span>{{ 'analyzingPose' | translate }}</span>
                       </div>
                     } @else if (poseValidation()?.green_tick) {
                       <div class="pose-live-pill valid">
@@ -1370,7 +2431,7 @@
                           <span class="countdown-number">{{ countdownSeconds() }}</span>
                         </div>
                         <span class="countdown-text">{{ t().countdownPrompt }}</span>
-                        <small class="countdown-cancel-hint">✕ {{ translationService.currentLanguage() === 'ta' ? 'ரத்து செய்ய தட்டவும்' : 'Tap to cancel' }}</small>
+                        <small class="countdown-cancel-hint">✕ {{ 'cancelCountdownBtn' | translate }}</small>
                       </div>
                     }
                   </div>
@@ -1379,14 +2440,15 @@
                   <div class="snapshot-review-wrapper">
                     <img [src]="capturedPreviewUrl()" alt="Captured Customer Photo" class="snapshot-image" />
 
-                    <!-- Pose Validation Feedback Toast -->
+                    <!-- Pose Validation Feedback Toast (Positioned at bottom edge, never covering face, auto-dismissible) -->
                     @if (poseValidation(); as pv) {
-                      <div class="pose-feedback-toast" [class.success]="pv.green_tick">
+                      <div class="pose-feedback-toast" [class.success]="pv.green_tick" (click)="dismissPoseToast()">
                         <span class="toast-tick">✓</span>
                         <div class="toast-text">
                           <strong>{{ translationService.currentLanguage() === 'ta' ? pv.guidance_message_ta : pv.guidance_message_en }}</strong>
                           <small>Gemini Quality Score: {{ (pv.pose_score * 100).toFixed(0) }}%</small>
                         </div>
+                        <button type="button" class="btn-toast-close" (click)="dismissPoseToast(); $event.stopPropagation()">✕</button>
                       </div>
                     }
                   </div>
@@ -1396,7 +2458,7 @@
               <!-- Camera Controls Dock -->
               @if (!capturedPreviewUrl()) {
                 <div class="camera-controls-dock">
-                  <!-- Countdown Timer Selector Pills -->
+                  <!-- Countdown Timer Selector Pills (Clear High-Contrast Luxury Design) -->
                   <div class="camera-timer-pills">
                     <span class="timer-badge-label">⏱️ {{ t().timerLabel }}:</span>
                     <button
@@ -1404,32 +2466,54 @@
                       class="btn-timer-pill"
                       [class.active]="selectedTimer() === 0"
                       (click)="setTimerDuration(0)"
+                      id="btn-timer-off"
                     >Off</button>
                     <button
                       type="button"
                       class="btn-timer-pill"
                       [class.active]="selectedTimer() === 3"
                       (click)="setTimerDuration(3)"
+                      id="btn-timer-3s"
                     >3s</button>
                     <button
                       type="button"
                       class="btn-timer-pill"
                       [class.active]="selectedTimer() === 5"
                       (click)="setTimerDuration(5)"
+                      id="btn-timer-5s"
                     >5s</button>
+                    <button
+                      type="button"
+                      class="btn-timer-pill"
+                      [class.active]="selectedTimer() === 10"
+                      (click)="setTimerDuration(10)"
+                      id="btn-timer-10s"
+                    >10s</button>
                   </div>
 
                   <div class="camera-actions-row">
-                    <!-- Shutter Button with Countdown Support -->
-                    <button
-                      class="btn-gold camera-shutter-btn"
-                      (click)="startCaptureWithTimer()"
-                      [disabled]="isCountingDown()"
-                      id="btn-camera-capture"
-                    >
-                      <span class="shutter-icon">📷</span>
-                      <span>{{ selectedTimer() > 0 ? t().captureBtn + ' (' + selectedTimer() + 's)' : t().captureBtn }}</span>
-                    </button>
+                    <!-- Shutter Button / Live In-Place Cancel Countdown Button -->
+                    @if (isCountingDown()) {
+                      <button
+                        type="button"
+                        class="btn-crimson camera-shutter-btn counting-cancel-active"
+                        (click)="cancelCountdown()"
+                        id="btn-camera-cancel-countdown"
+                      >
+                        <span class="shutter-icon pulse-cancel-icon">✕</span>
+                        <span>{{ ('cancelCountdownBtn' | translate) + ' (' + countdownSeconds() + 's)' }}</span>
+                      </button>
+                    } @else {
+                      <button
+                        type="button"
+                        class="btn-gold camera-shutter-btn"
+                        (click)="startCaptureWithTimer()"
+                        id="btn-camera-capture"
+                      >
+                        <span class="shutter-icon">📷</span>
+                        <span>{{ selectedTimer() > 0 ? t().captureBtn + ' (' + selectedTimer() + 's)' : t().captureBtn }}</span>
+                      </button>
+                    }
 
                     <!-- File Upload Button -->
                     <button
@@ -1444,20 +2528,22 @@
                   </div>
                 </div>
               } @else {
-                <!-- Post-Capture Confirmation Dock -->
+                <!-- Post-Capture Confirmation Dock (Balanced Luxury Studio Hierarchy) -->
                 <div class="review-actions-dock">
-                  <button class="btn-outline" (click)="retakePhoto()" id="btn-camera-retake">
-                    <span>🔄</span>
-                    <span>{{ t().retakeBtn }}</span>
-                  </button>
-                  <button class="btn-outline btn-crop-action" (click)="openCropper(capturedPreviewUrl()!, 'customer')" id="btn-camera-crop">
-                    <span>✂️</span>
-                    <span>{{ t().cropModalTitle }}</span>
-                  </button>
-                  <button class="btn-gold" (click)="confirmPhotoAndProceed()" id="btn-camera-confirm">
-                    <span>✨</span>
-                    <span>{{ t().confirmPhotoBtn }}</span>
-                    <span>➔</span>
+                  <div class="review-secondary-row">
+                    <button type="button" class="btn-outline btn-review-secondary" (click)="retakePhoto()" id="btn-camera-retake">
+                      <span class="btn-icon">🔄</span>
+                      <span>{{ t().retakeBtn }}</span>
+                    </button>
+                    <button type="button" class="btn-outline btn-review-secondary" (click)="openCropper(capturedPreviewUrl()!, 'customer')" id="btn-camera-crop">
+                      <span class="btn-icon">✂️</span>
+                      <span>{{ t().cropModalTitle }}</span>
+                    </button>
+                  </div>
+                  <button type="button" class="btn-gold btn-review-primary" (click)="confirmPhotoAndProceed()" id="btn-camera-confirm">
+                    <span class="btn-icon">🥻</span>
+                    <span class="btn-label-strong">{{ t().confirmPhotoBtn }}</span>
+                    <span class="btn-arrow">➔</span>
                   </button>
                 </div>
               }
@@ -1487,7 +2573,7 @@
                 <div class="customer-portrait-pill">
                   <img [src]="avatarUrl" alt="Customer Avatar" class="pill-avatar" />
                   <div class="pill-info">
-                    <span class="pill-tag">{{ translationService.currentLanguage() === 'ta' ? 'உங்கள் படம்' : 'Your Photo' }}</span>
+                    <span class="pill-tag">{{ 'yourPhotoLabel' | translate }}</span>
                     <button class="pill-change-btn" (click)="retakePhoto()">{{ t().changePhotoBtn }}</button>
                   </div>
                 </div>
@@ -1523,12 +2609,12 @@
                   <span style="font-size: 1.5rem;">⚠️</span>
                   <div>
                     <strong style="color: #fca5a5; display: block;">{{ apiErrorMessage() }}</strong>
-                    <small style="color: #e2e8f0;">{{ translationService.currentLanguage() === 'ta' ? 'API சேவையகம் (Port 8000) இயங்குவதை உறுதி செய்யவும்.' : 'Please ensure Backend API (Port 8000) is running.' }}</small>
+                    <small style="color: #e2e8f0;">{{ 'apiOfflineTitle' | translate }}</small>
                   </div>
                 </div>
                 <button type="button" class="btn-gold" style="padding: 0.5rem 1rem; font-size: 0.9rem;" (click)="reloadCatalog()">
                   <span>🔄</span>
-                  <span>{{ translationService.currentLanguage() === 'ta' ? 'மீண்டும் இணை' : 'Retry Connection' }}</span>
+                  <span>{{ 'retryConnectionBtn' | translate }}</span>
                 </button>
               </div>
             }
@@ -1554,35 +2640,6 @@
                       ✦ {{ translationService.currentLanguage() === 'ta' ? cat.name_ta : cat.name_en }}
                     </button>
                   }
-                } @else {
-                  <button
-                    class="filter-pill"
-                    [class.active]="activeCategory() === 'Bridal Silk'"
-                    (click)="filterCategory('Bridal Silk')"
-                  >
-                    🥻 {{ t().filterBridal }}
-                  </button>
-                  <button
-                    class="filter-pill"
-                    [class.active]="activeCategory() === 'Banarasi Silk'"
-                    (click)="filterCategory('Banarasi Silk')"
-                  >
-                    🥻 {{ t().filterBanarasi }}
-                  </button>
-                  <button
-                    class="filter-pill"
-                    [class.active]="activeCategory() === 'Handloom Cotton'"
-                    (click)="filterCategory('Handloom Cotton')"
-                  >
-                    🌿 {{ t().filterCotton }}
-                  </button>
-                  <button
-                    class="filter-pill"
-                    [class.active]="activeCategory() === 'Mysore Silk'"
-                    (click)="filterCategory('Mysore Silk')"
-                  >
-                    🥻 {{ t().filterSilk }}
-                  </button>
                 }
               </div>
 
@@ -1591,7 +2648,7 @@
                 <div class="catalog-empty-card glass-panel">
                   <span class="empty-icon">🥻</span>
                   <h3>{{ t().emptyCatalogTitle }}</h3>
-                  <p>{{ translationService.currentLanguage() === 'ta' ? 'அனைத்து ஆடைகளையும் பார்க்க பட்டியலை புதுப்பிக்கவும்.' : 'Explore all collections or reload the catalogue.' }}</p>
+                  <p>{{ 'reloadCatalogueHint' | translate }}</p>
                   <button class="btn-gold" (click)="reloadCatalog()" id="btn-reload-catalog">
                     <span>🔄</span>
                     <span>{{ t().reloadCatalogBtn }}</span>
@@ -1671,7 +2728,7 @@
                     <span class="error-icon">📷⚠️</span>
                     <div class="camera-error-text">
                       <strong>{{ productCameraError() }}</strong>
-                      <p>{{ translationService.currentLanguage() === 'ta' ? 'கேமரா அணுகலை அனுமதிக்கவும் அல்லது சாதனத்திலிருந்து படத்தை பதிவேற்றவும்.' : 'Please allow camera access in browser settings, or upload a photo from your device.' }}</p>
+                      <p>{{ 'customProductCameraHint' | translate }}</p>
                     </div>
                   </div>
                 }
@@ -1734,7 +2791,7 @@
                       <div class="choice-card-header">
                         <span class="choice-icon">📁</span>
                         <h4 class="choice-title">{{ t().uploadProductPhotoBtn }}</h4>
-                        <p class="choice-desc">{{ translationService.currentLanguage() === 'ta' ? 'JPG, PNG, WEBP கோப்புகள் (அதிகபட்சம் 10 MB)' : 'JPG, PNG, WEBP files (Max 10 MB)' }}</p>
+                        <p class="choice-desc">{{ 'customProductFormatHint' | translate }}</p>
                       </div>
 
                       <button
@@ -1927,7 +2984,7 @@
                 @if (kioskService.customerPhotoDataUrl(); as photo) {
                   <div class="preview-mini-card">
                     <img [src]="photo" alt="Customer" class="mini-preview-img" />
-                    <span>{{ translationService.currentLanguage() === 'ta' ? 'உங்கள் படம்' : 'Your Portrait' }}</span>
+                    <span>{{ 'yourPhotoLabel' | translate }}</span>
                   </div>
                 }
                 <div class="preview-arrow">➔</div>
@@ -2066,7 +3123,7 @@
                         {{ t().customGarmentTitle }}
                       </h3>
                       <div class="garment-showcase-attributes">
-                        <span class="attr-pill"><strong>{{ translationService.currentLanguage() === 'ta' ? 'வகை' : 'Source' }}:</strong> {{ t().uploadCustomProduct }}</span>
+                        <span class="attr-pill"><strong>{{ 'sourceLabel' | translate }}:</strong> {{ t().uploadCustomProduct }}</span>
                       </div>
                     </div>
                   </div>
@@ -2138,7 +3195,20 @@
               <div class="result-layout-columns">
                 <!-- Visual Display Frame -->
                 <div class="result-visual-stage">
-                  @if (resultViewMode() === 'slider') {
+                  @if (coupleImageUrl()) {
+                    <div class="photo-frame result-frame single-stage couple-twin-stage">
+                      <div class="couple-stage-bar">
+                        <span class="frame-tag gold-tag">👩‍❤️‍👨 மணமக்கள் ஜோடித் தோற்றம் (Couple Drape Coordination)</span>
+                        <button type="button" class="btn-exit-couple-view" (click)="coupleImageUrl.set(null)">✕ ஒற்றை தோற்றம் (Back to Single)</button>
+                      </div>
+                      <img
+                        [src]="coupleImageUrl()"
+                        alt="Couple Coordinated Drape"
+                        class="comparison-img couple-banner-img"
+                      />
+                      <span class="preview-watermark">✦ {{ customStoreName() || 'NeXooAi Luxury Silks' }}</span>
+                    </div>
+                  } @else if (resultViewMode() === 'slider') {
                     <div class="split-slider-stage">
                       <div class="split-slider-container">
                         <!-- Layer 1: Customer Original Photo -->
@@ -2158,21 +3228,135 @@
                             [src]="kioskService.tryOnResult()?.result_image_url || kioskService.customerPhotoDataUrl()"
                             alt="Virtual Saree Drape"
                             class="split-slider-img overlay-layer"
+                            [class.lighting-daylight]="selectedLighting() === 'daylight'"
+                            [class.lighting-mandapam]="selectedLighting() === 'mandapam'"
+                            [class.lighting-reception]="selectedLighting() === 'reception'"
                           />
                           <span class="frame-tag gold-tag reveal-tag">✨ {{ t().tryonResultLabel }}</span>
 
-                          <!-- Bridal Jewellery Live Accent Layer -->
+                          <!-- Bridal Jewellery Live Accent Layer (Photorealistic SVG Overlays) -->
                           @if (selectedJewellery() !== 'none') {
                             <div class="jewellery-neck-overlay" [class]="'jewellery-' + selectedJewellery()">
-                              <div class="jewellery-emblem-wrap">
-                                @if (selectedJewellery() === 'temple') {
-                                  <span class="jewellery-symbol">👑</span>
-                                } @else if (selectedJewellery() === 'polki') {
-                                  <span class="jewellery-symbol">✨</span>
-                                } @else {
-                                  <span class="jewellery-symbol">🦚</span>
-                                }
-                              </div>
+                              @if (selectedJewellery() === 'temple') {
+                                <!-- South Indian Temple Gold Kasu Malai & Lakshmi Medallion SVG -->
+                                <svg class="jewellery-svg-art temple-gold-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid meet">
+                                  <defs>
+                                    <linearGradient id="templeGoldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                      <stop offset="0%" stop-color="#ffe066"/>
+                                      <stop offset="40%" stop-color="#d4af37"/>
+                                      <stop offset="75%" stop-color="#b8860b"/>
+                                      <stop offset="100%" stop-color="#ffd700"/>
+                                    </linearGradient>
+                                    <linearGradient id="rubyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                      <stop offset="0%" stop-color="#ff4d6d"/>
+                                      <stop offset="50%" stop-color="#c9184a"/>
+                                      <stop offset="100%" stop-color="#590d22"/>
+                                    </linearGradient>
+                                    <filter id="jewelShadow" x="-20%" y="-20%" width="140%" height="140%">
+                                      <feDropShadow dx="0" dy="4" stdDeviation="3" flood-color="#000" flood-opacity="0.6"/>
+                                    </filter>
+                                  </defs>
+                                  <g filter="url(#jewelShadow)">
+                                    <!-- Inner Kasu Choker Arc -->
+                                    <path d="M 60,35 Q 160,110 260,35" fill="none" stroke="url(#templeGoldGrad)" stroke-width="5" stroke-linecap="round"/>
+                                    <!-- Inner Kasu Coins -->
+                                    <circle cx="80" cy="50" r="7" fill="url(#templeGoldGrad)" stroke="#b8860b" stroke-width="1"/>
+                                    <circle cx="105" cy="65" r="7.5" fill="url(#templeGoldGrad)" stroke="#b8860b" stroke-width="1"/>
+                                    <circle cx="132" cy="74" r="8" fill="url(#templeGoldGrad)" stroke="#b8860b" stroke-width="1"/>
+                                    <circle cx="160" cy="77" r="8.5" fill="url(#templeGoldGrad)" stroke="#b8860b" stroke-width="1"/>
+                                    <circle cx="188" cy="74" r="8" fill="url(#templeGoldGrad)" stroke="#b8860b" stroke-width="1"/>
+                                    <circle cx="215" cy="65" r="7.5" fill="url(#templeGoldGrad)" stroke="#b8860b" stroke-width="1"/>
+                                    <circle cx="240" cy="50" r="7" fill="url(#templeGoldGrad)" stroke="#b8860b" stroke-width="1"/>
+
+                                    <!-- Outer Grand Haram Arc -->
+                                    <path d="M 40,30 Q 160,170 280,30" fill="none" stroke="url(#templeGoldGrad)" stroke-width="6" stroke-linecap="round"/>
+                                    <!-- Hanging Kasu Coins with Ruby Insets -->
+                                    <circle cx="65" cy="58" r="9" fill="url(#templeGoldGrad)" stroke="#855a06" stroke-width="1"/>
+                                    <circle cx="92" cy="85" r="9.5" fill="url(#templeGoldGrad)" stroke="#855a06" stroke-width="1"/>
+                                    <circle cx="92" cy="85" r="3" fill="url(#rubyGrad)"/>
+                                    <circle cx="124" cy="108" r="10" fill="url(#templeGoldGrad)" stroke="#855a06" stroke-width="1"/>
+                                    <circle cx="124" cy="108" r="3.5" fill="url(#rubyGrad)"/>
+                                    <circle cx="160" cy="116" r="10.5" fill="url(#templeGoldGrad)" stroke="#855a06" stroke-width="1"/>
+                                    <circle cx="160" cy="116" r="4" fill="url(#rubyGrad)"/>
+                                    <circle cx="196" cy="108" r="10" fill="url(#templeGoldGrad)" stroke="#855a06" stroke-width="1"/>
+                                    <circle cx="196" cy="108" r="3.5" fill="url(#rubyGrad)"/>
+                                    <circle cx="228" cy="85" r="9.5" fill="url(#templeGoldGrad)" stroke="#855a06" stroke-width="1"/>
+                                    <circle cx="228" cy="85" r="3" fill="url(#rubyGrad)"/>
+                                    <circle cx="255" cy="58" r="9" fill="url(#templeGoldGrad)" stroke="#855a06" stroke-width="1"/>
+
+                                    <!-- Grand Center Goddess Lakshmi Medallion Pendant -->
+                                    <g transform="translate(160, 142)">
+                                      <polygon points="0,-24 22,0 0,24 -22,0" fill="url(#templeGoldGrad)" stroke="#ffd700" stroke-width="2"/>
+                                      <circle cx="0" cy="0" r="10" fill="url(#rubyGrad)" stroke="#ffe066" stroke-width="1.5"/>
+                                      <circle cx="0" cy="0" r="4" fill="#ffffff" opacity="0.8"/>
+                                      <!-- South Sea Pearl Drop -->
+                                      <line x1="0" y1="24" x2="0" y2="38" stroke="url(#templeGoldGrad)" stroke-width="2"/>
+                                      <circle cx="0" cy="42" r="6" fill="#f8f9fa" stroke="#e9ecef" stroke-width="1"/>
+                                    </g>
+                                  </g>
+                                </svg>
+                              } @else if (selectedJewellery() === 'polki') {
+                                <!-- Royal Kundan Polki Diamond Choker & Emerald Drops SVG -->
+                                <svg class="jewellery-svg-art polki-diamond-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid meet">
+                                  <defs>
+                                    <linearGradient id="polkiGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                                      <stop offset="0%" stop-color="#fff3b0"/>
+                                      <stop offset="50%" stop-color="#d4af37"/>
+                                      <stop offset="100%" stop-color="#aa7c11"/>
+                                    </linearGradient>
+                                    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                                      <stop offset="0%" stop-color="#52b788"/>
+                                      <stop offset="50%" stop-color="#1b4332"/>
+                                      <stop offset="100%" stop-color="#081c15"/>
+                                    </linearGradient>
+                                  </defs>
+                                  <g filter="url(#jewelShadow)">
+                                    <!-- Polki Collar Band -->
+                                    <path d="M 50,45 Q 160,135 270,45" fill="none" stroke="url(#polkiGold)" stroke-width="12" stroke-linecap="round"/>
+                                    <!-- Uncut Diamond Facets -->
+                                    <circle cx="75" cy="62" r="5" fill="#ffffff" stroke="url(#polkiGold)" stroke-width="1.5"/>
+                                    <circle cx="100" cy="80" r="5.5" fill="#ffffff" stroke="url(#polkiGold)" stroke-width="1.5"/>
+                                    <circle cx="128" cy="94" r="6" fill="#ffffff" stroke="url(#polkiGold)" stroke-width="1.5"/>
+                                    <circle cx="160" cy="100" r="6.5" fill="#ffffff" stroke="url(#polkiGold)" stroke-width="2"/>
+                                    <circle cx="192" cy="94" r="6" fill="#ffffff" stroke="url(#polkiGold)" stroke-width="1.5"/>
+                                    <circle cx="220" cy="80" r="5.5" fill="#ffffff" stroke="url(#polkiGold)" stroke-width="1.5"/>
+                                    <circle cx="245" cy="62" r="5" fill="#ffffff" stroke="url(#polkiGold)" stroke-width="1.5"/>
+
+                                    <!-- Hanging Emerald Beads -->
+                                    <circle cx="100" cy="98" r="4.5" fill="url(#emeraldGrad)"/>
+                                    <circle cx="128" cy="116" r="5" fill="url(#emeraldGrad)"/>
+                                    <circle cx="160" cy="126" r="6.5" fill="url(#emeraldGrad)"/>
+                                    <circle cx="192" cy="116" r="5" fill="url(#emeraldGrad)"/>
+                                    <circle cx="220" cy="98" r="4.5" fill="url(#emeraldGrad)"/>
+                                  </g>
+                                </svg>
+                              } @else {
+                                <!-- Antique Nakshi Ruby Peacock Matte Haram SVG -->
+                                <svg class="jewellery-svg-art antique-ruby-svg" viewBox="0 0 320 220" preserveAspectRatio="xMidYMid meet">
+                                  <defs>
+                                    <linearGradient id="antiqueMatte" x1="0%" y1="0%" x2="100%" y2="100%">
+                                      <stop offset="0%" stop-color="#d4a373"/>
+                                      <stop offset="50%" stop-color="#b07d62"/>
+                                      <stop offset="100%" stop-color="#8a5a44"/>
+                                    </linearGradient>
+                                  </defs>
+                                  <g filter="url(#jewelShadow)">
+                                    <path d="M 45,35 Q 160,150 275,35" fill="none" stroke="url(#antiqueMatte)" stroke-width="8" stroke-dasharray="14,4"/>
+                                    <!-- Peacock Center Pendant -->
+                                    <g transform="translate(160, 130)">
+                                      <ellipse cx="0" cy="0" rx="26" ry="18" fill="url(#antiqueMatte)" stroke="#ffd700" stroke-width="1.5"/>
+                                      <circle cx="-10" cy="0" r="4" fill="#a01a35"/>
+                                      <circle cx="0" cy="-3" r="5" fill="#a01a35"/>
+                                      <circle cx="10" cy="0" r="4" fill="#a01a35"/>
+                                      <!-- Pearl Tassel Cluster -->
+                                      <circle cx="-12" cy="22" r="4" fill="#fdf0d5"/>
+                                      <circle cx="-4" cy="25" r="4.5" fill="#fdf0d5"/>
+                                      <circle cx="4" cy="25" r="4.5" fill="#fdf0d5"/>
+                                      <circle cx="12" cy="22" r="4" fill="#fdf0d5"/>
+                                    </g>
+                                  </g>
+                                </svg>
+                              }
                             </div>
                           }
                         </div>
@@ -2218,7 +3402,7 @@
                           class="comparison-img"
                         />
                       </div>
-                      <div class="photo-frame result-frame">
+                      <div class="photo-frame result-frame" [class.lighting-daylight]="selectedLighting() === 'daylight'" [class.lighting-mandapam]="selectedLighting() === 'mandapam'" [class.lighting-reception]="selectedLighting() === 'reception'">
                         <span class="frame-tag gold-tag">✨ {{ t().tryonResultLabel }}</span>
                         <img
                           [src]="kioskService.tryOnResult()?.result_image_url || kioskService.customerPhotoDataUrl()"
@@ -2229,7 +3413,7 @@
                       </div>
                     </div>
                   } @else if (resultViewMode() === 'result') {
-                    <div class="photo-frame result-frame single-stage">
+                    <div class="photo-frame result-frame single-stage" [class.lighting-daylight]="selectedLighting() === 'daylight'" [class.lighting-mandapam]="selectedLighting() === 'mandapam'" [class.lighting-reception]="selectedLighting() === 'reception'">
                       <span class="frame-tag gold-tag">✨ {{ t().tryonResultLabel }}</span>
                       <img
                         [src]="kioskService.tryOnResult()?.result_image_url || kioskService.customerPhotoDataUrl()"
@@ -2249,7 +3433,7 @@
                     </div>
                   }
 
-                  <!-- Bridal Jewellery Accent Selection Bar -->
+                  <!-- 1. Bridal Jewellery Accent Selection Bar -->
                   <div class="bridal-jewellery-selector-bar glass-panel">
                     <div class="jewellery-bar-header">
                       <span class="jewellery-icon">💎</span>
@@ -2299,6 +3483,249 @@
                     </div>
                   </div>
 
+                  <!-- 2. Phase 2: Wedding Hall Lighting & Ambience Simulator -->
+                  <div class="wedding-lighting-selector-bar glass-panel">
+                    <div class="jewellery-bar-header">
+                      <span class="jewellery-icon">✨</span>
+                      <h4 class="jewellery-bar-title">{{ t().weddingLightingTitle }}</h4>
+                    </div>
+                    <div class="lighting-options-grid">
+                      <button
+                        type="button"
+                        class="btn-lighting-chip"
+                        [class.active]="selectedLighting() === 'daylight'"
+                        (click)="selectLighting('daylight')"
+                        id="btn-light-daylight"
+                      >
+                        <span class="light-icon">☀️</span>
+                        <div class="light-meta">
+                          <strong>{{ t().lightingDaylight }}</strong>
+                          <small>இயற்கை சூரிய ஒளி • துல்லிய நிறம்</small>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-lighting-chip gold-glow"
+                        [class.active]="selectedLighting() === 'mandapam'"
+                        (click)="selectLighting('mandapam')"
+                        id="btn-light-mandapam"
+                      >
+                        <span class="light-icon">🕯️</span>
+                        <div class="light-meta">
+                          <strong>{{ t().lightingMandapam }}</strong>
+                          <small>பொன்னொளி தீபம் • ஜரி மினுமினுப்பு</small>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-lighting-chip royal-glow"
+                        [class.active]="selectedLighting() === 'reception'"
+                        (click)="selectLighting('reception')"
+                        id="btn-light-reception"
+                      >
+                        <span class="light-icon">🌌</span>
+                        <div class="light-meta">
+                          <strong>{{ t().lightingReception }}</strong>
+                          <small>ராஜ வரவேற்பு • ஹை-கிளாமர்</small>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- 3. Phase 2: Matching Blouse & Border Contrast Customizer -->
+                  <div class="blouse-customizer-bar glass-panel">
+                    <div class="jewellery-bar-header">
+                      <span class="jewellery-icon">🪡</span>
+                      <h4 class="jewellery-bar-title">{{ t().blouseCustomizerTitle }}</h4>
+                    </div>
+                    <div class="blouse-options-grid">
+                      <button
+                        type="button"
+                        class="btn-blouse-chip"
+                        [class.active]="selectedBlouseTone() === 'matching'"
+                        (click)="selectBlouseTone('matching')"
+                        id="btn-blouse-matching"
+                      >
+                        <span class="swatch-circle swatch-matching"></span>
+                        <span>{{ t().blouseMatching }}</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-blouse-chip"
+                        [class.active]="selectedBlouseTone() === 'contrast'"
+                        (click)="selectBlouseTone('contrast')"
+                        id="btn-blouse-contrast"
+                      >
+                        <span class="swatch-circle swatch-contrast"></span>
+                        <span>{{ t().blouseContrast }} ({{ stylistHarmonics().blouseContrast }})</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-blouse-chip"
+                        [class.active]="selectedBlouseTone() === 'gold_zari'"
+                        (click)="selectBlouseTone('gold_zari')"
+                        id="btn-blouse-zari"
+                      >
+                        <span class="swatch-circle swatch-zari"></span>
+                        <span>{{ t().blouseGoldZari }}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- 4. Phase 4: Saree Draping Style Selector -->
+                  <div class="draping-style-bar glass-panel">
+                    <div class="jewellery-bar-header">
+                      <span class="jewellery-icon">👗</span>
+                      <h4 class="jewellery-bar-title">{{ t().drapingStyleTitle }}</h4>
+                    </div>
+                    <div class="draping-options-grid">
+                      <button
+                        type="button"
+                        class="btn-drape-chip"
+                        [class.active]="selectedDrapeStyle() === 'nivi'"
+                        (click)="selectDrapeStyle('nivi')"
+                        id="btn-drape-nivi"
+                      >
+                        <span class="drape-icon">✨</span>
+                        <div class="drape-meta">
+                          <strong>{{ t().styleClassicNivi }}</strong>
+                          <small>6-கஜ பாரம்பரிய அழகு</small>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-drape-chip"
+                        [class.active]="selectedDrapeStyle() === 'madisar'"
+                        (click)="selectDrapeStyle('madisar')"
+                        id="btn-drape-madisar"
+                      >
+                        <span class="drape-icon">🪔</span>
+                        <div class="drape-meta">
+                          <strong>{{ t().styleMadisar }}</strong>
+                          <small>9-கஜ முகூர்த்த மடிப்பு</small>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-drape-chip"
+                        [class.active]="selectedDrapeStyle() === 'gujarati'"
+                        (click)="selectDrapeStyle('gujarati')"
+                        id="btn-drape-gujarati"
+                      >
+                        <span class="drape-icon">👑</span>
+                        <div class="drape-meta">
+                          <strong>{{ t().styleGujaratiFront }}</strong>
+                          <small>முன் முந்தானை பிரம்மாண்டம்</small>
+                        </div>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-drape-chip"
+                        [class.active]="selectedDrapeStyle() === 'lehenga'"
+                        (click)="selectDrapeStyle('lehenga')"
+                        id="btn-drape-lehenga"
+                      >
+                        <span class="drape-icon">💃</span>
+                        <div class="drape-meta">
+                          <strong>{{ t().styleLehengaDrape }}</strong>
+                          <small>பார்ட்டி & வரவேற்பு லுக்</small>
+                        </div>
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- 5. Phase 3: Couple & Family Coordinated Lookbook -->
+                  <div class="couple-lookbook-bar glass-panel">
+                    <div class="couple-header-row">
+                      <div class="couple-title-meta">
+                        <span class="jewellery-icon">👩‍❤️‍👨</span>
+                        <div>
+                          <h4 class="jewellery-bar-title">{{ t().coupleMatchingTitle }}</h4>
+                          <span class="couple-subtitle">மணமகள் புடவையின் பார்டர் மற்றும் ஜரிகைக்குப் பொருத்தமான மாப்பிள்ளை ஆடை ஜோடி</span>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        class="btn-couple-toggle"
+                        [class.active]="isCoupleModeActive()"
+                        (click)="toggleCoupleMode()"
+                        id="btn-toggle-couple-mode"
+                      >
+                        <span class="toggle-dot"></span>
+                        <span>{{ isCoupleModeActive() ? 'ஜோடி பயன்முறை ஆன்' : 'ஜோடி மேட்சிங் பார்' }}</span>
+                      </button>
+                    </div>
+
+                    @if (isCoupleModeActive()) {
+                      <div class="couple-content-expanded">
+                        <div class="groom-attire-chips">
+                          <button
+                            type="button"
+                            class="btn-attire-chip"
+                            [class.active]="selectedGroomAttire() === 'dhoti'"
+                            (click)="selectGroomAttire('dhoti')"
+                            id="btn-groom-dhoti"
+                          >
+                            <span>🥻</span>
+                            <span>{{ t().coupleDhotiOption }}</span>
+                          </button>
+                          <button
+                            type="button"
+                            class="btn-attire-chip"
+                            [class.active]="selectedGroomAttire() === 'kurta'"
+                            (click)="selectGroomAttire('kurta')"
+                            id="btn-groom-kurta"
+                          >
+                            <span>🤴</span>
+                            <span>{{ t().coupleKurtaOption }}</span>
+                          </button>
+                          <button
+                            type="button"
+                            class="btn-attire-chip"
+                            [class.active]="selectedGroomAttire() === 'twinning'"
+                            (click)="selectGroomAttire('twinning')"
+                            id="btn-groom-twinning"
+                          >
+                            <span>✨</span>
+                            <span>{{ t().coupleTwinningOption }}</span>
+                          </button>
+                        </div>
+
+                        <div class="groom-preview-card">
+                          <div class="groom-avatar-box">
+                            <span class="groom-big-icon">
+                              {{ selectedGroomAttire() === 'dhoti' ? '🥻' : (selectedGroomAttire() === 'kurta' ? '🤴' : '✨') }}
+                            </span>
+                            <div class="groom-border-stripe" [style.background]="kioskService.selectedSaree()?.color || '#c99738'"></div>
+                          </div>
+                          <div class="groom-info-meta">
+                            <h5>
+                              {{ selectedGroomAttire() === 'dhoti' ? 'தூய பட்டு வேஷ்டி & சட்டை (Pure Mulberry Silk Dhoti)' : (selectedGroomAttire() === 'kurta' ? 'ராயல் பட்டு குர்தா & சுரிதார் (Heritage Silk Kurta)' : 'வண்ண இரட்டை காம்போ (Color-Matched Twinning Silk)') }}
+                            </h5>
+                            <p class="groom-desc">
+                              மணமகள் அணிந்திருக்கும் <strong>{{ kioskService.selectedSaree()?.name_ta || kioskService.selectedSaree()?.name_en || 'பட்டுப் புடவை' }}</strong>-ன் அதே தங்க ஜரிகை பார்டர் வேலைப்பாடு கொண்ட மேட்சிங் ஆடை.
+                            </p>
+                            <div class="groom-combo-badge">
+                              <span>🎁 மணமக்கள் காம்போ சலுகை: 10% உடனடி தள்ளுபடி</span>
+                            </div>
+                            <div class="groom-action-row" style="margin-top: 10px;">
+                              <button
+                                type="button"
+                                class="btn-gold btn-small full-width"
+                                (click)="generateCoupleTwinDrape()"
+                                [disabled]="isGeneratingCouple()"
+                                id="btn-gen-couple-drape"
+                              >
+                                <span>👩‍❤️‍👨</span>
+                                <span>{{ isGeneratingCouple() ? 'ஜோடி தோற்றம் தயாராகிறது...' : 'ஜோடி தோற்ற முன்னோட்டம் காண்க (Generate Couple Drape)' }}</span>
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    }
+                  </div>
+
                   <div class="result-disclaimer-box">
                     <span>ℹ</span>
                     <span>{{ t().disclaimerNotice }}</span>
@@ -2317,7 +3744,7 @@
                     <div class="stylist-metric-row">
                       <div class="stylist-score-circle">
                         <span class="score-number">{{ stylistHarmonics().matchScore }}%</span>
-                        <span class="score-sub">{{ translationService.currentLanguage() === 'ta' ? 'பொருத்தம்' : 'Match' }}</span>
+                        <span class="score-sub">{{ 'matchScoreLabel' | translate }}</span>
                       </div>
                       <div class="stylist-summary-text">
                         <strong class="undertone-highlight">{{ stylistHarmonics().undertone }}</strong>
@@ -2353,14 +3780,38 @@
                     <span class="qr-security-badge">🔒 {{ t().tokenExpiresNotice }}</span>
 
                     <div class="result-download-actions">
+                      <!-- B2B Feature: 5s Runway Fashion Video Motion -->
+                      @if (publicFeatures().runway_video) {
+                        <button
+                          class="btn-runway-motion full-width"
+                          (click)="generateRunwayMotion()"
+                          [disabled]="isGeneratingVideo()"
+                          id="btn-runway-motion"
+                        >
+                          <span>🎬</span>
+                          <span>{{ isGeneratingVideo() ? t().generatingVideoText : t().viewRunwayVideoBtn }}</span>
+                        </button>
+                      }
+
+                      <!-- Primary Showroom Conversion: Buy This Saree Floor Slip -->
+                      <button class="btn-buy-counter full-width" (click)="openBuyCounterModal()" id="btn-buy-counter">
+                        <span class="btn-icon">🛍️</span>
+                        <span class="btn-text">{{ translationService.currentLanguage() === 'ta' ? 'இப்புடவையை வாங்க விரும்புகிறேன் (Buy This Saree)' : 'I Want to Buy This Saree (Floor Slip)' }}</span>
+                      </button>
+
                       <button class="btn-gold full-width" (click)="triggerDirectDownload()" id="btn-result-download">
                         <span>💾</span>
                         <span>{{ t().directDownloadBtn }}</span>
                       </button>
 
-                      <button class="btn-whatsapp-share full-width" (click)="shareOnWhatsApp()" id="btn-result-whatsapp">
+                      <button class="btn-whatsapp-share full-width" (click)="openWhatsAppShareModal()" id="btn-result-whatsapp">
                         <span>💬</span>
-                        <span>{{ t().shareWhatsAppBtn }}</span>
+                        <span>{{ translationService.currentLanguage() === 'ta' ? 'வாட்ஸ்அப்பில் புகைப்படத்தைப் பெறுக (WhatsApp HD)' : 'Send to my WhatsApp' }}</span>
+                      </button>
+
+                      <button class="btn-family-poll full-width" (click)="openFamilyPollModal()" id="btn-result-family-poll">
+                        <span>👨‍👩‍👧</span>
+                        <span>{{ translationService.currentLanguage() === 'ta' ? 'குடும்பத்தினரின் வாக்குக் கேட்க (Family Poll)' : 'Ask Family / Friends (Live Poll)' }}</span>
                       </button>
                     </div>
                   </div>
@@ -2429,9 +3880,170 @@
   }
 
   <!-- ========================================================================= -->
+  <!-- MODAL: B2B BOUTIQUE ONBOARDING MODAL                                      -->
+  <!-- ========================================================================= -->
+  @if (showOnboardModal()) {
+    <div class="modal-backdrop" (click)="closeOnboardModal()">
+      <div class="pin-modal-dialog glass-panel" style="max-width: 560px;" (click)="$event.stopPropagation()">
+        <div class="modal-crest">🏬</div>
+        <h2 class="pin-modal-title">புதிய புடவை கடை Onboard செய் (Boutique Registration)</h2>
+        <p class="pin-modal-subtitle">கடை நிர்வாகி கணக்கு, பிரத்யேக API சாவி மற்றும் சந்தா திட்டம் உருவாக்கப்படும்</p>
+
+        @if (onboardError()) {
+          <div class="pin-error-toast" style="margin-bottom: 12px;">
+            <span>⚠️</span>
+            <span>{{ onboardError() }}</span>
+          </div>
+        }
+        @if (onboardSuccess()) {
+          <div style="background: rgba(46,204,113,0.15); border: 1px solid rgba(46,204,113,0.4); color: #2ecc71; padding: 10px; border-radius: 8px; margin-bottom: 12px; font-size: 0.85rem;">
+            <span>{{ onboardSuccess() }}</span>
+          </div>
+        }
+
+        <div style="display: flex; flex-direction: column; gap: 12px; text-align: left;">
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-group">
+              <label>கடை பெயர் (Boutique Name)*</label>
+              <input
+                type="text"
+                class="admin-input"
+                [value]="onboardName()"
+                (input)="onboardName.set($any($event.target).value)"
+                placeholder="எ.கா: Sri Kumaran Silks"
+              />
+            </div>
+            <div class="form-group">
+              <label>கடை குறியீடு (Tenant Code)</label>
+              <input
+                type="text"
+                class="admin-input"
+                [value]="onboardCode()"
+                (input)="onboardCode.set($any($event.target).value)"
+                placeholder="srikumaran"
+              />
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-group">
+              <label>மேனேஜர் பெயர் (Manager Name)*</label>
+              <input
+                type="text"
+                class="admin-input"
+                [value]="onboardManagerName()"
+                (input)="onboardManagerName.set($any($event.target).value)"
+                placeholder="மேலாளர் பெயர்"
+              />
+            </div>
+            <div class="form-group">
+              <label>மின்னஞ்சல் (Login Email)*</label>
+              <input
+                type="email"
+                class="admin-input"
+                [value]="onboardManagerEmail()"
+                (input)="onboardManagerEmail.set($any($event.target).value)"
+                placeholder="manager@kumaran.in"
+              />
+            </div>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div class="form-group">
+              <label>கடவுச்சொல் (Password - Default: auto)</label>
+              <input
+                type="password"
+                class="admin-input"
+                [value]="onboardManagerPassword()"
+                (input)="onboardManagerPassword.set($any($event.target).value)"
+                placeholder="வெற்று விட்டால் தானாக உருவாகும்"
+              />
+            </div>
+            <div class="form-group">
+              <label>தொலைபேசி (Phone Number)</label>
+              <input
+                type="tel"
+                class="admin-input"
+                [value]="onboardPhone()"
+                (input)="onboardPhone.set($any($event.target).value)"
+                placeholder="+91 98401 00000"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>சந்தா திட்டம் (Subscription Tier):</label>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 4px;">
+              <button
+                type="button"
+                class="btn-login-tab"
+                [class.active]="onboardTier() === 'silver'"
+                (click)="onTierChange('silver')"
+                style="padding: 8px 4px; font-size: 0.8rem;"
+              >
+                🥈 Silver (₹12,999)
+              </button>
+              <button
+                type="button"
+                class="btn-login-tab"
+                [class.active]="onboardTier() === 'gold'"
+                (click)="onTierChange('gold')"
+                style="padding: 8px 4px; font-size: 0.8rem;"
+              >
+                🥇 Gold (₹24,999)
+              </button>
+              <button
+                type="button"
+                class="btn-login-tab"
+                [class.active]="onboardTier() === 'platinum'"
+                (click)="onTierChange('platinum')"
+                style="padding: 8px 4px; font-size: 0.8rem;"
+              >
+                💎 Platinum (₹49,999)
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label>தயாரிப்பு பட்டியல் URL (Optional Feed URL):</label>
+            <input
+              type="url"
+              class="admin-input"
+              [value]="onboardCatalogUrl()"
+              (input)="onboardCatalogUrl.set($any($event.target).value)"
+              placeholder="https://.../catalog.json"
+            />
+          </div>
+
+          <div style="display: flex; gap: 10px; margin-top: 14px;">
+            <button
+              type="button"
+              class="btn-outline"
+              style="flex: 1;"
+              (click)="closeOnboardModal()"
+            >
+              ரத்து செய் (Cancel)
+            </button>
+            <button
+              type="button"
+              class="btn-gold"
+              style="flex: 2; justify-content: center;"
+              [disabled]="isOnboardingSubmitting()"
+              (click)="submitOnboardCustomer()"
+            >
+              <span>{{ isOnboardingSubmitting() ? 'சேமிக்கப்படுகிறது...' : 'உறுதி செய் (Confirm Onboard)' }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================================================= -->
   <!-- SHOWROOM KIOSK SECURITY & ADMIN LOGIN MODAL DIALOG                        -->
   <!-- ========================================================================= -->
   @if (showAdminPinModal()) {
+
     <div class="modal-backdrop" (click)="closeAdminPinModal()">
       <div class="pin-modal-dialog glass-panel" (click)="$event.stopPropagation()">
         <div class="modal-crest">🔐</div>
@@ -2717,7 +4329,7 @@
             </button>
           </div>
           <p class="crop-hint-text">
-            {{ translationService.currentLanguage() === 'ta' ? 'படத்தை விரலால் அல்லது மவுஸால் இழுத்து (Drag to Pan) மையப்படுத்தவும்; பின்னணியை நீக்க Slider-ஐப் பயன்படுத்தி பெரிதாக்கவும்.' : 'Drag photo to center the person; use the zoom slider to crop out bystanders or unwanted background.' }}
+            {{ 'cropDragInstruction' | translate }}
           </p>
         </div>
 
@@ -2757,12 +4369,12 @@
           class="dock-pill-trigger"
           (click)="toggleFloatingDockExpanded()"
           (mousedown)="onDockMouseDown($event)"
-          [title]="translationService.currentLanguage() === 'ta' ? 'விரைவு மெனு (நகர்த்த இழுக்கவும்)' : 'Quick Menu (Drag along edge to reposition)'"
+          [title]="'dockQuickMenuHint' | translate"
           id="dock-pill-trigger"
         >
           <span class="dock-handle-icon" title="Drag along edge">⋮⋮</span>
           <span class="dock-pill-badge">⚡</span>
-          <span class="dock-pill-label">{{ translationService.currentLanguage() === 'ta' ? 'மெனு' : 'Menu' }}</span>
+          <span class="dock-pill-label">{{ 'dockMenu' | translate }}</span>
         </button>
       }
 
@@ -2773,22 +4385,22 @@
           <div class="dock-panel-header" (mousedown)="onDockMouseDown($event)">
             <div class="dock-drag-grip" title="Drag vertically along edge or across to switch sides">
               <span class="grip-icon">⋮⋮</span>
-              <span class="grip-text">{{ translationService.currentLanguage() === 'ta' ? 'இழுத்து நகர்த்துக' : 'Drag to Move' }}</span>
+              <span class="grip-text">{{ 'dockDragToMove' | translate }}</span>
             </div>
             <div class="dock-header-actions">
               <button
                 type="button"
                 class="btn-dock-tool btn-dock-side"
                 (click)="toggleDockSide()"
-                [title]="floatingDockSide() === 'right' ? 'Switch to Left Edge' : 'Switch to Right Edge'"
+                [title]="floatingDockSide() === 'right' ? ('dockSwitchLeft' | translate) : ('dockSwitchRight' | translate)"
               >
-                ⇄ {{ floatingDockSide() === 'right' ? 'Left' : 'Right' }}
+                ⇄ {{ floatingDockSide() === 'right' ? ('dockSwitchLeft' | translate) : ('dockSwitchRight' | translate) }}
               </button>
               <button
                 type="button"
                 class="btn-dock-tool btn-dock-close"
                 (click)="toggleFloatingDockExpanded()"
-                title="Minimize Menu"
+                [title]="'dockClose' | translate"
               >
                 ✕
               </button>
@@ -2806,7 +4418,7 @@
               id="dock-btn-reach"
             >
               <span class="btn-icon">♿</span>
-              <span class="btn-label">{{ isReachModeActive() ? (translationService.currentLanguage() === 'ta' ? 'இயல்பு' : 'Normal') : (translationService.currentLanguage() === 'ta' ? 'எட்டு' : 'Reach') }}</span>
+              <span class="btn-label">{{ isReachModeActive() ? ('restoreStandardHeight' | translate) : ('reachModeBtn' | translate) }}</span>
             </button>
 
             <!-- Theme Toggle -->
@@ -2817,18 +4429,18 @@
               id="dock-btn-theme"
             >
               <span class="btn-icon">{{ isLightTheme() ? '🌙' : '☀️' }}</span>
-              <span class="btn-label">{{ isLightTheme() ? (translationService.currentLanguage() === 'ta' ? 'டார்க்' : 'Dark') : (translationService.currentLanguage() === 'ta' ? 'லைட்' : 'Light') }}</span>
+              <span class="btn-label">{{ isLightTheme() ? ('darkThemeLabel' | translate) : ('lightThemeLabel' | translate) }}</span>
             </button>
 
-            <!-- Language Switch -->
+            <!-- Multi-Language Selector Trigger -->
             <button
               type="button"
               class="dock-action-btn"
-              (click)="translationService.toggleLanguage()"
+              (click)="toggleLanguageMenu()"
               id="dock-btn-lang"
             >
               <span class="btn-icon">🌐</span>
-              <span class="btn-label">{{ translationService.currentLanguage() === 'ta' ? 'English' : 'தமிழ்' }}</span>
+              <span class="btn-label">{{ translationService.currentLangInfo().label }}</span>
             </button>
 
             <!-- Reset Session (active during session) -->
@@ -2840,7 +4452,7 @@
                 id="dock-btn-reset"
               >
                 <span class="btn-icon">🔄</span>
-                <span class="btn-label">{{ translationService.currentLanguage() === 'ta' ? 'மீட்டமை' : 'Reset' }}</span>
+                <span class="btn-label">{{ 'resetSession' | translate }}</span>
               </button>
             }
 
@@ -2853,7 +4465,7 @@
                 id="dock-btn-lock"
               >
                 <span class="btn-icon">🔒</span>
-                <span class="btn-label">{{ translationService.currentLanguage() === 'ta' ? 'பூட்டு' : 'Lock' }}</span>
+                <span class="btn-label">{{ 'lockKioskBtn' | translate }}</span>
               </button>
             }
 
@@ -2865,12 +4477,517 @@
               id="dock-btn-admin"
             >
               <span class="btn-icon">🛡️</span>
-              <span class="btn-label">{{ translationService.currentLanguage() === 'ta' ? 'நிர்வாகம்' : 'Admin' }}</span>
+              <span class="btn-label">{{ 'adminPortalTitle' | translate }}</span>
             </button>
           </div>
         </div>
       }
     </aside>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- RUNWAY MOTION VIDEO MODAL                                                 -->
+  <!-- ========================================================================= -->
+  @if (runwayVideoUrl() || isGeneratingVideo()) {
+    <div class="modal-backdrop video-modal-backdrop" (click)="closeRunwayVideoModal()">
+      <div class="modal-dialog video-modal-dialog glass-panel" (click)="$event.stopPropagation()">
+        <div class="video-modal-header">
+          <div class="video-modal-title">
+            <span class="video-modal-icon">🎬</span>
+            <h3>{{ 'runwayVideoTitle' | translate }}</h3>
+          </div>
+          <button class="btn-close-video" (click)="closeRunwayVideoModal()">✕</button>
+        </div>
+
+        <div class="video-viewport-wrap">
+          @if (isGeneratingVideo()) {
+            <div class="video-generating-loader">
+              <div class="silk-weaving-ring"></div>
+              <div class="silk-needle-icon">🥻</div>
+              <h4>{{ t().generatingVideoText }}</h4>
+              <p>{{ 'runwayVideoDesc' | translate }}</p>
+            </div>
+          } @else if (runwayVideoUrl()) {
+            <video
+              [src]="runwayVideoUrl()"
+              autoplay
+              loop
+              playsinline
+              controls
+              class="runway-player-video"
+            ></video>
+          }
+        </div>
+
+        @if (runwayVideoUrl()) {
+          <div class="video-modal-actions">
+            <a [href]="runwayVideoUrl()" target="_blank" download class="btn-gold">
+              <span>💾</span>
+              <span>{{ 'downloadVideoBtn' | translate }}</span>
+            </a>
+            <button class="btn-outline" (click)="closeRunwayVideoModal()">
+              <span>✕</span>
+              <span>{{ 'closeBtn' | translate }}</span>
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: SHOWROOM FLOOR TRY-TO-BUY TOKEN SLIP (CONVERSION DESK)              -->
+  <!-- ========================================================================= -->
+  @if (showCounterTokenModal()) {
+    <div class="modal-backdrop" (click)="closeCounterTokenModal()">
+      <div class="modal-dialog counter-token-modal glass-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="token-modal-title-group">
+            <span class="token-modal-crest">✦</span>
+            <h3>🛍️ விற்பனை கவுண்டர் டோக்கன் (Showroom Floor Slip)</h3>
+          </div>
+          <button class="btn-close-modal" (click)="closeCounterTokenModal()" id="btn-close-token-modal">✕</button>
+        </div>
+
+        <div class="modal-body">
+          @if (!activeCounterToken()) {
+            <!-- Form to generate token -->
+            <div class="token-init-panel">
+              <div class="token-saree-highlight">
+                <div class="token-saree-info">
+                  <span class="token-saree-badge">தேர்ந்தெடுக்கப்பட்ட புடவை</span>
+                  <h4 class="token-saree-title">
+                    {{ kioskService.selectedSaree()?.name_ta || kioskService.selectedSaree()?.name_en }}
+                  </h4>
+                  <div class="token-saree-meta">
+                    <span><strong>SKU:</strong> {{ kioskService.selectedSaree()?.sku }}</span>
+                    <span class="gold-price"><strong>விலை:</strong> ₹{{ kioskService.selectedSaree()?.price | number:'1.0-0' }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="token-prompt-box">
+                <p>இந்த புடவையை நீங்கள் உடனடியாக நேரில் பார்க்க அல்லது வாங்க விரும்பினால், ஊழியர் அலமாரியிலிருந்து எடுத்து வர கீழேயுள்ள பொத்தானைத் தட்டவும்.</p>
+              </div>
+
+              <div class="form-group" style="margin-top: 14px;">
+                <label>உங்கள் மொபைல் எண் (Mobile No - விருப்பத்திற்குரியது):</label>
+                <input
+                  type="tel"
+                  class="admin-input large-touch-input"
+                  [value]="customerPhoneForToken()"
+                  (input)="customerPhoneForToken.set($any($event.target).value)"
+                  placeholder="+91 98401 23456"
+                />
+              </div>
+
+              <div class="form-group" style="margin-top: 10px;">
+                <label>உங்கள் பெயர் (Name - விருப்பத்திற்குரியது):</label>
+                <input
+                  type="text"
+                  class="admin-input large-touch-input"
+                  [value]="customerNameForToken()"
+                  (input)="customerNameForToken.set($any($event.target).value)"
+                  placeholder="எ.கா: பிரியா"
+                />
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn-outline" (click)="closeCounterTokenModal()">ரத்து செய்</button>
+              <button
+                class="btn-gold btn-large"
+                (click)="confirmGenerateCounterToken()"
+                [disabled]="isGeneratingToken()"
+                id="btn-confirm-token-gen"
+              >
+                <span>🎫</span>
+                <span>{{ isGeneratingToken() ? 'டோக்கன் தயாராகிறது...' : 'டோக்கன் உருவாக்கு (Get Floor Slip)' }}</span>
+              </button>
+            </div>
+          } @else {
+            <!-- Active Generated Luxury Showroom Slip Ticket -->
+            <div class="luxury-slip-ticket">
+              <div class="slip-ticket-header">
+                <span class="slip-store-name">{{ customStoreName() || 'NEXOOAI LUXURY SILKS' }}</span>
+                <span class="slip-ticket-type">FLOOR SALES SLIP</span>
+              </div>
+
+              <div class="slip-token-number-box">
+                <span class="slip-number-label">உங்கள் டோக்கன் எண் / TOKEN NO:</span>
+                <div class="slip-token-code">{{ activeCounterToken().token_code }}</div>
+              </div>
+
+              <div class="slip-rack-beacon">
+                <span class="beacon-pulse">📍</span>
+                <div class="beacon-details">
+                  <span class="beacon-label">இருப்பிட அலமாரி (RACK LOCATION):</span>
+                  <strong class="beacon-loc">{{ activeCounterToken().rack_location }}</strong>
+                </div>
+              </div>
+
+              <div class="slip-details-grid">
+                <div class="slip-detail-row">
+                  <span>புடவை / Item:</span>
+                  <strong>{{ activeCounterToken().product_name_ta || activeCounterToken().product_name_en }}</strong>
+                </div>
+                <div class="slip-detail-row">
+                  <span>SKU எண்:</span>
+                  <strong>{{ activeCounterToken().sku }}</strong>
+                </div>
+                <div class="slip-detail-row">
+                  <span>விலை / MRP:</span>
+                  <strong class="gold-text">₹{{ activeCounterToken().price | number:'1.0-0' }}</strong>
+                </div>
+              </div>
+
+              <!-- Barcode Mockup -->
+              <div class="slip-barcode-area">
+                <div class="barcode-bars">
+                  <span class="bar b1"></span><span class="bar b2"></span><span class="bar b1"></span><span class="bar b3"></span>
+                  <span class="bar b2"></span><span class="bar b1"></span><span class="bar b3"></span><span class="bar b1"></span>
+                  <span class="bar b2"></span><span class="bar b3"></span><span class="bar b1"></span><span class="bar b2"></span>
+                  <span class="bar b3"></span><span class="bar b1"></span><span class="bar b2"></span><span class="bar b1"></span>
+                </div>
+                <span class="barcode-digits">{{ activeCounterToken().token_code }} • KIOSK-01</span>
+              </div>
+
+              <div class="slip-staff-status-notice">
+                <span class="notice-icon">🔔</span>
+                <p>கடை ஊழியருக்கு தகவல் அனுப்பப்பட்டுவிட்டது! ஊழியர் உங்கள் புடவையை எடுத்து வர இந்த டோக்கன் எண்ணைக் கூறவும்.</p>
+              </div>
+
+              <div class="modal-footer" style="margin-top: 16px;">
+                <button class="btn-gold full-width" (click)="closeCounterTokenModal()" id="btn-done-token">
+                  <span>✓</span>
+                  <span>சரி, முடிந்தது (Done)</span>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: DIRECT WHATSAPP DELIVERY OF TRY-ON PORTRAIT (ZERO HARDCODING)      -->
+  <!-- ========================================================================= -->
+  @if (showWhatsAppModal()) {
+    <div class="modal-backdrop" (click)="closeWhatsAppShareModal()">
+      <div class="modal-dialog whatsapp-delivery-modal glass-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="token-modal-title-group">
+            <span class="whatsapp-modal-icon">💬</span>
+            <h3>வாட்ஸ்அப்பில் புகைப்படத்தைப் பெறுக (WhatsApp HD)</h3>
+          </div>
+          <button class="btn-close-modal" (click)="closeWhatsAppShareModal()" id="btn-close-whatsapp-modal">✕</button>
+        </div>
+
+        <div class="modal-body">
+          <p class="whatsapp-modal-hint">
+            உங்கள் ட்ரை-ஆன் புகைப்படத்தை உயர் துல்லிய HD தரத்தில், கடையின் அதிகாரப்பூர்வ வாட்ஸ்அப் மூலம் நேரடியாகப் பெறலாம்.
+          </p>
+
+          <div class="form-group" style="margin-top: 14px;">
+            <label>உங்கள் வாட்ஸ்அப் எண் (WhatsApp Phone Number) *</label>
+            <div class="whatsapp-phone-input-wrap">
+              <span class="phone-prefix">+91</span>
+              <input
+                type="tel"
+                class="admin-input large-touch-input"
+                [value]="whatsAppSharePhone()"
+                (input)="whatsAppSharePhone.set($any($event.target).value)"
+                placeholder="98401 23456"
+                maxlength="14"
+                id="input-customer-whatsapp"
+              />
+            </div>
+          </div>
+
+          @if (whatsAppShareSuccess()) {
+            <div class="whatsapp-status-banner success">
+              <span class="status-icon">✅</span>
+              <div class="status-msg">
+                <strong>வெற்றி!</strong>
+                <p>{{ whatsAppShareSuccess() }}</p>
+              </div>
+            </div>
+          }
+
+          @if (whatsAppShareError()) {
+            <div class="whatsapp-status-banner error">
+              <span class="status-icon">⚠️</span>
+              <div class="status-msg">
+                <strong>பிழை ஏற்பட்டது:</strong>
+                <p>{{ whatsAppShareError() }}</p>
+              </div>
+            </div>
+          }
+        </div>
+
+        <div class="modal-footer">
+          <button class="btn-outline" (click)="closeWhatsAppShareModal()">ரத்து செய்</button>
+          <button
+            class="btn-gold btn-whatsapp-submit"
+            (click)="confirmSendWhatsApp()"
+            [disabled]="isSendingWhatsApp() || !whatsAppSharePhone().trim()"
+            id="btn-submit-whatsapp-delivery"
+          >
+            <span>💬</span>
+            <span>{{ isSendingWhatsApp() ? 'அனுப்பப்படுகிறது...' : 'புகைப்படத்தை அனுப்பு (Send HD Photo)' }}</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: FAMILY & FRIENDS OPINION POLL (WHATSAPP MULTI-SAREE VOTING)        -->
+  <!-- ========================================================================= -->
+  @if (showFamilyPollModal()) {
+    <div class="modal-backdrop" (click)="closeFamilyPollModal()">
+      <div class="modal-dialog family-poll-modal glass-panel" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <div class="token-modal-title-group">
+            <span class="family-poll-icon">👨‍👩‍👧</span>
+            <h3>குடும்பத்தினர் கருத்து வாக்கெடுப்பு (Family Poll)</h3>
+          </div>
+          <button class="btn-close-modal" (click)="closeFamilyPollModal()" id="btn-close-poll-modal">✕</button>
+        </div>
+
+        <div class="modal-body">
+          @if (!createdFamilyPoll()) {
+            <div class="poll-init-panel">
+              <p class="poll-intro-text">
+                நீங்கள் ட்ரை செய்து பார்த்த இந்த பட்டுப்புடவையை உங்கள் அம்மா, கணவர், சகோதரி அல்லது தோழிகளுக்கு வாட்ஸ்அப்பில் ஒரே இணைப்பாக அனுப்பி, <strong>"எந்த புடவை எனக்கு மிகவும் அழகாக இருக்கிறது?"</strong> என்று வாக்கெடுப்பு நடத்தலாம்!
+              </p>
+
+              <div class="poll-candidates-preview">
+                <h5>வாக்கெடுப்பில் இடம்பெறும் புடவைகள்:</h5>
+                <div class="poll-candidate-chips-row">
+                  <div class="poll-chip active">
+                    <span class="chip-num">1</span>
+                    <span class="chip-name">{{ kioskService.selectedSaree()?.name_ta || kioskService.selectedSaree()?.name_en || 'ட்ரை-ஆன் புடவை' }}</span>
+                    <span class="chip-badge">உங்கள் தேர்வு ⭐</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top: 14px;">
+                <label>உங்கள் பெயர் (மணமகள் பெயர்) *</label>
+                <input
+                  type="text"
+                  class="admin-input large-touch-input"
+                  [value]="customerNameForToken()"
+                  (input)="customerNameForToken.set($any($event.target).value)"
+                  placeholder="எ.கா: பிரியா அல்லது அனிதா"
+                />
+              </div>
+
+              <div class="form-group" style="margin-top: 10px;">
+                <label>உங்கள் வாட்ஸ்அப் எண் (விருப்பத்திற்குரியது):</label>
+                <input
+                  type="tel"
+                  class="admin-input large-touch-input"
+                  [value]="customerPhoneForToken()"
+                  (input)="customerPhoneForToken.set($any($event.target).value)"
+                  placeholder="+91 98401 23456"
+                />
+              </div>
+            </div>
+
+            <div class="modal-footer">
+              <button class="btn-outline" (click)="closeFamilyPollModal()">ரத்து செய்</button>
+              <button
+                class="btn-gold btn-large"
+                (click)="submitCreateFamilyPoll()"
+                [disabled]="isCreatingPoll()"
+                id="btn-confirm-create-poll"
+              >
+                <span>👨‍👩‍👧</span>
+                <span>{{ isCreatingPoll() ? 'வாக்கெடுப்பு தயாராகிறது...' : 'வாக்கெடுப்பு லிங்க் உருவாக்கு (Start Poll)' }}</span>
+              </button>
+            </div>
+          } @else {
+            <!-- Generated Poll Ticket & Share Panel -->
+            <div class="poll-success-panel">
+              <div class="poll-ticket-box">
+                <span class="poll-badge-top">வாக்கெடுப்பு தயார்! (POLL ACTIVE)</span>
+                <h4 class="poll-ticket-code">{{ createdFamilyPoll().poll_code }}</h4>
+                <p class="poll-ticket-sub">குடும்பத்தினர் மொபைல் மூலம் உடனே வாக்களிக்கலாம்.</p>
+
+                <!-- Dynamic QR Code for Mobile Scanning -->
+                <div class="poll-qr-center">
+                  <app-qr-code
+                    [value]="'http://localhost:4200' + createdFamilyPoll().poll_url"
+                    [size]="160"
+                  ></app-qr-code>
+                </div>
+
+                <div class="poll-share-action-grid">
+                  <button
+                    type="button"
+                    class="btn-whatsapp-share full-width"
+                    (click)="shareFamilyPollWhatsApp()"
+                    id="btn-poll-share-wa"
+                  >
+                    <span>💬</span>
+                    <span>வாட்ஸ்அப்பில் குடும்பத்தினருக்கு அனுப்பு</span>
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-outline full-width"
+                    (click)="copyFamilyPollLink()"
+                    id="btn-poll-copy-link"
+                  >
+                    <span>📋</span>
+                    <span>{{ familyPollShareCopied() ? 'லிங்க் நகலெடுக்கப்பட்டது! ✓' : 'வாக்கெடுப்பு லிங்கை நகலெடு' }}</span>
+                  </button>
+                </div>
+              </div>
+
+              <div class="modal-footer" style="margin-top: 16px;">
+                <button class="btn-gold full-width" (click)="closeFamilyPollModal()">
+                  <span>✓</span>
+                  <span>முடிந்தது (Done)</span>
+                </button>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- MOBILE / DESKTOP FAMILY POLL LIVE VOTER VIEW                              -->
+  <!-- ========================================================================= -->
+  @if (activeVoterPollCode() && voterPollData()) {
+    <div class="modal-backdrop voter-screen-backdrop">
+      <div class="voter-dialog-shell glass-panel">
+        <div class="voter-header-bar">
+          <div class="voter-branding">
+            <span class="voter-crest">✦</span>
+            <span>{{ customStoreName() || 'NEXOOAI LUXURY SILKS' }}</span>
+          </div>
+          <button class="btn-modal-close" (click)="exitVoterView()">✕</button>
+        </div>
+
+        <div class="voter-body-container">
+          <div class="voter-hero-intro">
+            <h2>{{ voterPollData().title }}</h2>
+            <p>எங்கள் குடும்ப மணமகள் <strong>{{ voterPollData().customer_name }}</strong>-க்கு மிகவும் பொருத்தமான பட்டுப்புடவைக்கு உங்கள் வாக்கை அளியுங்கள்!</p>
+            <span class="voter-tally-pill">🗳️ மொத்த வாக்குகள்: {{ voterPollData().total_votes }}</span>
+          </div>
+
+          @if (voteSuccessMsg()) {
+            <div class="voter-success-banner">
+              <span class="vote-success-icon">🎉</span>
+              <h3>வாக்களித்தமைக்கு நன்றி!</h3>
+              <p>{{ voteSuccessMsg() }}</p>
+            </div>
+          }
+
+          <!-- Candidates Grid -->
+          <div class="voter-candidates-grid">
+            @for (cand of voterPollData().candidates; track cand.index) {
+              <div
+                class="candidate-vote-card"
+                [class.selected]="selectedCandidateIndex() === cand.index"
+                (click)="selectPollCandidate(cand.index)"
+              >
+                <div class="candidate-img-box">
+                  <img [src]="cand.image_url" [alt]="cand.saree_name" class="cand-portrait" />
+                  <span class="candidate-index-badge">விருப்பம் #{{ cand.index + 1 }}</span>
+                </div>
+
+                <div class="candidate-info-box">
+                  <h4>{{ cand.saree_name }}</h4>
+                  <div class="cand-meta">
+                    <span>{{ cand.sku }}</span>
+                    <strong class="gold-text">₹{{ cand.price | number:'1.0-0' }}</strong>
+                  </div>
+
+                  <!-- Real-time Vote Progress Bar -->
+                  <div class="cand-vote-bar-wrap">
+                    <div class="cand-vote-bar-fill" [style.width.%]="cand.vote_percentage"></div>
+                  </div>
+                  <div class="cand-vote-score">
+                    <span>{{ cand.vote_count }} வாக்குகள்</span>
+                    <strong>{{ cand.vote_percentage }}%</strong>
+                  </div>
+
+                  <button
+                    type="button"
+                    class="btn-vote-choice"
+                    [class.voted]="selectedCandidateIndex() === cand.index"
+                  >
+                    <span>{{ selectedCandidateIndex() === cand.index ? '✓ தேர்ந்தெடுக்கப்பட்டது' : 'இந்த புடவை எனக்கு பிடித்துள்ளது' }}</span>
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- Voter Cast Form -->
+          @if (!voteSuccessMsg()) {
+            <div class="voter-submit-form-panel">
+              <h4>உங்கள் வாக்கை உறுதி செய்யவும்:</h4>
+              <div class="voter-form-row">
+                <div class="form-group flex-1">
+                  <label>உங்கள் பெயர் (Your Name) *</label>
+                  <input
+                    type="text"
+                    class="admin-input"
+                    [value]="voterName()"
+                    (input)="voterName.set($any($event.target).value)"
+                    placeholder="எ.கா: அம்மா / கார்த்திக்"
+                  />
+                </div>
+                <div class="form-group flex-1">
+                  <label>உறவுமுறை (Relationship):</label>
+                  <select
+                    class="admin-select"
+                    [value]="voterRelation()"
+                    (change)="voterRelation.set($any($event.target).value)"
+                  >
+                    <option value="Mom">அம்மா (Mother)</option>
+                    <option value="Husband">கணவர் / மாப்பிள்ளை (Groom)</option>
+                    <option value="Sister">சகோதரி (Sister)</option>
+                    <option value="Father">அப்பா (Father)</option>
+                    <option value="Friend">தோழி / நண்பர் (Friend)</option>
+                    <option value="Relative">உறவினர் (Relative)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group" style="margin-top: 10px;">
+                <label>வாழ்த்து செய்தி (Optional Comment):</label>
+                <input
+                  type="text"
+                  class="admin-input"
+                  [value]="voterComment()"
+                  (input)="voterComment.set($any($event.target).value)"
+                  placeholder="எ.கா: இந்த சிகப்பு பட்டு முகூர்த்தத்திற்கு பிரமாதமாக இருக்கும்!"
+                />
+              </div>
+
+              <button
+                type="button"
+                class="btn-gold btn-large full-width"
+                style="margin-top: 14px;"
+                [disabled]="isSubmittingVote() || selectedCandidateIndex() === null || !voterName().trim()"
+                (click)="submitVoterVote()"
+              >
+                <span>🗳️</span>
+                <span>{{ isSubmittingVote() ? 'வாக்கு பதிவாகிறது...' : 'எனது வாக்கை பதிவு செய் (Submit Vote)' }}</span>
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
   }
 </div>
 

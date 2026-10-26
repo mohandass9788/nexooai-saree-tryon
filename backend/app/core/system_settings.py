@@ -27,6 +27,45 @@ _CACHE: Dict[str, Any] = {
     "kiosk_staff_session_hours": 24,
     "kiosk_admin_pin": "849201",
     "custom_ai_prompt_template": "Virtual saree try-on portrait: Gracefully drape the {garment_name} ({category}, {fabric}, {color}) onto the person. Preserve facial identity, hair, skin tone, and body pose with authentic waist pleats and ornate pallu over left shoulder.",
+    # B2B Client Feature Toggles (Client Add-on Packages)
+    "feature_tryon_max": "false",
+    "feature_runway_video": "false",
+    "feature_selfie_mode": "false",
+    "feature_privacy_base64": "false",
+    "feature_split_slider": "true",
+    "feature_portrait_916": "true",
+    "fashn_resolution": "1k",
+    "fashn_generation_mode": "balanced",
+    "saree_pleat_prompt": "traditional Indian silk saree drape, pleated pallu pinned neatly over left shoulder, crisp zari borders, matching blouse",
+    # Showroom Brand Identity & Promotional Media
+    "custom_store_name": "NeXooAi Luxury Silks",
+    "custom_store_tagline": "Traditional Handloom Silk Sarees & Kanchipuram Weaves",
+    "custom_store_logo_url": "",
+    "custom_store_ad_video_url": "",
+    "store_contact_phone": "+91 98401 23456",
+    "store_city": "Chennai",
+    # Showroom Watermark on Generated Portraits
+    "watermark_enabled": "true",
+    "watermark_text": "NeXooAi Luxury Silks",
+    "watermark_subtext": "Exclusively Styled at Showroom",
+    "watermark_position": "bottom_banner",  # 'bottom_banner', 'bottom_right', 'crest_overlay'
+    # Showroom Dynamic WhatsApp Gateway (No Hardcoding!)
+    "whatsapp_enabled": "false",
+    "whatsapp_provider": "meta_cloud",  # 'meta_cloud', 'wati', 'twilio', 'webhook'
+    "whatsapp_phone_number_id": "",
+    "whatsapp_business_account_id": "",
+    "whatsapp_access_token": "",
+    "whatsapp_template_name": "saree_tryon_delivery",
+    "whatsapp_sales_desk_phone": "+91 98401 23456",
+    # Floor Counter Slip / POS Token Settings
+    "counter_token_enabled": "true",
+    "counter_auto_notify_sales": "true",
+    # Live POS / ERP Billing Webhook Integration
+    "pos_webhook_enabled": "false",
+    "pos_webhook_url": "",
+    "pos_webhook_auth_header": "",
+    "pos_system_type": "generic",  # 'generic', 'tally', 'sap', 'zoho'
+    "pos_auto_sync_tokens": "true",
 }
 
 
