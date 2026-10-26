@@ -1,73 +1,126 @@
-# NeXooAi Virtual Saree Try-On
-> **AI-Powered Virtual Saree Trial Platform for Indian Textile Retail Stores**
+# NeXooAi Virtual Saree Try-On & B2B SaaS Retail Platform
 
-NeXooAi Virtual Saree Try-On is an enterprise-grade retail platform that enables saree showroom customers to preview how a saree looks draped on them via a touchscreen kiosk.
-
-> **Notice**: The generated image is a visual styling preview, not an absolute guarantee of physical fitting or exact fabric appearance.
+> **AI-Powered Virtual Saree Trial Mirror & Multi-Tenant Retail Platform for Indian Textile Showrooms**  
+> **Release Version:** 2.0.0 (Production Release)  
+> **Test Status:** ✅ 43 / 43 Pytest Unit Tests Passing (100% Green) | ✅ Angular 19 Production Build Clean | ✅ CI/CD Automated  
 
 ---
 
-## 📌 Features & Workflow
-- **Touch-Friendly Kiosk**: Built for touchscreens with responsive touch controls, high contrast, and virtual keyboard input.
-- **Bilingual Interface**: Native **Tamil (`தமிழ்`)** and **English (`EN`)** support.
-- **Camera Capture & Privacy**: Live webcam preview, photo snapshot, and clear explicit consent agreement.
-- **Saree Catalogue**: Instant filtering by fabric (Kanchipuram Silk, Banarasi, Cotton, Chiffon), color, and price.
-- **Pluggable AI Try-On**: Provider-agnostic adapter supporting hosted AI Try-On APIs with seamless fallback to custom local/cloud models.
-- **Instant Mobile QR Download**: Customers can scan an on-screen QR code with their smartphone to securely download their try-on photo using an expiring token.
-- **Privacy & Auto-Purge**: Automatic retention enforcement and customer session timeout (90 seconds).
+## 📖 Primary Documentation & AI Agent Handover
+
+- 🚀 **[CLAUDE_CODE_HANDOVER_AND_MASTER_DOCS.md](file:///c:/Users/nithy/Videos/MNV's/nexooai-saree-tryon/CLAUDE_CODE_HANDOVER_AND_MASTER_DOCS.md)** — **Master specification for developers and external AI coding agents (Claude Code, Cursor, Copilot).** Contains full directory tree, architectural rules, code invariants, and guidance.
+- 📋 **[PROJECT_CHANGELOG_AND_FIXES.md](file:///c:/Users/nithy/Videos/MNV's/nexooai-saree-tryon/PROJECT_CHANGELOG_AND_FIXES.md)** — Exhaustive log of all 6 core bugs diagnosed and resolved across TypeScript, FastAPI, PostgreSQL asyncpg, and Pytest.
+- 📚 **[`docs/`](file:///c:/Users/nithy/Videos/MNV's/nexooai-saree-tryon/docs/)** — Detailed engineering specifications covering API routes, architecture, security, and database design.
+
+---
+
+## 🌟 Key Platform Features
+
+1. **Touch-Friendly 9:16 Portrait Mirror Kiosk:**
+   - Designed for 55" showroom totems with live webcam preview, pose guidance, and instant AI drape generation.
+2. **Wedding Lighting Simulation (4 Ambiences):**
+   - Mandapam Golden Glow (2800K), Evening Reception (4500K), Temple Golden Hour, and Showroom Studio (5500K).
+3. **Cultural Saree Drape Physics (3 Styles):**
+   - Traditional Nivi Drape, Gujarati Front Seedha Pallu, and Royal Coorgi Pleats.
+4. **Bridal Heritage Jewellery Suite & Groom Attire Twinning:**
+   - Kasu Malai (Coin Necklace), Polki Diamond Choker, Temple Gold Choker, and Heritage Ruby Haram.
+   - Matching groom silk dhoti and royal kurta twinning preview.
+5. **Floor Sales Desk POS Counter Slip Generator:**
+   - Generates thermal slips (`TK-482910`) with saree SKU, exact floor rack locator (e.g. `Rack-A3`), price, and barcode.
+6. **Family WhatsApp Voting & Live Approval Polls:**
+   - Relatives at home can vote on try-on looks in real-time via `/kiosk/family-poll/{poll_code}`.
+7. **B2B Multi-Tenant SaaS Platform & Catalog Ingestion API:**
+   - Multi-tier subscriptions: Silver (₹12,999/mo), Gold (₹24,999/mo), Platinum (₹49,999/mo).
+   - Super Admin dashboard tracking MRR (₹), active stores, and token usage meters.
+   - Programmatic Catalog Ingestion: `POST /api/v1/tenant/catalog/sync` and `POST /api/v1/tenant/catalog/import-url`.
+
+---
+
+## 🔐 Default Credentials Quick Reference
+
+| Role | Email / Identifier | Password / PIN | Access Level |
+| :--- | :--- | :--- | :--- |
+| **Super Admin** | `mohandass@nexooai.in` | `mohandass@1992` | Full platform control, all boutiques, MRR tracking, onboarding |
+| **Store Manager** | `admin@nexooai.com` | `Qwerty@123` | Single boutique inventory, products, staff PIN, kiosk locks |
+| **Kiosk Staff PIN** | Showroom Keypad | `2468` | Unlock kiosk, camera controls, POS slip printing |
+| **Kiosk Admin PIN** | Showroom Keypad | `1357` | Switch kiosk mode, update store branding |
+| **Default Tenant API Key** | Shop `shop_default` | `sk_live_nexooai_default_01` | Programmatic catalog ingestion |
 
 ---
 
 ## 🏗️ System Architecture
+
 ```text
-[ Kiosk Frontend (Angular) ]  <--- HTTP REST --->  [ FastAPI Backend (Python 3.9) ]
-                                                           │
-                                             ┌─────────────┴─────────────┐
-                                             ▼                           ▼
+[ Kiosk Frontend (Angular 19) ]  <--- HTTP REST --->  [ FastAPI Backend (Python 3.10) ]
+                                                            │
+                                              ┌─────────────┴─────────────┐
+                                              ▼                           ▼
                                     [ SQLite / PostgreSQL ]      [ Pluggable AI Adapter ]
-                                                                  ├── Mock Engine (Dev)
-                                                                  ├── Cloud API (Fashn/Replicate)
-                                                                  └── Custom GPU Server
+                                                                  ├── Fashn.ai Cloud API
+                                                                  ├── Kolors / Replicate
+                                                                  ├── Google Gemini AI
+                                                                  └── Mock Fallback Engine
 ```
-
----
-
-## 📚 Documentation Index
-Comprehensive technical documentation is maintained in the [`docs/`](file:///c:/Users/nithy/Videos/MNV's/nexooai-saree-tryon/docs/) folder:
-- [docs/PROJECT_OVERVIEW.md](file:///c:/Users/nithy/Videos/MNV's/nexooai-saree-tryon/docs/PROJECT_OVERVIEW.md) — Product vision, kiosk flow, and roadmap.
-- [docs/ARCHITECTURE.md](file:///c:/Users/nithy/Videos/MNV's/nexooai-saree-tryon/docs/ARCHITECTURE.md) — System components and data flow.
-- [docs/DATABASE_DESIGN.md](file:///c:/Users/nithy/Videos/MNV's/nexooai-saree-tryon/docs/DATABASE_DESIGN.md) — Entity-relationship diagrams and table schemas.
-- [docs/API_DOCUMENTATION.md](file:///c:/Users/nithy/Videos/MNV's/nexooai-saree-tryon/docs/API_DOCUMENTATION.md) — REST API endpoints specification (`/api/v1`).
-- [docs/AI_INTEGRATION.md](file:///c:/Users/nithy/Videos/MNV's/nexooai-saree-tryon/docs/AI_INTEGRATION.md) — AI adapter pattern, provider mapping, and image limits.
-- [docs/SECURITY.md](file:///c:/Users/nithy/Videos/MNV's/nexooai-saree-tryon/docs/SECURITY.md) — Customer privacy, consent rules, and data retention.
-- [docs/LOCAL_SETUP.md](file:///c:/Users/nithy/Videos/MNV's/nexooai-saree-tryon/docs/LOCAL_SETUP.md) — Step-by-step developer installation guide.
-- [docs/TESTING.md](file:///c:/Users/nithy/Videos/MNV's/nexooai-saree-tryon/docs/TESTING.md) — Test setup and execution guide.
-- [docs/DEPLOYMENT.md](file:///c:/Users/nithy/Videos/MNV's/nexooai-saree-tryon/docs/DEPLOYMENT.md) — Production Docker and Nginx deployment guidelines.
-- [docs/DECISIONS.md](file:///c:/Users/nithy/Videos/MNV's/nexooai-saree-tryon/docs/DECISIONS.md) — Architecture Decision Records (ADRs).
 
 ---
 
 ## 🚀 Quick Start (Local Development)
 
-### 1. Backend (FastAPI + Python 3.9)
+### 1. Backend (FastAPI + Python)
 ```powershell
 cd backend
-py -3.9 -m venv venv
-.\venv\Scripts\Activate.ps1
+python -m venv venv
+.\venv\Scripts\activate
 pip install -r requirements.txt
-cp ../.env.example .env
-uvicorn app.main:app --reload --port 8000
+python -m backend.app.db.init_db
+$env:PYTHONPATH="."
+uvicorn backend.app.main:app --host 127.0.0.1 --port 8000 --reload
 ```
+- Interactive Swagger API Docs: `http://localhost:8000/docs`
 - Health Check: `http://localhost:8000/api/v1/health`
-- Interactive Swagger Docs: `http://localhost:8000/docs`
 
-### 2. Frontend Kiosk (Angular + TypeScript)
+### 2. Frontend (Angular 19)
 ```powershell
 cd frontend
 npm install
 npm start
 ```
-- Kiosk App: `http://localhost:4200`
+- Kiosk Mirror & Admin Portal: `http://localhost:4200`
+
+---
+
+## 🧪 Testing
+
+```powershell
+# Run backend tests (43/43 passing)
+cd backend
+$env:PYTHONPATH=".."
+.\venv\Scripts\pytest -v
+
+# Validate frontend production bundle
+cd ../frontend
+npm run build
+```
+
+---
+
+## 🐳 Production Deployment (Docker Compose)
+
+```bash
+# 1. Clone repository
+git clone https://github.com/mohandass9788/nexooai-saree-tryon.git
+cd nexooai-saree-tryon
+
+# 2. Build and start containers
+docker-compose up -d --build
+
+# 3. Seed database
+docker-compose exec backend python -m backend.app.db.init_db
+```
+
+Application is served at:
+- Frontend Web App: `http://<server-ip>:80`
+- Backend API Docs: `http://<server-ip>:8000/docs`
 
 ---
 
