@@ -1425,3 +1425,16 @@
     display: none;
   }
 }
+
+/* ==========================================================================
+   3D FABRIC STUDIO SECTION (Three.js & Theatre.js)
+   ========================================================================== */
+.section-3d-studio {
+  padding: 80px 0;
+  position: relative;
+  background: linear-gradient(180deg, transparent 0%, rgba(212, 175, 55, 0.03) 50%, transparent 100%);
+}
+
+.theme-light .section-3d-studio {
+  background: linear-gradient(180deg, transparent 0%, rgba(184, 134, 11, 0.04) 50%, transparent 100%);
+}

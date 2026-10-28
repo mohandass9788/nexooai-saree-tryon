@@ -2472,42 +2472,181 @@
         <!-- SCREEN 1: WELCOME SCREEN                                            -->
         <!-- ------------------------------------------------------------------- -->
         @if (kioskService.currentStep() === 'WELCOME') {
-          <div class="screen-welcome">
-            <div class="welcome-card glass-panel">
-              <div class="royal-accent-motif">❖ ✦ ❖</div>
-              <h2 class="welcome-headline">{{ t().welcomeTitle }}</h2>
-              <p class="welcome-subtext">{{ t().welcomeSubtitle }}</p>
+          <div class="screen-welcome screen-welcome-master">
+            <!-- Main Content Grid: Left Arch Model + Right Welcome Panel -->
+            <div class="welcome-master-grid">
+              <!-- Left Hero Arch Showcase -->
+              <div class="welcome-arch-showcase">
+                <!-- Floating Left Column Captions -->
+                <div class="arch-side-captions">
+                  <div class="arch-side-group">
+                    <span class="arch-side-gold">Traditional</span>
+                    <span class="arch-side-gold">Sarees</span>
+                  </div>
+                  <div class="arch-side-group">
+                    <h3 class="arch-side-title">Modern</h3>
+                    <h3 class="arch-side-title">Technology</h3>
+                  </div>
+                  <div class="arch-side-group">
+                    <p class="arch-side-sub">A New Shopping<br>Experience</p>
+                  </div>
+                </div>
 
-              <!-- 4 Showroom Feature Highlights -->
-              <div class="workflow-feature-cards">
-                <div class="feature-item">
-                  <div class="feature-icon">👗</div>
-                  <h3>{{ 'featureDrapeTitle' | translate }}</h3>
-                  <p>{{ 'featureDrapeDesc' | translate }}</p>
+                <!-- Arch Frame with Model -->
+                <div class="arch-gold-frame">
+                  <img src="assets/images/welcome_arch_model.jpg" alt="NeXooAI Luxury Silk Sarees" class="arch-model-img" />
+                  <div class="arch-gold-overlay-border"></div>
                 </div>
-                <div class="feature-item">
-                  <div class="feature-icon">✨</div>
-                  <h3>{{ 'featureSilkTitle' | translate }}</h3>
-                  <p>{{ 'featureSilkDesc' | translate }}</p>
-                </div>
-                <div class="feature-item">
-                  <div class="feature-icon">🛡️</div>
-                  <h3>{{ 'featurePrivacyTitle' | translate }}</h3>
-                  <p>{{ 'featurePrivacyDesc' | translate }}</p>
-                </div>
-                <div class="feature-item">
-                  <div class="feature-icon">📲</div>
-                  <h3>{{ 'featureQrTitle' | translate }}</h3>
-                  <p>{{ 'featureQrDesc' | translate }}</p>
+
+                <!-- Delicate Gold Mandala Flourish Radiating From Arch -->
+                <div class="arch-mandala-flourish" aria-hidden="true">
+                  <svg viewBox="0 0 200 200" width="180" height="180" fill="none">
+                    <circle cx="100" cy="100" r="70" stroke="#d4af37" stroke-width="0.75" stroke-dasharray="3 3" opacity="0.45"/>
+                    <circle cx="100" cy="100" r="50" stroke="#d4af37" stroke-width="0.5" opacity="0.35"/>
+                    <path d="M100 20 C105 55 145 95 180 100 C145 105 105 145 100 180 C95 145 55 105 20 100 C55 95 95 55 100 20 Z" stroke="#c59325" stroke-width="0.8" opacity="0.5"/>
+                    <path d="M43 43 C70 70 130 70 157 43 C130 70 130 130 157 157 C130 130 70 130 43 157 C70 130 70 70 43 43 Z" stroke="#c59325" stroke-width="0.5" opacity="0.35"/>
+                  </svg>
                 </div>
               </div>
 
-              <!-- Large Kiosk Touch Start CTA Button -->
-              <button class="btn-gold start-trial-btn" (click)="openConsentModal()" id="btn-start-trial">
-                <span>✨</span>
-                <span>{{ t().startBtn }}</span>
-                <span class="arrow-glyph">➔</span>
-              </button>
+              <!-- Right Main Welcome Content -->
+              <div class="welcome-main-content">
+                <div class="royal-accent-motif">❖ &nbsp; ✦ &nbsp; ❖</div>
+                <span class="welcome-eyebrow-text">WELCOME TO {{ customStoreName() || 'NeXooAI LUXURY SILKS' }}</span>
+                <h1 class="welcome-hero-headline">
+                  Your Saree. Your Style.<br>
+                  <span class="welcome-highlight">Instantly.</span>
+                </h1>
+                <div class="welcome-title-divider">
+                  <span class="divider-line"></span>
+                  <span class="divider-diamond">❖</span>
+                  <span class="divider-line"></span>
+                </div>
+                <p class="welcome-hero-subtext">
+                  Experience realistic virtual draping in seconds—without physically changing garments.
+                </p>
+
+                <!-- 4 Showroom Feature Highlights Cards Grid -->
+                <div class="welcome-features-grid">
+                  <!-- Feature Card 1 -->
+                  <div class="welcome-feat-card">
+                    <div class="feat-card-icon-wrap drape-icon">
+                      <svg viewBox="0 0 36 36" width="32" height="32" fill="none">
+                        <circle cx="18" cy="7" r="3.5" fill="#58081e" />
+                        <path d="M13 13C13 11.5 23 11.5 23 13L24 21C24 22 21 23 18 23C15 23 12 22 12 21L13 13Z" fill="#750c29" />
+                        <path d="M11 21L9 32C13 33 23 33 27 32L25 21C21 22.5 15 22.5 11 21Z" fill="#58081e" />
+                        <path d="M14 13L23 25" stroke="#d4af37" stroke-width="1.6" stroke-linecap="round"/>
+                        <path d="M12 20L21 31" stroke="#e5b94c" stroke-width="1.6" stroke-linecap="round"/>
+                      </svg>
+                    </div>
+                    <h4 class="feat-card-title">Instant<br>Virtual Draping</h4>
+                    <p class="feat-card-desc">See yourself in beautiful sarees within seconds using AI.</p>
+                  </div>
+
+                  <!-- Feature Card 2 -->
+                  <div class="welcome-feat-card">
+                    <div class="feat-card-icon-wrap silk-icon">
+                      <svg viewBox="0 0 36 36" width="32" height="32" fill="none">
+                        <rect x="6" y="9" width="24" height="5.5" rx="2.5" fill="#c59325" />
+                        <rect x="4" y="15.5" width="28" height="6.5" rx="3" fill="#8a0f2b" />
+                        <rect x="6" y="23" width="24" height="6.5" rx="3" fill="#dfb347" />
+                        <line x1="8" y1="12" x2="26" y2="12" stroke="#fff" stroke-width="1.2" stroke-dasharray="2 2" opacity="0.8"/>
+                        <line x1="7" y1="18.5" x2="29" y2="18.5" stroke="#ffd700" stroke-width="1.2" stroke-dasharray="2 2"/>
+                        <line x1="8" y1="26" x2="26" y2="26" stroke="#8a0f2b" stroke-width="1.2" stroke-dasharray="2 2" opacity="0.8"/>
+                      </svg>
+                    </div>
+                    <h4 class="feat-card-title">Authentic<br>Silk & Zari</h4>
+                    <p class="feat-card-desc">Explore real collections like Kanchipuram, Banarasi and more.</p>
+                  </div>
+
+                  <!-- Feature Card 3 -->
+                  <div class="welcome-feat-card">
+                    <div class="feat-card-icon-wrap privacy-icon">
+                      <svg viewBox="0 0 36 36" width="32" height="32" fill="none">
+                        <path d="M18 4L7 9V17C7 24.5 11.5 30 18 32.5C24.5 30 29 24.5 29 17V9L18 4Z" fill="#fcf6eb" stroke="#c59325" stroke-width="1.8"/>
+                        <rect x="13" y="17" width="10" height="7.5" rx="2" fill="#58081e" />
+                        <path d="M15 17V13.5C15 11.8 16.3 10.5 18 10.5C19.7 10.5 21 11.8 21 13.5V17" stroke="#58081e" stroke-width="1.8" stroke-linecap="round"/>
+                        <circle cx="18" cy="20.5" r="1.3" fill="#ffd700"/>
+                      </svg>
+                    </div>
+                    <h4 class="feat-card-title">Privacy<br>First</h4>
+                    <p class="feat-card-desc">Your photos are secure and automatically removed after the session.</p>
+                  </div>
+
+                  <!-- Feature Card 4 -->
+                  <div class="welcome-feat-card">
+                    <div class="feat-card-icon-wrap qr-icon">
+                      <svg viewBox="0 0 36 36" width="32" height="32" fill="none">
+                        <rect x="6" y="6" width="9" height="9" rx="1.5" stroke="#58081e" stroke-width="1.8" fill="none"/>
+                        <rect x="9" y="9" width="3" height="3" fill="#58081e"/>
+                        <rect x="21" y="6" width="9" height="9" rx="1.5" stroke="#58081e" stroke-width="1.8" fill="none"/>
+                        <rect x="24" y="9" width="3" height="3" fill="#58081e"/>
+                        <rect x="6" y="21" width="9" height="9" rx="1.5" stroke="#58081e" stroke-width="1.8" fill="none"/>
+                        <rect x="9" y="24" width="3" height="3" fill="#58081e"/>
+                        <rect x="21" y="21" width="3.5" height="3.5" fill="#c59325"/>
+                        <rect x="26.5" y="26.5" width="3.5" height="3.5" fill="#58081e"/>
+                        <rect x="26.5" y="21" width="3.5" height="3.5" fill="#dfb347"/>
+                        <rect x="21" y="26.5" width="3.5" height="3.5" fill="#dfb347"/>
+                      </svg>
+                    </div>
+                    <h4 class="feat-card-title">Save<br>with QR</h4>
+                    <p class="feat-card-desc">Save, share or send to the sales counter with QR or POS slip.</p>
+                  </div>
+                </div>
+
+                <!-- Grand Golden Start CTA Button -->
+                <div class="welcome-cta-row">
+                  <button class="btn-begin-trial-grand" (click)="openConsentModal()" id="btn-start-trial">
+                    <span class="sparkle-glyph">✨</span>
+                    <span class="btn-label-text">Begin Virtual Trial</span>
+                    <span class="arrow-glyph">➔</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Bottom Floating 4-Step Workflow Pill Strip -->
+            <div class="welcome-bottom-workflow-strip">
+              <div class="workflow-strip-card">
+                <div class="wf-step">
+                  <span class="wf-num-badge">1</span>
+                  <span class="wf-icon">📷</span>
+                  <div class="wf-text">
+                    <strong>Take a Photo</strong>
+                    <small>Use the kiosk camera or upload a photo</small>
+                  </div>
+                </div>
+                <span class="wf-divider-arrow">➔</span>
+
+                <div class="wf-step">
+                  <span class="wf-num-badge">2</span>
+                  <span class="wf-icon">🖼️</span>
+                  <div class="wf-text">
+                    <strong>Choose a Saree</strong>
+                    <small>Browse our collection by style, color or occasion</small>
+                  </div>
+                </div>
+                <span class="wf-divider-arrow">➔</span>
+
+                <div class="wf-step">
+                  <span class="wf-num-badge">3</span>
+                  <span class="wf-icon">🪄</span>
+                  <div class="wf-text">
+                    <strong>AI Try-On</strong>
+                    <small>See yourself in real-time with high accuracy</small>
+                  </div>
+                </div>
+                <span class="wf-divider-arrow">➔</span>
+
+                <div class="wf-step">
+                  <span class="wf-num-badge">4</span>
+                  <span class="wf-icon">💌</span>
+                  <div class="wf-text">
+                    <strong>Save & Share</strong>
+                    <small>Share via QR, save or send to sales counter</small>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
         }
@@ -4581,7 +4720,7 @@
   <!-- ========================================================================= -->
   <!-- DRAGGABLE FLOATING EDGE DOCK (Moves along side edges, snaps left/right)   -->
   <!-- ========================================================================= -->
-  @if (!isAdminMode()) {
+  @if (!isAdminMode() && kioskService.currentStep() !== 'WELCOME') {
     <aside
       class="floating-edge-dock"
       [class.dock-left]="floatingDockSide() === 'left'"
