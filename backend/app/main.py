@@ -84,8 +84,7 @@ app.add_middleware(
 app.include_router(api_router)
 
 
-from fastapi.responses import RedirectResponse
+# Unified production SPA mount at root (after API routes)
+if os.path.exists(frontend_dist):
+    app.mount("/", StaticFiles(directory=frontend_dist, html=True), name="frontend_root")
 
-@app.get("/", include_in_schema=False)
-async def root():
-    return RedirectResponse(url="/kiosk/")

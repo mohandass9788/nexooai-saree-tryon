@@ -1,6 +1,8 @@
 import os
 import uuid
+import time
 import secrets
+import hashlib
 import logging
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
@@ -28,9 +30,13 @@ from backend.app.services.tryon.factory import get_tryon_engine
 from backend.app.services.tryon.gemini_guard import gemini_pose_guard, PoseValidationResult
 from backend.app.services.tokens.token_service import token_service
 from backend.app.services.storage.local_storage import storage_service
+from backend.app.api.deps import require_staff, AuthenticatedUser
 
 logger = logging.getLogger("tryon")
 router = APIRouter()
+
+# In-memory short-lived idempotency cache to prevent double-billing on touch screen double-taps
+_IDEMPOTENCY_CACHE: Dict[str, Dict[str, Any]] = {}
 
 MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB limit
 ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
@@ -117,6 +123,35 @@ async def create_tryon_job(
 
     if not active_shop_id:
         active_shop_id = "shop_default"
+
+    # Enforce Tenant Subscription Status & Monthly Try-On Quota (Phases S3-S5)
+    try:
+        res_sh = await db.execute(select(ShopModel).where(ShopModel.id == active_shop_id))
+        shop_record = res_sh.scalar_one_or_none()
+        if shop_record:
+            # Check account suspension / cancellation
+            pay_stat = (getattr(shop_record, "payment_status", "paid") or "paid").lower()
+            if not shop_record.is_active or pay_stat in ("suspended", "cancelled"):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="This showroom kiosk is temporarily paused due to account status. Please contact showroom management.",
+                )
+
+            # Check monthly quota
+            quota = getattr(shop_record, "monthly_token_quota", 500) or 500
+            used = getattr(shop_record, "tokens_used_this_month", 0) or 0
+            if used >= quota:
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail=f"Showroom monthly try-on quota ({quota}) exhausted. Please upgrade your subscription tier.",
+                )
+            # Atomically increment quota
+            shop_record.tokens_used_this_month = used + 1
+            await db.flush()
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.warning(f"Could not verify tenant subscription quota: {e}")
 
     # Audit customer consent in DB
     try:
@@ -238,6 +273,44 @@ async def create_tryon_job(
                         pass
         target_product_id = saree_meta.id if saree_meta else saree_id
 
+    # 4b. Idempotency check: prevent duplicate billing on touch-screen double-taps
+    idempotency_raw = f"{hashlib.sha256(person_image_bytes[:512]).hexdigest()}_{len(person_image_bytes)}_{target_product_id}_{active_session_id}"
+    idempotency_key = hashlib.sha256(idempotency_raw.encode()).hexdigest()
+
+    # Clean old cache entries (> 300s)
+    now_ts = time.time()
+    for k in list(_IDEMPOTENCY_CACHE.keys()):
+        if now_ts - _IDEMPOTENCY_CACHE[k]["cached_at"] > 300.0:
+            _IDEMPOTENCY_CACHE.pop(k, None)
+
+    cached_entry = _IDEMPOTENCY_CACHE.get(idempotency_key)
+    if cached_entry and (now_ts - cached_entry["cached_at"]) < 60.0:
+        logger.info("Returning cached try-on response for idempotent key %s", idempotency_key[:8])
+        return cached_entry["response"]
+
+    # 4c. Cost Cap Enforcement: Daily budget check
+    cost_cap_enabled = str(get_setting("ai_cost_cap_enabled", "true")).lower() == "true"
+    if cost_cap_enabled:
+        try:
+            daily_cap = float(get_setting("ai_daily_budget_usd", 15.0))
+            today_start = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+            cost_stmt = select(func.sum(TryOnJobModel.estimated_cost_usd)).where(
+                TryOnJobModel.created_at >= today_start,
+                TryOnJobModel.shop_id == active_shop_id,
+            )
+            cost_res = await db.execute(cost_stmt)
+            today_cost = cost_res.scalar() or 0.0
+            if today_cost >= daily_cap:
+                logger.warning("Daily AI budget cap of $%.2f reached for shop %s (spent $%.2f)", daily_cap, active_shop_id, today_cost)
+                raise HTTPException(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    detail="Daily virtual try-on allocation has been reached. Please consult showroom sales staff for direct trial (இன்றைய மெய்நிகர் ட்ரையல் ஒதுக்கீடு நிறைவுற்றது).",
+                )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.warning(f"Cost cap check error: {e}")
+
     # 5. Dispatch to Pluggable AI Adapter
     engine = get_tryon_engine()
     engine_result = await engine.process_tryon(
@@ -276,9 +349,20 @@ async def create_tryon_job(
         except Exception:
             pass
 
+        # Actionable, bilingual friendly retake guidance based on error code
+        err_code = engine_result.error_code or "PROVIDER_ERROR"
+        if err_code == "PROVIDER_TIMEOUT":
+            friendly_detail = "AI server took longer than expected to render the saree. Please tap 'Retry' (வலையமைப்பு தாமதத்தால் முயற்சி முடிவடையவில்லை. தயவுசெய்து 'மீண்டும் முயற்சி' பொத்தானை அழுத்தவும்)."
+        elif err_code == "PROVIDER_RATE_LIMIT":
+            friendly_detail = "Showroom try-on traffic is currently high. Please wait a few seconds and tap 'Retry' (தற்போது பயன்பாடு அதிகமாக உள்ளது. சில நொடிகள் காத்திருந்து மீண்டும் முயற்சிக்கவும்)."
+        elif err_code == "INVALID_IMAGE_PAYLOAD":
+            friendly_detail = "Photo framing or lighting was not suitable for virtual draping. Please stand upright facing the camera with good lighting and tap 'Retry' (புகைப்படம் தெளிவாக அமையவில்லை. தயவுசெய்து நல்ல வெளிச்சத்தில் நேராக நின்று மீண்டும் முயற்சிக்கவும்)."
+        else:
+            friendly_detail = f"{engine_result.error_message or 'Try-on processing failed'}. Please stand upright facing the camera and tap 'Retry'."
+
         raise HTTPException(
             status_code=status.HTTP_502_BAD_GATEWAY,
-            detail=engine_result.error_message or "Try-on engine processing failed.",
+            detail=friendly_detail,
         )
 
     job_id = engine_result.provider_job_id
@@ -373,10 +457,11 @@ async def create_tryon_job(
         logger.warning(f"Could not persist tryon job into database: {e}")
         await db.rollback()
 
-    result_url = f"http://127.0.0.1:8000/api/v1/tryon/jobs/{job_id}/result"
-    qr_url = f"http://127.0.0.1:8000/api/v1/tryon/download/{token_meta.raw_token}"
+    public_base_url = settings.PUBLIC_BASE_URL.rstrip("/")
+    result_url = f"{public_base_url}/api/v1/tryon/jobs/{job_id}/result"
+    qr_url = f"{public_base_url}/api/v1/tryon/download/{token_meta.raw_token}"
 
-    return TryOnJobResponse(
+    res_payload = TryOnJobResponse(
         job_id=job_id,
         status=engine_result.status,
         provider=engine_result.provider_name,
@@ -386,10 +471,15 @@ async def create_tryon_job(
         processing_time_ms=engine_result.processing_time_ms,
         estimated_cost_usd=engine_result.estimated_cost_usd,
     )
+    _IDEMPOTENCY_CACHE[idempotency_key] = {
+        "response": res_payload,
+        "cached_at": time.time(),
+    }
+    return res_payload
 
 
 @router.get("/jobs/{job_id}/customer-photo", summary="Retrieve Customer Original Photo")
-async def get_customer_photo(job_id: str):
+async def get_customer_photo(job_id: str, current_user: AuthenticatedUser = Depends(require_staff)):
     media_bytes = await storage_service.get_media(f"person_{job_id}")
     if not media_bytes:
         raise HTTPException(
@@ -1004,7 +1094,5 @@ async def cast_poll_vote(poll_code: str, req: CastPollVoteRequest, db: AsyncSess
         "message": f"Thank you {new_vote.voter_name}! Your vote has been recorded.",
         "candidate_voted": candidates[req.candidate_index].get("saree_name", f"Option #{req.candidate_index + 1}"),
     }
-
-
 
 

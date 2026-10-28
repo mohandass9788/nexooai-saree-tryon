@@ -32,11 +32,12 @@ services:
       - APP_ENV=production
       - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-nexooai_admin}:${POSTGRES_PASSWORD:-nexooai_secure_2026}@db:5432/${POSTGRES_DB:-nexooai_saree}
       - SECRET_KEY=${SECRET_KEY:-nexooai_super_secret_jwt_key_2026_change_in_prod}
-      - FASHN_API_KEY=${FASHN_API_KEY:-}
+      - FAL_KEY=${FAL_KEY:-}
       - OPENAI_API_KEY=${OPENAI_API_KEY:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - ACTIVE_AI_PROVIDER=${ACTIVE_AI_PROVIDER:-mock}
-      - FRONTEND_ORIGINS=http://localhost,http://localhost:80,http://localhost:4200
+      - AI_TRYON_PROVIDER=${AI_TRYON_PROVIDER:-mock}
+      - CORS_ORIGINS=${CORS_ORIGINS:-http://localhost,http://localhost:80,http://localhost:4200}
+      - PUBLIC_BASE_URL=${PUBLIC_BASE_URL:-http://localhost}
     volumes:
       - ./media:/app/media
     ports:

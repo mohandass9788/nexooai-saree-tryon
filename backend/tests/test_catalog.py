@@ -29,13 +29,14 @@ async def test_get_catalog_filtered():
 
 
 @pytest.mark.asyncio
-async def test_get_saree_detail():
+async def test_get_saree_detail(manager_headers):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         list_resp = await client.get("/api/v1/catalog")
         data = list_resp.json()
         if data["total"] == 0:
+            import uuid
             cr = await client.post("/api/v1/admin/products", json={
-                "sku": "KAN-SILK-001",
+                "sku": f"KAN-TEST-{uuid.uuid4().hex[:6]}",
                 "name_en": "Kanchipuram Silk Saree",
                 "name_ta": "காஞ்சிபுரம் பட்டு புடவை",
                 "category": "Silk Sarees",
@@ -43,7 +44,8 @@ async def test_get_saree_detail():
                 "color": "Crimson Red",
                 "price": 12500.0,
                 "primary_image_url": "https://example.com/saree.jpg",
-            })
+                "is_active": True,
+            }, headers=manager_headers)
             item_id = cr.json()["id"]
         else:
             item_id = data["items"][0]["id"]

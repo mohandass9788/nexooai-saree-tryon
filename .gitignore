@@ -263,6 +263,10 @@ backend/.venv/
 *.sqlite
 *.sqlite3
 backend/*.sqlite3
+backend/test.db
+backend/test.db-shm
+backend/test.db-wal
+backend/test-media/
 
 # ==============================================================================
 # IDEs & Operating System

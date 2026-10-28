@@ -328,13 +328,17 @@ export class TranslationService {
   readonly supportedLanguages = SUPPORTED_LANGUAGES;
 
   private getInitialLanguage(): Language {
-    if (typeof localStorage !== 'undefined') {
-      const saved = localStorage.getItem('nexooai_language') as Language;
-      if (saved && ['en', 'ta', 'hi', 'ml', 'te'].includes(saved)) {
-        return saved;
+    try {
+      if (typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'function') {
+        const saved = localStorage.getItem('nexooai_language') as Language;
+        if (saved && ['en', 'ta', 'hi', 'ml', 'te'].includes(saved)) {
+          return saved;
+        }
       }
+    } catch {
+      // Storage unavailable
     }
-    return 'en'; // Default to English
+    return 'ta'; // Default to Tamil for showroom kiosk
   }
 
   readonly currentLanguage = signal<Language>(this.getInitialLanguage());
@@ -393,12 +397,10 @@ export class TranslationService {
   }
 
   /**
-   * Cycle to next language
+   * Toggle language between Tamil and English (primary kiosk bilingual switch)
    */
   toggleLanguage(): void {
-    const order: Language[] = ['en', 'ta', 'hi', 'ml', 'te'];
-    const currentIdx = order.indexOf(this.currentLanguage());
-    const nextIdx = (currentIdx + 1) % order.length;
-    this.setLanguage(order[nextIdx]);
+    const next = this.currentLanguage() === 'ta' ? 'en' : 'ta';
+    this.setLanguage(next);
   }
 }

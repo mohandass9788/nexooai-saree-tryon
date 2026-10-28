@@ -390,7 +390,8 @@ export class ApiService {
   }
 
   logoutAdmin(token?: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/auth/logout?token=${token || ''}`, {});
+    const headers = token ? { Authorization: `Bearer ${token}` } : undefined;
+    return this.http.post(`${this.baseUrl}/auth/logout`, {}, { headers });
   }
 
   // --- Today's Customers & Photos (100% DB-driven) ---

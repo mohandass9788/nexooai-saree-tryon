@@ -21,12 +21,25 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in v.split(",") if origin.strip()]
         return v
 
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def normalise_debug_value(cls, v: Union[str, bool, int]) -> Union[str, bool, int]:
+        """Accept common deployment labels while preserving strict boolean parsing otherwise."""
+        if isinstance(v, str):
+            normalised = v.strip().lower()
+            if normalised in {"release", "production", "prod"}:
+                return False
+            if normalised in {"development", "dev", "debug"}:
+                return True
+        return v
+
     # Database
     DATABASE_URL: str = "sqlite+aiosqlite:///./nexooai_dev.sqlite3"
 
     # Storage
     STORAGE_PROVIDER: str = "local"
     STORAGE_LOCAL_DIR: str = "./media"
+    PUBLIC_BASE_URL: str = "http://127.0.0.1:8000"
 
     # AI Try-On Provider
     AI_TRYON_PROVIDER: str = "huggingface"  # "huggingface" | "gemini" | "fal-fashn" | "fal-kolors" | "fashn" | "replicate" | "mock"

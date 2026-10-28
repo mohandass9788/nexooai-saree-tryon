@@ -30,6 +30,7 @@ class ShopModel(Base):
 
     branches = relationship("BranchModel", back_populates="shop")
     categories = relationship("CategoryModel", back_populates="shop")
+    products = relationship("ProductModel", back_populates="shop")
     tryon_jobs = relationship("TryOnJobModel", back_populates="shop")
     admin_users = relationship("AdminUserModel", back_populates="shop")
     counter_tokens = relationship("CounterTokenModel", back_populates="shop")
@@ -85,6 +86,7 @@ class ProductModel(Base):
     __tablename__ = "products"
 
     id = Column(String(64), primary_key=True, index=True)
+    shop_id = Column(String(64), ForeignKey("shops.id"), nullable=True, index=True)
     category_id = Column(String(64), ForeignKey("categories.id"), nullable=True)
     sku = Column(String(64), unique=True, index=True, nullable=False)
     name_en = Column(String(255), nullable=False)
@@ -101,6 +103,7 @@ class ProductModel(Base):
     is_active = Column(Boolean, default=True, index=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+    shop = relationship("ShopModel", back_populates="products")
     category_rel = relationship("CategoryModel", back_populates="products")
     images = relationship("ProductImageModel", back_populates="product")
     tryon_jobs = relationship("TryOnJobModel", back_populates="product")
@@ -269,4 +272,82 @@ class FamilyPollVoteModel(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
 
     poll = relationship("FamilyPollModel", back_populates="votes")
+
+
+class SubscriptionModel(Base):
+    __tablename__ = "subscriptions"
+
+    id = Column(String(64), primary_key=True, index=True)
+    shop_id = Column(String(64), ForeignKey("shops.id"), nullable=False, index=True)
+    plan_tier = Column(String(50), default="silver", nullable=False)  # "silver", "gold", "platinum"
+    account_status = Column(String(50), default="trial", nullable=False, index=True)  # trial, active, payment_due, grace, suspended, cancelled
+    monthly_price_inr = Column(Float, default=9999.0, nullable=False)
+    monthly_tryon_limit = Column(Integer, default=500, nullable=False)
+    max_kiosks = Column(Integer, default=1, nullable=False)
+    max_users = Column(Integer, default=3, nullable=False)
+    max_products = Column(Integer, default=500, nullable=False)
+    current_period_start = Column(DateTime, default=datetime.utcnow, nullable=False)
+    current_period_end = Column(DateTime, nullable=True)
+    grace_period_end = Column(DateTime, nullable=True)
+    billing_email = Column(String(255), nullable=True)
+    gstin = Column(String(32), nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    shop = relationship("ShopModel")
+
+
+class InvoiceModel(Base):
+    __tablename__ = "invoices"
+
+    id = Column(String(64), primary_key=True, index=True)
+    shop_id = Column(String(64), ForeignKey("shops.id"), nullable=False, index=True)
+    subscription_id = Column(String(64), ForeignKey("subscriptions.id"), nullable=True)
+    invoice_number = Column(String(64), unique=True, index=True, nullable=False)  # e.g. "INV-NX-2026-001"
+    amount_inr = Column(Float, nullable=False)
+    gst_amount_inr = Column(Float, default=0.0)
+    status = Column(String(32), default="unpaid", index=True)  # "paid", "unpaid", "void", "refunded"
+    due_date = Column(DateTime, nullable=False)
+    paid_at = Column(DateTime, nullable=True)
+    payment_reference = Column(String(128), nullable=True)  # UTR / Gateway transaction ID
+    payment_method = Column(String(50), nullable=True)  # "bank_transfer", "upi", "card"
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    shop = relationship("ShopModel")
+    subscription = relationship("SubscriptionModel")
+
+
+class UserInvitationModel(Base):
+    __tablename__ = "user_invitations"
+
+    id = Column(String(64), primary_key=True, index=True)
+    shop_id = Column(String(64), ForeignKey("shops.id"), nullable=False, index=True)
+    email = Column(String(255), index=True, nullable=False)
+    role = Column(String(50), default="store_manager", nullable=False)  # "tenant_owner", "store_manager", "staff"
+    invited_by_user_id = Column(String(64), nullable=True)
+    invite_token = Column(String(128), unique=True, index=True, nullable=False)
+    status = Column(String(32), default="pending", index=True)  # "pending", "accepted", "expired", "revoked"
+    expires_at = Column(DateTime, nullable=False)
+    accepted_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    shop = relationship("ShopModel")
+
+
+class KioskDeviceSessionModel(Base):
+    __tablename__ = "kiosk_device_sessions"
+
+    id = Column(String(64), primary_key=True, index=True)
+    kiosk_id = Column(String(64), ForeignKey("kiosks.id"), nullable=False, index=True)
+    shop_id = Column(String(64), ForeignKey("shops.id"), nullable=False, index=True)
+    device_token = Column(String(128), unique=True, index=True, nullable=False)
+    is_active = Column(Boolean, default=True, index=True)
+    ip_address = Column(String(64), nullable=True)
+    last_heartbeat_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    kiosk = relationship("KioskModel")
+    shop = relationship("ShopModel")
+
 

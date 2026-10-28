@@ -5,10 +5,17 @@
 The backend uses `pytest` with `httpx` (for FastAPI `AsyncClient` / `TestClient`).
 
 ### Running Backend Tests
-From the `backend/` directory:
+From the `backend/` directory, run against the isolated test database:
 ```powershell
-pytest -v
+$env:APP_ENV="testing"
+$env:DATABASE_URL="sqlite+aiosqlite:///./test.db"
+$env:STORAGE_LOCAL_DIR="./test-media"
+$env:AI_TRYON_PROVIDER="mock"
+$env:PYTHONPATH=".."
+.\venv\Scripts\python.exe -m pytest -v
 ```
+
+The suite rejects non-test databases and removes its test database/media artifacts after it finishes.
 
 ### Test Coverage Areas
 1. **Health & Telemetry**: Validates `GET /api/v1/health` status and system info.

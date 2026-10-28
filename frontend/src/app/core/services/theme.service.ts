@@ -7,13 +7,17 @@ export type AppTheme = 'dark' | 'light';
 })
 export class ThemeService {
   private getInitialTheme(): AppTheme {
-    if (typeof localStorage !== 'undefined') {
-      const saved = localStorage.getItem('nexooai_theme');
-      if (saved === 'light' || saved === 'dark') {
-        return saved;
+    try {
+      if (typeof localStorage !== 'undefined' && typeof localStorage.getItem === 'function') {
+        const saved = localStorage.getItem('nexooai_theme');
+        if (saved === 'light' || saved === 'dark') {
+          return saved;
+        }
       }
+    } catch {
+      // Storage unavailable
     }
-    return 'dark'; // Keep existing royal obsidian dark theme as default
+    return 'light'; // Royal champagne ivory light theme as default
   }
 
   readonly currentTheme = signal<AppTheme>(this.getInitialTheme());

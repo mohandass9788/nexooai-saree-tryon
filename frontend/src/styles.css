@@ -3,8 +3,10 @@
    ============================================================================== */
 
 :root {
-  --font-heading: 'Cinzel', 'Noto Sans Tamil', serif;
-  --font-body: 'Outfit', 'Noto Sans Tamil', sans-serif;
+  --font-heading: 'Cinzel', 'Playfair Display', 'Noto Serif Tamil', serif;
+  --font-serif: 'Cormorant Garamond', 'Playfair Display', 'Noto Serif Tamil', Georgia, serif;
+  --font-luxury-brand: 'Cinzel', 'Cormorant Garamond', serif;
+  --font-body: 'Outfit', 'Noto Sans Tamil', -apple-system, BlinkMacSystemFont, sans-serif;
 
   /* Luxury Color Palette */
   --color-bg-primary: #0e0711;
@@ -46,11 +48,13 @@
 
 html, body {
   width: 100%;
-  height: 100%;
-  overflow: hidden;
+  min-height: 100%;
   font-family: var(--font-body);
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   background-image: 
     radial-gradient(circle at 15% 15%, rgba(133, 15, 41, 0.18) 0%, transparent 40%),
     radial-gradient(circle at 85% 85%, rgba(212, 175, 55, 0.12) 0%, transparent 45%),

@@ -45,10 +45,11 @@ jobs:
       - name: Run Backend Unit Tests
         env:
           APP_ENV: testing
-          ACTIVE_AI_PROVIDER: mock
-          DATABASE_URL: sqlite+aiosqlite:///./test.db
+          AI_TRYON_PROVIDER: mock
+          DATABASE_URL: sqlite+aiosqlite:///./backend/test.db
+          STORAGE_LOCAL_DIR: ./backend/test-media
         run: |
-          PYTHONPATH=. pytest -v
+          PYTHONPATH=. pytest -c backend/pytest.ini backend/tests -v
 
       - name: Set up Node.js 20
         uses: actions/setup-node@v4
@@ -64,6 +65,10 @@ jobs:
       - name: Build Frontend Angular Bundle
         working-directory: frontend
         run: npm run build -- --configuration production
+
+      - name: Run Frontend Unit Tests
+        working-directory: frontend
+        run: npm run test -- --watch=false
 
   # =========================================================================
   # 2. DOCKER BUILD & PUSH TO GITHUB CONTAINER REGISTRY (GHCR)

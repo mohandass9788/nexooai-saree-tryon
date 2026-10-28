@@ -48,15 +48,29 @@ class CatalogImportUrlRequest(BaseModel):
 
 async def get_shop_by_api_key(
     x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+    authorization: Optional[str] = Header(None, alias="Authorization"),
     api_key: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
 ) -> ShopModel:
-    """Authenticates the boutique client using their private tenant API key."""
-    key = x_api_key or api_key
+    """Authenticates the boutique client using their private tenant API key via secure headers."""
+    from backend.app.core.config import settings
+
+    key = x_api_key
+    if not key and authorization and authorization.lower().startswith("bearer "):
+        key = authorization[7:].strip()
+
+    if not key and api_key:
+        if settings.APP_ENV == "production":
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Passing API keys in URL query parameters is prohibited in production. Use the 'X-API-Key' HTTP header.",
+            )
+        key = api_key
+
     if not key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing Tenant API Key. Provide via 'X-API-Key' header or '?api_key=' parameter.",
+            detail="Missing Tenant API Key. Provide via 'X-API-Key' header.",
         )
 
     res = await db.execute(select(ShopModel).where(ShopModel.api_key == key.strip()))

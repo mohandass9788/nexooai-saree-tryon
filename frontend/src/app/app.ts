@@ -29,6 +29,9 @@ import {
   CounterTokenItem,
 } from './core/services/api.service';
 import { QrCodeComponent } from './shared/components/qr-code.component';
+import { ToastContainerComponent } from './shared/components/toast-container.component';
+import { ConfirmDialogComponent } from './shared/components/confirm-dialog.component';
+import { NotificationService } from './core/services/notification.service';
 import { TranslatePipe } from './core/pipes/translate.pipe';
 import { Language, SUPPORTED_LANGUAGES } from './core/services/translation.service';
 import heic2any from 'heic2any';
@@ -36,7 +39,7 @@ import heic2any from 'heic2any';
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, QrCodeComponent, TranslatePipe],
+  imports: [CommonModule, QrCodeComponent, TranslatePipe, ToastContainerComponent, ConfirmDialogComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
@@ -44,6 +47,7 @@ export class App implements OnInit, OnDestroy {
   readonly translationService = inject(TranslationService);
   readonly kioskService = inject(KioskService);
   readonly themeService = inject(ThemeService);
+  readonly notificationService = inject(NotificationService);
   private readonly apiService = inject(ApiService);
   private readonly sanitizer = inject(DomSanitizer);
 
@@ -189,6 +193,8 @@ export class App implements OnInit, OnDestroy {
     return list.filter((item) => item.category.toLowerCase().includes(cat.toLowerCase()));
   });
 
+  readonly Math = Math;
+
   // Admin Dashboard state
   readonly isAdminMode = signal<boolean>(false);
   readonly adminTab = signal<'METRICS' | 'CUSTOMERS' | 'CATALOG' | 'JOBS' | 'SETTINGS' | 'USERS' | 'SHOWROOM' | 'TOKENS' | 'INSIGHTS' | 'SAAS_CUSTOMERS'>('METRICS');
@@ -217,6 +223,8 @@ export class App implements OnInit, OnDestroy {
   readonly onboardError = signal<string | null>(null);
   readonly onboardSuccess = signal<string | null>(null);
   readonly isOnboardingSubmitting = signal<boolean>(false);
+  // Mobile Navigation Drawer
+  readonly showMobileDrawer = signal<boolean>(false);
 
   // Catalog Feed & Direct Ingestion state
   readonly catalogSyncApiKey = signal<string>('');
@@ -291,8 +299,38 @@ export class App implements OnInit, OnDestroy {
   readonly isGeneratingCouple = signal<boolean>(false);
   readonly coupleImageUrl = signal<string | null>(null);
 
-  // User & Staff Access Control (RBAC)
+  // Result Screen Hero Mirror & Drawer State
+  readonly showStylingDrawer = signal<boolean>(false);
+  readonly showShareDrawer = signal<boolean>(false);
+
+  toggleStylingDrawer(): void {
+    this.showStylingDrawer.update(v => !v);
+    if (this.showStylingDrawer()) {
+      this.showShareDrawer.set(false);
+    }
+  }
+
+  closeStylingDrawer(): void {
+    this.showStylingDrawer.set(false);
+  }
+
+  toggleShareDrawer(): void {
+    this.showShareDrawer.update(v => !v);
+    if (this.showShareDrawer()) {
+      this.showStylingDrawer.set(false);
+    }
+  }
+
+  closeShareDrawer(): void {
+    this.showShareDrawer.set(false);
+  }
+
   readonly currentAdminUser = signal<{ id: string; email: string; name: string; role: string } | null>(null);
+  readonly isSuperAdmin = computed(() => {
+    const user = this.currentAdminUser();
+    if (!user) return false;
+    return user.role === 'super_admin' || user.email === 'mohandass@nexooai.in';
+  });
   readonly adminUsers = signal<AdminUserItem[]>([]);
   readonly adminLoginMode = signal<'password' | 'pin'>('password');
   readonly adminEmailInput = signal<string>('mohandass@nexooai.in');
@@ -531,6 +569,15 @@ export class App implements OnInit, OnDestroy {
     this.kioskService.lockKiosk();
     this.staffPinInput.set('');
     this.staffPinError.set(null);
+  }
+
+  // --- Mobile Drawer Navigation Methods ---
+  toggleMobileDrawer(): void {
+    this.showMobileDrawer.update(v => !v);
+  }
+
+  closeMobileDrawer(): void {
+    this.showMobileDrawer.set(false);
   }
 
   // --- Ergonomic Reachability Mode Methods ---
@@ -996,7 +1043,8 @@ export class App implements OnInit, OnDestroy {
     }
 
     try {
-      const converted = await heic2any({
+      const heic2anyFn = (heic2any as unknown as { default: unknown }).default || heic2any;
+      const converted = await (heic2anyFn as unknown as (options: unknown) => Promise<Blob | Blob[]>)({
         blob: file,
         toType: 'image/jpeg',
         quality: 0.95,
@@ -1446,7 +1494,7 @@ export class App implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.isCreatingPoll.set(false);
-          alert(err.error?.detail || 'Family Poll உருவாக்க முடியவில்லை.');
+          this.notificationService.showError(err.error?.detail || 'Family Poll உருவாக்க முடியவில்லை.');
         },
       });
   }
@@ -1502,7 +1550,7 @@ export class App implements OnInit, OnDestroy {
         },
         error: (err) => {
           this.isSubmittingVote.set(false);
-          alert(err.error?.detail || 'வாக்கு பதிவு செய்ய முடியவில்லை.');
+          this.notificationService.showError(err.error?.detail || 'வாக்கு பதிவு செய்ய முடியவில்லை.');
         },
       });
   }
@@ -1720,10 +1768,13 @@ export class App implements OnInit, OnDestroy {
   }
 
   setAdminTab(tab: 'METRICS' | 'CUSTOMERS' | 'CATALOG' | 'JOBS' | 'SETTINGS' | 'USERS' | 'SHOWROOM' | 'TOKENS' | 'INSIGHTS' | 'SAAS_CUSTOMERS'): void {
+    if ((tab === 'SETTINGS' || tab === 'SAAS_CUSTOMERS') && !this.isSuperAdmin()) {
+      tab = 'METRICS';
+    }
     this.adminTab.set(tab);
     if (tab === 'CUSTOMERS') {
       this.loadAdminCustomers();
-    } else if (tab === 'SETTINGS') {
+    } else if (tab === 'SETTINGS' && this.isSuperAdmin()) {
       this.loadSystemSettings();
     } else if (tab === 'USERS') {
       this.loadAdminUsers();
@@ -1733,7 +1784,7 @@ export class App implements OnInit, OnDestroy {
       this.loadCounterTokens();
     } else if (tab === 'INSIGHTS') {
       this.loadShowroomInsights();
-    } else if (tab === 'SAAS_CUSTOMERS') {
+    } else if (tab === 'SAAS_CUSTOMERS' && this.isSuperAdmin()) {
       this.loadSaaSCustomers();
     }
   }
@@ -1743,12 +1794,14 @@ export class App implements OnInit, OnDestroy {
     this.apiService.getAdminProducts().subscribe((p) => this.adminProducts.set(p));
     this.apiService.getAdminJobs().subscribe((j) => this.adminJobs.set(j));
     this.loadAdminCustomers();
-    this.loadSystemSettings();
+    if (this.isSuperAdmin()) {
+      this.loadSystemSettings();
+      this.loadSaaSCustomers();
+    }
     this.loadAdminUsers();
     this.loadShowroomSettings();
     this.loadCounterTokens();
     this.loadShowroomInsights();
-    this.loadSaaSCustomers();
   }
 
 
@@ -1847,7 +1900,7 @@ export class App implements OnInit, OnDestroy {
   updateTokenStatus(token: CounterTokenItem, newStatus: string): void {
     this.apiService.updateCounterTokenStatus(token.id, newStatus).subscribe({
       next: () => this.loadCounterTokens(),
-      error: (err) => alert(err.error?.detail || 'நிலை மாற்றுவதில் பிழை.'),
+      error: (err) => this.notificationService.showError(err.error?.detail || 'நிலை மாற்றுவதில் பிழை.'),
     });
   }
 
@@ -1995,7 +2048,7 @@ export class App implements OnInit, OnDestroy {
 
   toggleUserActive(user: AdminUserItem): void {
     if (user.email.toLowerCase() === 'mohandass@nexooai.in') {
-      alert('Master Super Admin கணக்கை முடக்க முடியாது (Master Super Admin cannot be deactivated).');
+      this.notificationService.showWarning('Master Super Admin கணக்கை முடக்க முடியாது (Master Super Admin cannot be deactivated).');
       return;
     }
 
@@ -2006,24 +2059,32 @@ export class App implements OnInit, OnDestroy {
         this.settingsFeedbackMsg.set(`பயனர் நிலை மாற்றப்பட்டது: ${user.email}`);
         setTimeout(() => this.settingsFeedbackMsg.set(null), 3000);
       },
-      error: (err) => alert(err.error?.detail || 'நிலை மாற்ற முடியவில்லை.'),
+      error: (err) => this.notificationService.showError(err.error?.detail || 'நிலை மாற்ற முடியவில்லை.'),
     });
   }
 
-  deleteUser(user: AdminUserItem): void {
+  async deleteUser(user: AdminUserItem): Promise<void> {
     if (user.email.toLowerCase() === 'mohandass@nexooai.in') {
-      alert('Master Super Admin கணக்கை நீக்க முடியாது (Master Super Admin cannot be deleted).');
+      this.notificationService.showWarning('Master Super Admin கணக்கை நீக்க முடியாது (Master Super Admin cannot be deleted).');
       return;
     }
 
-    if (confirm(`நிச்சயமாக பயனர் '${user.name}' (${user.email}) கணக்கை நீக்க வேண்டுமா?`)) {
+    const confirmed = await this.notificationService.confirm({
+      title: 'பயனரை நீக்கு (Delete User)',
+      message: `நிச்சயமாக பயனர் '${user.name}' (${user.email}) கணக்கை நீக்க வேண்டுமா?`,
+      confirmText: 'நீக்கு (Delete)',
+      cancelText: 'ரத்து (Cancel)',
+      isDestructive: true,
+    });
+
+    if (confirmed) {
       this.apiService.deleteAdminUser(user.id).subscribe({
         next: () => {
           this.loadAdminUsers();
           this.settingsFeedbackMsg.set(`பயனர் கணக்கு நீக்கப்பட்டது: ${user.email}`);
           setTimeout(() => this.settingsFeedbackMsg.set(null), 3000);
         },
-        error: (err) => alert(err.error?.detail || 'பயனரை நீக்க முடியவில்லை.'),
+        error: (err) => this.notificationService.showError(err.error?.detail || 'பயனரை நீக்க முடியவில்லை.'),
       });
     }
   }
@@ -2044,8 +2105,16 @@ export class App implements OnInit, OnDestroy {
     this.selectedCustomerPreview.set(null);
   }
 
-  deleteCustomerRecord(jobId: string): void {
-    if (confirm('Are you sure you want to delete this customer record and photos permanently?')) {
+  async deleteCustomerRecord(jobId: string): Promise<void> {
+    const confirmed = await this.notificationService.confirm({
+      title: 'Delete Customer Record',
+      message: 'Are you sure you want to delete this customer record and photos permanently?',
+      confirmText: 'Delete Permanently',
+      cancelText: 'Cancel',
+      isDestructive: true,
+    });
+
+    if (confirmed) {
       this.apiService.deleteCustomerRecord(jobId).subscribe(() => {
         if (this.selectedCustomerPreview()?.job_id === jobId) {
           this.closeCustomerPreview();
@@ -2203,7 +2272,7 @@ export class App implements OnInit, OnDestroy {
         },
         error: () => {
           this.isUploadingProductImg.set(false);
-          alert('Failed to upload image. Please try again.');
+          this.notificationService.showError('Failed to upload image. Please try again.');
         },
       });
     }
@@ -2216,7 +2285,7 @@ export class App implements OnInit, OnDestroy {
     const img = this.newProdImageUrl() || '/static/benchmark_model.jpg';
 
     if (!sku || !nameEn) {
-      alert('Please provide SKU and Product Title.');
+      this.notificationService.showWarning('Please provide SKU and Product Title.');
       return;
     }
 
@@ -2239,27 +2308,46 @@ export class App implements OnInit, OnDestroy {
         this.closeAddProductModal();
         this.loadAdminData();
         this.loadCatalog();
+        this.notificationService.showSuccess('Product saved to catalog successfully.');
       },
       error: (err) => {
-        alert(err.error?.detail || 'Failed to create product.');
+        this.notificationService.showError(err.error?.detail || 'Failed to create product.');
       },
     });
   }
 
-  deleteProduct(sareeId: string): void {
-    if (confirm('Delete this product from catalog?')) {
+  async deleteProduct(sareeId: string): Promise<void> {
+    const confirmed = await this.notificationService.confirm({
+      title: 'Delete Product',
+      message: 'Delete this product from catalog?',
+      confirmText: 'Delete',
+      cancelText: 'Cancel',
+      isDestructive: true,
+    });
+
+    if (confirmed) {
       this.apiService.deleteProduct(sareeId).subscribe(() => {
         this.loadAdminData();
         this.loadCatalog();
+        this.notificationService.showSuccess('Product deleted from catalog.');
       });
     }
   }
 
-  clearSampleCatalog(): void {
-    if (confirm('Are you sure you want to remove all dummy/sample products? You will be able to add your real store products!')) {
+  async clearSampleCatalog(): Promise<void> {
+    const confirmed = await this.notificationService.confirm({
+      title: 'Clear Sample Products',
+      message: 'Are you sure you want to remove all dummy/sample products? You will be able to add your real store products!',
+      confirmText: 'Clear All Samples',
+      cancelText: 'Cancel',
+      isDestructive: true,
+    });
+
+    if (confirmed) {
       this.apiService.clearCatalog().subscribe(() => {
         this.loadAdminData();
         this.loadCatalog();
+        this.notificationService.showSuccess('Sample products cleared.');
       });
     }
   }
@@ -2427,8 +2515,23 @@ export class App implements OnInit, OnDestroy {
   copyApiKey(apiKey: string): void {
     if (navigator.clipboard) {
       navigator.clipboard.writeText(apiKey);
-      alert('API Key நகலெடுக்கப்பட்டது (Copied to clipboard)!');
+      this.notificationService.showSuccess('API Key நகலெடுக்கப்பட்டது (Copied to clipboard)!');
     }
+  }
+
+  quickTopupTokens(shopId: string, additionalTokens: number = 500): void {
+    const cust = this.saasCustomers().find((c) => c.id === shopId);
+    if (!cust) return;
+    const newQuota = (cust.monthly_token_quota || 0) + additionalTokens;
+    this.apiService.updateCustomer(shopId, { monthly_token_quota: newQuota }).subscribe({
+      next: () => {
+        this.loadSaaSCustomers();
+        this.notificationService.showSuccess('Tokens topped up successfully.');
+      },
+      error: (err) => {
+        this.notificationService.showError('Failed to top up tokens: ' + (err.error?.detail || err.message));
+      },
+    });
   }
 
   submitSyncCatalogUrl(): void {

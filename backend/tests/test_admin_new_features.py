@@ -4,10 +4,10 @@ from backend.app.main import app
 
 
 @pytest.mark.asyncio
-async def test_get_todays_customers():
+async def test_get_todays_customers(staff_headers):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        response = await client.get("/api/v1/admin/customers/today")
+        response = await client.get("/api/v1/admin/customers/today", headers=staff_headers)
         assert response.status_code == 200
         data = response.json()
         assert "total_customers_today" in data
@@ -16,11 +16,11 @@ async def test_get_todays_customers():
 
 
 @pytest.mark.asyncio
-async def test_get_and_update_settings():
+async def test_get_and_update_settings(super_admin_headers):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
         # Get settings
-        response = await client.get("/api/v1/admin/settings")
+        response = await client.get("/api/v1/admin/settings", headers=super_admin_headers)
         assert response.status_code == 200
         data = response.json()
         assert "active_ai_provider" in data
@@ -35,7 +35,7 @@ async def test_get_and_update_settings():
             "idle_attract_timeout_seconds": 12,
             "idle_attract_enabled": True,
         }
-        post_resp = await client.post("/api/v1/admin/settings", json=update_payload)
+        post_resp = await client.post("/api/v1/admin/settings", json=update_payload, headers=super_admin_headers)
         assert post_resp.status_code == 200
         updated = post_resp.json()
         assert updated["active_ai_provider"] == "mock"
@@ -48,23 +48,23 @@ async def test_get_and_update_settings():
 
 
 @pytest.mark.asyncio
-async def test_test_provider_endpoint():
+async def test_test_provider_endpoint(super_admin_headers):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        resp = await client.post("/api/v1/admin/settings/test-provider", json={"provider": "mock"})
+        resp = await client.post("/api/v1/admin/settings/test-provider", json={"provider": "mock"}, headers=super_admin_headers)
         assert resp.status_code == 200
         assert resp.json()["success"] is True
 
-        resp_fashn = await client.post("/api/v1/admin/settings/test-provider", json={"provider": "fashn", "api_key": "fa-demo12345"})
+        resp_fashn = await client.post("/api/v1/admin/settings/test-provider", json={"provider": "fashn", "api_key": "fa-demo12345"}, headers=super_admin_headers)
         assert resp_fashn.status_code == 200
         assert resp_fashn.json()["success"] is True
 
 
 @pytest.mark.asyncio
-async def test_purge_expired_endpoint():
+async def test_purge_expired_endpoint(super_admin_headers):
     transport = ASGITransport(app=app)
     async with AsyncClient(transport=transport, base_url="http://test") as client:
-        resp = await client.post("/api/v1/admin/customers/purge-expired")
+        resp = await client.post("/api/v1/admin/customers/purge-expired", headers=super_admin_headers)
         assert resp.status_code == 200
         assert "purged_media_files" in resp.json()
 
@@ -102,4 +102,3 @@ async def test_change_admin_pin_flow():
             json={"current_pin": "654321", "new_pin": "849201"},
         )
         assert reset_resp.status_code == 200
-

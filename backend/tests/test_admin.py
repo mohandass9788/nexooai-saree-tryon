@@ -4,9 +4,9 @@ from backend.app.main import app
 
 
 @pytest.mark.asyncio
-async def test_get_admin_metrics():
+async def test_get_admin_metrics(manager_headers):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        response = await client.get("/api/v1/admin/metrics")
+        response = await client.get("/api/v1/admin/metrics", headers=manager_headers)
         assert response.status_code == 200
         data = response.json()
         assert "total_tryons_today" in data
@@ -17,12 +17,12 @@ async def test_get_admin_metrics():
 
 
 @pytest.mark.asyncio
-async def test_admin_list_and_create_product():
+async def test_admin_list_and_create_product(manager_headers):
     import uuid
     test_sku = f"ADM-TEST-{uuid.uuid4().hex[:6].upper()}"
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # 1. List products
-        list_resp = await client.get("/api/v1/admin/products")
+        list_resp = await client.get("/api/v1/admin/products", headers=manager_headers)
         assert list_resp.status_code == 200
         initial_count = len(list_resp.json())
 
@@ -38,21 +38,21 @@ async def test_admin_list_and_create_product():
             "primary_image_url": "https://example.com/saree.jpg",
             "pallu_type": "Zari Weave",
         }
-        create_resp = await client.post("/api/v1/admin/products", json=new_saree)
+        create_resp = await client.post("/api/v1/admin/products", json=new_saree, headers=manager_headers)
         assert create_resp.status_code == 201
         created = create_resp.json()
         assert created["sku"] == test_sku
 
         # 3. Duplicate SKU should be rejected
-        dup_resp = await client.post("/api/v1/admin/products", json=new_saree)
+        dup_resp = await client.post("/api/v1/admin/products", json=new_saree, headers=manager_headers)
         assert dup_resp.status_code == 409
 
 
 
 @pytest.mark.asyncio
-async def test_admin_toggle_product_status():
+async def test_admin_toggle_product_status(manager_headers):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-        prods = await client.get("/api/v1/admin/products")
+        prods = await client.get("/api/v1/admin/products", headers=manager_headers)
         items = prods.json()
         if not items:
             cr = await client.post("/api/v1/admin/products", json={
@@ -64,7 +64,7 @@ async def test_admin_toggle_product_status():
                 "color": "Red",
                 "price": 5000.0,
                 "primary_image_url": "https://example.com/saree.jpg",
-            })
+            }, headers=manager_headers)
             prod_id = cr.json()["id"]
         else:
             prod_id = items[0]["id"]
@@ -72,6 +72,7 @@ async def test_admin_toggle_product_status():
         response = await client.put(
             f"/api/v1/admin/products/{prod_id}/status",
             params={"is_active": False},
+            headers=manager_headers,
         )
         assert response.status_code == 200
         assert response.json()["is_active"] is False
@@ -80,6 +81,7 @@ async def test_admin_toggle_product_status():
         reset_resp = await client.put(
             f"/api/v1/admin/products/{prod_id}/status",
             params={"is_active": True},
+            headers=manager_headers,
         )
         assert reset_resp.status_code == 200
 
@@ -87,16 +89,16 @@ async def test_admin_toggle_product_status():
 
 
 @pytest.mark.asyncio
-async def test_admin_jobs_and_safe_retry():
+async def test_admin_jobs_and_safe_retry(manager_headers):
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # List jobs
-        jobs_resp = await client.get("/api/v1/admin/jobs")
+        jobs_resp = await client.get("/api/v1/admin/jobs", headers=manager_headers)
         assert jobs_resp.status_code == 200
         jobs = jobs_resp.json()
         assert len(jobs) >= 1
 
         # Retry failed job (job_4b99ef21)
-        retry_resp = await client.post("/api/v1/admin/jobs/job_4b99ef21/retry")
+        retry_resp = await client.post("/api/v1/admin/jobs/job_4b99ef21/retry", headers=manager_headers)
         assert retry_resp.status_code == 200
         retried = retry_resp.json()
         assert retried["status"] == "completed"

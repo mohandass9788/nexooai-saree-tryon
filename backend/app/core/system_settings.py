@@ -66,6 +66,9 @@ _CACHE: Dict[str, Any] = {
     "pos_webhook_auth_header": "",
     "pos_system_type": "generic",  # 'generic', 'tally', 'sap', 'zoho'
     "pos_auto_sync_tokens": "true",
+    # AI Cost Cap & Idempotency Safeguards
+    "ai_daily_budget_usd": 15.0,
+    "ai_cost_cap_enabled": "true",
 }
 
 

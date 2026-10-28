@@ -1,8 +1,52 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
+
+vi.mock('heic2any', () => ({
+  default: vi.fn().mockImplementation(async (options: any) => options.blob),
+}));
+
 import { of, throwError } from 'rxjs';
 import { TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
+
+// Mock localStorage for test environment (Node/JSDOM)
+const createStorageMock = () => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: (key: string) => store[key] ?? null,
+    setItem: (key: string, value: string) => {
+      store[key] = String(value);
+    },
+    removeItem: (key: string) => {
+      delete store[key];
+    },
+    clear: () => {
+      store = {};
+    },
+    get length() {
+      return Object.keys(store).length;
+    },
+    key: (i: number) => Object.keys(store)[i] ?? null,
+  };
+};
+
+if (typeof globalThis.localStorage === 'undefined' || typeof globalThis.localStorage.getItem !== 'function') {
+  Object.defineProperty(globalThis, 'localStorage', {
+    value: createStorageMock(),
+    writable: true,
+    configurable: true,
+  });
+}
+
+if (typeof (globalThis as any).Worker === 'undefined') {
+  (globalThis as any).Worker = class DummyWorker {
+    postMessage() {}
+    terminate() {}
+    addEventListener() {}
+    removeEventListener() {}
+  };
+}
+
 import { App } from './app';
 import { TranslationService } from './core/services/translation.service';
 import { KioskService } from './core/services/kiosk.service';
@@ -231,6 +275,7 @@ describe('NeXooAi Saree Kiosk App', () => {
       estimated_cost_usd: 0.0,
     });
 
+    app.setResultViewMode('compare');
     fixture.detectChanges();
 
     expect(app.resultViewMode()).toBe('compare');
@@ -253,7 +298,7 @@ describe('NeXooAi Saree Kiosk App', () => {
     const app = fixture.componentInstance;
 
     kioskService.setStep('RESULT');
-    expect(app.resultViewMode()).toBe('compare');
+    expect(app.resultViewMode()).toBe('slider');
 
     app.setResultViewMode('result');
     expect(app.resultViewMode()).toBe('result');
@@ -317,6 +362,7 @@ describe('NeXooAi Saree Kiosk App', () => {
       estimated_cost_usd: 0.0,
     });
 
+    app.showShareDrawer.set(true);
     fixture.detectChanges();
 
     const compiled = fixture.nativeElement as HTMLElement;
@@ -367,7 +413,7 @@ describe('NeXooAi Saree Kiosk App', () => {
     expect(kioskService.currentStep()).toBe('COMBINE');
   });
 
-  it('should reject invalid MIME types during custom product upload', () => {
+  it('should reject invalid MIME types during custom product upload', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
 
@@ -379,13 +425,13 @@ describe('NeXooAi Saree Kiosk App', () => {
       },
     } as unknown as Event;
 
-    app.onProductFileUpload(event);
+    await app.onProductFileUpload(event);
 
     expect(app.productValidationError()).toBeTruthy();
     expect(kioskService.customGarmentBlob()).toBeNull();
   });
 
-  it('should reject oversized files (>10MB) during custom product upload', () => {
+  it('should reject oversized files (>10MB) during custom product upload', async () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
 
@@ -400,7 +446,7 @@ describe('NeXooAi Saree Kiosk App', () => {
       },
     } as unknown as Event;
 
-    app.onProductFileUpload(event);
+    await app.onProductFileUpload(event);
 
     expect(app.productValidationError()).toBeTruthy();
     expect(kioskService.customGarmentBlob()).toBeNull();
@@ -526,6 +572,12 @@ describe('NeXooAi Saree Kiosk App', () => {
   it('should switch to SETTINGS tab and save AI provider', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
+    app.currentAdminUser.set({
+      id: 'usr_super',
+      email: 'mohandass@nexooai.in',
+      name: 'Super Admin',
+      role: 'super_admin',
+    });
 
     const mockSettings = {
       active_ai_provider: 'mock',

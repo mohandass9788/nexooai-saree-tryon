@@ -1,5 +1,6 @@
 import os
 import uuid
+import secrets
 import logging
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional, Dict, Any
@@ -26,6 +27,13 @@ from backend.app.db.models import (
 from backend.app.core.security import hash_password
 from backend.app.schemas.catalog import SareeItem
 from backend.app.api.v1.endpoints.catalog import SAMPLE_SAREES
+from backend.app.api.deps import (
+    AuthenticatedUser,
+    require_super_admin,
+    require_manager,
+    require_staff,
+    enforce_tenant_scope,
+)
 
 logger = logging.getLogger("admin")
 router = APIRouter()
@@ -197,14 +205,26 @@ SAMPLE_JOBS: List[JobMonitoringItem] = [
 
 
 @router.get("/metrics", response_model=DashboardMetrics, summary="Get Store Telemetry Metrics")
-async def get_metrics(db: AsyncSession = Depends(get_db)):
+async def get_metrics(
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_manager),
+    shop_id: Optional[str] = Query(None),
+):
+    eff_shop = enforce_tenant_scope(current_user, shop_id)
     active_count = len(SAMPLE_SAREES)
     active_kiosks = 1
 
     try:
-        # Query active products count from DB
+        # Query active products count from DB scoped to tenant
+        prod_filter = [ProductModel.is_active == True]
+        if eff_shop:
+            prod_filter.append(
+                or_(ProductModel.shop_id == eff_shop, ProductModel.shop_id.is_(None))
+                if eff_shop == "shop_default"
+                else ProductModel.shop_id == eff_shop
+            )
         prod_count_res = await db.execute(
-            select(func.count(ProductModel.id)).where(ProductModel.is_active == True)
+            select(func.count(ProductModel.id)).where(*prod_filter)
         )
         db_prod_count = prod_count_res.scalar()
         if db_prod_count is not None and db_prod_count > 0:
@@ -218,8 +238,15 @@ async def get_metrics(db: AsyncSession = Depends(get_db)):
         if db_kiosk_count is not None and db_kiosk_count > 0:
             active_kiosks = db_kiosk_count
 
-        # Query real jobs from DB
-        jobs_res = await db.execute(select(TryOnJobModel))
+        # Query real jobs from DB scoped to tenant
+        jobs_stmt = select(TryOnJobModel)
+        if eff_shop:
+            jobs_stmt = jobs_stmt.where(
+                or_(TryOnJobModel.shop_id == eff_shop, TryOnJobModel.shop_id.is_(None))
+                if eff_shop == "shop_default"
+                else TryOnJobModel.shop_id == eff_shop
+            )
+        jobs_res = await db.execute(jobs_stmt)
         db_jobs = jobs_res.scalars().all()
 
         if db_jobs:
@@ -244,31 +271,34 @@ async def get_metrics(db: AsyncSession = Depends(get_db)):
     except Exception as e:
         logger.warning(f"Error calculating database metrics: {e}")
 
-    # Fallback to SAMPLE_JOBS
-    total_jobs = len(SAMPLE_JOBS)
-    completed_jobs = sum(1 for j in SAMPLE_JOBS if j.status == "completed")
-    success_rate = (completed_jobs / total_jobs * 100) if total_jobs > 0 else 100.0
-    total_cost = sum(j.estimated_cost_usd for j in SAMPLE_JOBS)
-    avg_latency = (
-        int(sum(j.processing_time_ms for j in SAMPLE_JOBS) / total_jobs)
-        if total_jobs > 0
-        else 0
-    )
-
+    # Return authentic zero data when no jobs have been recorded today (no fabricated sample data)
     return DashboardMetrics(
-        total_tryons_today=total_jobs,
-        success_rate_percent=round(success_rate, 1),
+        total_tryons_today=0,
+        success_rate_percent=100.0,
         active_catalog_count=active_count,
         active_kiosks=active_kiosks,
-        estimated_cost_usd_today=round(total_cost, 3),
-        average_latency_ms=avg_latency,
+        estimated_cost_usd_today=0.0,
+        average_latency_ms=0,
     )
 
 
 @router.get("/products", response_model=List[SareeItem], summary="Admin Product List")
-async def list_products(db: AsyncSession = Depends(get_db)):
+async def list_products(
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_staff),
+    shop_id: Optional[str] = Query(None),
+):
+    eff_shop = enforce_tenant_scope(current_user, shop_id)
     try:
-        res = await db.execute(select(ProductModel).order_by(ProductModel.created_at.desc()))
+        stmt = select(ProductModel)
+        if eff_shop:
+            stmt = stmt.where(
+                or_(ProductModel.shop_id == eff_shop, ProductModel.shop_id.is_(None))
+                if eff_shop == "shop_default"
+                else ProductModel.shop_id == eff_shop
+            )
+        stmt = stmt.order_by(ProductModel.created_at.desc())
+        res = await db.execute(stmt)
         db_products = res.scalars().all()
         return [
             SareeItem(
@@ -295,7 +325,11 @@ async def list_products(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/products", response_model=SareeItem, status_code=status.HTTP_201_CREATED, summary="Create New Saree")
-async def create_product(req: CreateSareeRequest, db: AsyncSession = Depends(get_db)):
+async def create_product(
+    req: CreateSareeRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_manager),
+):
     # 1. Verify SKU uniqueness in DB
     try:
         check = await db.execute(select(ProductModel).where(func.lower(ProductModel.sku) == req.sku.lower()))
@@ -317,12 +351,14 @@ async def create_product(req: CreateSareeRequest, db: AsyncSession = Depends(get
                 detail=f"Saree with SKU '{req.sku}' already exists in catalogue.",
             )
 
+    eff_shop = enforce_tenant_scope(current_user)
     new_id = f"saree_{uuid.uuid4().hex[:8]}"
 
     # Save to Database
     try:
         db_prod = ProductModel(
             id=new_id,
+            shop_id=eff_shop,
             sku=req.sku,
             name_en=req.name_en,
             name_ta=req.name_ta,
@@ -373,7 +409,13 @@ async def create_product(req: CreateSareeRequest, db: AsyncSession = Depends(get
 
 
 @router.put("/products/{saree_id}/status", response_model=SareeItem, summary="Toggle Saree Active Status")
-async def toggle_product_status(saree_id: str, is_active: bool = Query(...), db: AsyncSession = Depends(get_db)):
+async def toggle_product_status(
+    saree_id: str,
+    is_active: bool = Query(...),
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_manager),
+):
+    eff_shop = enforce_tenant_scope(current_user)
     found_item = None
 
     try:
@@ -387,6 +429,11 @@ async def toggle_product_status(saree_id: str, is_active: bool = Query(...), db:
         )
         db_p = res.scalar_one_or_none()
         if db_p:
+            if current_user.role != "super_admin" and db_p.shop_id and db_p.shop_id != eff_shop:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Cross-tenant modification forbidden. You cannot change products belonging to another shop.",
+                )
             db_p.is_active = is_active
             await db.commit()
             found_item = SareeItem(
@@ -404,6 +451,8 @@ async def toggle_product_status(saree_id: str, is_active: bool = Query(...), db:
                 pallu_type=db_p.pallu_type,
                 is_active=db_p.is_active,
             )
+    except HTTPException:
+        raise
     except Exception as e:
         logger.warning(f"Error updating product status in DB: {e}")
 
@@ -420,9 +469,23 @@ async def toggle_product_status(saree_id: str, is_active: bool = Query(...), db:
 
 
 @router.get("/jobs", response_model=List[JobMonitoringItem], summary="List Try-On Jobs Telemetry")
-async def list_jobs(db: AsyncSession = Depends(get_db)):
+async def list_jobs(
+    limit: int = 50,
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_manager),
+    shop_id: Optional[str] = Query(None),
+):
+    eff_shop = enforce_tenant_scope(current_user, shop_id)
     try:
-        res = await db.execute(select(TryOnJobModel).order_by(TryOnJobModel.created_at.desc()).limit(50))
+        stmt = select(TryOnJobModel)
+        if eff_shop:
+            stmt = stmt.where(
+                or_(TryOnJobModel.shop_id == eff_shop, TryOnJobModel.shop_id.is_(None))
+                if eff_shop == "shop_default"
+                else TryOnJobModel.shop_id == eff_shop
+            )
+        stmt = stmt.order_by(TryOnJobModel.created_at.desc()).limit(limit)
+        res = await db.execute(stmt)
         db_jobs = res.scalars().all()
         if db_jobs:
             items = []
@@ -448,11 +511,21 @@ async def list_jobs(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/jobs/{job_id}/retry", response_model=JobMonitoringItem, summary="Safe Retry for Failed Job")
-async def retry_failed_job(job_id: str, db: AsyncSession = Depends(get_db)):
+async def retry_failed_job(
+    job_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_manager),
+):
+    eff_shop = enforce_tenant_scope(current_user)
     try:
         res = await db.execute(select(TryOnJobModel).where(TryOnJobModel.id == job_id))
         db_job = res.scalar_one_or_none()
         if db_job:
+            if current_user.role != "super_admin" and db_job.shop_id and db_job.shop_id != eff_shop:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Cross-tenant retry forbidden. Job does not belong to your shop.",
+                )
             if db_job.status != "failed":
                 raise HTTPException(
                     status_code=400,
@@ -532,9 +605,21 @@ SAMPLE_CUSTOMERS: List[CustomerHistoryItem] = [
 
 
 @router.get("/customers/today", response_model=CustomerTodayResponse, summary="Get Today's Customer Try-On History")
-async def get_todays_customers(db: AsyncSession = Depends(get_db)):
+async def get_todays_customers(
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_staff),
+    shop_id: Optional[str] = Query(None),
+):
+    eff_shop = enforce_tenant_scope(current_user, shop_id)
     try:
-        stmt = select(TryOnJobModel).order_by(TryOnJobModel.created_at.desc()).limit(100)
+        stmt = select(TryOnJobModel)
+        if eff_shop:
+            stmt = stmt.where(
+                or_(TryOnJobModel.shop_id == eff_shop, TryOnJobModel.shop_id.is_(None))
+                if eff_shop == "shop_default"
+                else TryOnJobModel.shop_id == eff_shop
+            )
+        stmt = stmt.order_by(TryOnJobModel.created_at.desc()).limit(100)
         res = await db.execute(stmt)
         jobs = res.scalars().all()
         if jobs:
@@ -591,12 +676,26 @@ async def get_todays_customers(db: AsyncSession = Depends(get_db)):
 
 
 @router.delete("/customers/{job_id}", summary="Delete Customer Record and Photos")
-async def delete_customer_record(job_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_customer_record(
+    job_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_manager),
+):
+    eff_shop = enforce_tenant_scope(current_user)
     try:
+        res = await db.execute(select(TryOnJobModel).where(TryOnJobModel.id == job_id))
+        job_to_del = res.scalar_one_or_none()
+        if job_to_del and current_user.role != "super_admin" and job_to_del.shop_id and job_to_del.shop_id != eff_shop:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cross-tenant deletion forbidden. Record does not belong to your shop.",
+            )
         await storage_service.delete_media(f"person_{job_id}")
         await storage_service.delete_media(job_id)
         await db.execute(delete(TryOnJobModel).where(TryOnJobModel.id == job_id))
         await db.commit()
+    except HTTPException:
+        raise
     except Exception as e:
         logger.warning(f"Error deleting customer job {job_id}: {e}")
         await db.rollback()
@@ -607,7 +706,10 @@ async def delete_customer_record(job_id: str, db: AsyncSession = Depends(get_db)
 
 
 @router.post("/customers/purge-expired", summary="Purge All Expired Photos Immediately")
-async def purge_expired_photos(db: AsyncSession = Depends(get_db)):
+async def purge_expired_photos(
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_super_admin),
+):
     purged_storage = await storage_service.purge_expired()
     purged_db = 0
     try:
@@ -635,7 +737,10 @@ async def purge_expired_photos(db: AsyncSession = Depends(get_db)):
 # =========================================================================
 
 @router.get("/settings", response_model=SystemSettingsDTO, summary="Get AI & System Settings")
-async def get_system_settings():
+async def get_system_settings(
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_super_admin),
+):
     provider = str(get_setting("ai_provider", settings.AI_TRYON_PROVIDER or "mock"))
     fashn_key = str(get_setting("fashn_api_key", getattr(settings, "FAL_KEY", "") or getattr(settings, "AI_TRYON_API_KEY", "")))
     gemini_key = str(get_setting("gemini_api_key", getattr(settings, "GEMINI_API_KEY", "")))
@@ -731,7 +836,11 @@ async def get_system_settings():
 
 
 @router.post("/settings", response_model=SystemSettingsDTO, summary="Update AI & System Settings")
-async def update_system_settings(req: UpdateSettingsRequest, db: AsyncSession = Depends(get_db)):
+async def update_system_settings(
+    req: UpdateSettingsRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_super_admin),
+):
     if req.active_ai_provider is not None:
         await set_setting("ai_provider", req.active_ai_provider, db)
     if req.fashn_api_key is not None and req.fashn_api_key.strip():
@@ -814,7 +923,10 @@ async def get_public_kiosk_features():
 
 
 @router.post("/settings/test-provider", summary="Test AI Provider Connection")
-async def test_ai_provider(req: TestProviderRequest):
+async def test_ai_provider(
+    req: TestProviderRequest,
+    current_user: AuthenticatedUser = Depends(require_super_admin),
+):
     prov = req.provider.lower().strip()
     key = req.api_key or get_setting(f"{prov}_api_key") or ""
 
@@ -847,7 +959,10 @@ async def test_ai_provider(req: TestProviderRequest):
 # =========================================================================
 
 @router.post("/products/upload-image", summary="Upload Product Photo")
-async def upload_product_image(image: UploadFile = File(...)):
+async def upload_product_image(
+    image: UploadFile = File(...),
+    current_user: AuthenticatedUser = Depends(require_manager),
+):
     filename = f"prod_{uuid.uuid4().hex[:8]}_{image.filename}"
     target_dir = os.path.join("backend", "app", "static", "sarees")
     os.makedirs(target_dir, exist_ok=True)
@@ -859,11 +974,25 @@ async def upload_product_image(image: UploadFile = File(...)):
 
 
 @router.delete("/products/{saree_id}", summary="Delete Product from Catalogue")
-async def delete_product(saree_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_product(
+    saree_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_manager),
+):
+    eff_shop = enforce_tenant_scope(current_user)
     try:
+        res = await db.execute(select(ProductModel).where(or_(ProductModel.id == saree_id, ProductModel.sku == saree_id)))
+        db_p = res.scalar_one_or_none()
+        if db_p and current_user.role != "super_admin" and db_p.shop_id and db_p.shop_id != eff_shop:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Cross-tenant deletion forbidden. You cannot delete products belonging to another shop.",
+            )
         await db.execute(delete(ProductImageModel).where(ProductImageModel.product_id == saree_id))
         await db.execute(delete(ProductModel).where(or_(ProductModel.id == saree_id, ProductModel.sku == saree_id)))
         await db.commit()
+    except HTTPException:
+        raise
     except Exception as e:
         logger.warning(f"Database error deleting product: {e}")
         await db.rollback()
@@ -878,7 +1007,10 @@ async def delete_product(saree_id: str, db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/catalog/clear", summary="Clear Dummy/Sample Catalogue Products & Categories")
-async def clear_catalog(db: AsyncSession = Depends(get_db)):
+async def clear_catalog(
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_manager),
+):
     try:
         await db.execute(delete(DownloadTokenModel))
         await db.execute(delete(TryOnJobModel))
@@ -924,11 +1056,23 @@ class UpdateUserRequest(BaseModel):
 
 
 @router.get("/users", response_model=List[AdminUserDTO], summary="List All Staff & Admin Users")
-async def list_admin_users(db: AsyncSession = Depends(get_db)):
+async def list_admin_users(
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_manager),
+    shop_id: Optional[str] = Query(None),
+):
     """
-    Retrieve all staff and manager accounts for role and access management.
+    Retrieve staff and manager accounts scoped to active tenant.
     """
-    stmt = select(AdminUserModel).order_by(AdminUserModel.created_at.asc())
+    eff_shop = enforce_tenant_scope(current_user, shop_id)
+    stmt = select(AdminUserModel)
+    if eff_shop:
+        stmt = stmt.where(
+            or_(AdminUserModel.shop_id == eff_shop, AdminUserModel.shop_id.is_(None))
+            if eff_shop == "shop_default"
+            else AdminUserModel.shop_id == eff_shop
+        )
+    stmt = stmt.order_by(AdminUserModel.created_at.asc())
     res = await db.execute(stmt)
     users = res.scalars().all()
 
@@ -946,7 +1090,11 @@ async def list_admin_users(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/users", response_model=AdminUserDTO, summary="Create New Staff / Admin Account")
-async def create_admin_user(req: CreateUserRequest, db: AsyncSession = Depends(get_db)):
+async def create_admin_user(
+    req: CreateUserRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_manager),
+):
     """
     Add a new staff member or store manager with specific role permissions.
     """
@@ -958,13 +1106,21 @@ async def create_admin_user(req: CreateUserRequest, db: AsyncSession = Depends(g
             detail=f"User with email '{email_clean}' already exists.",
         )
 
+    eff_shop = enforce_tenant_scope(current_user)
     valid_roles = ["super_admin", "store_manager", "store_staff"]
     role = req.role.strip().lower()
     if role not in valid_roles:
         role = "store_staff"
 
+    if current_user.role != "super_admin" and role == "super_admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Store managers cannot provision super_admin accounts.",
+        )
+
     new_user = AdminUserModel(
         id=f"user_{uuid.uuid4().hex[:8]}",
+        shop_id=eff_shop,
         email=email_clean,
         name=req.name.strip(),
         hashed_password=hash_password(req.password),
@@ -988,7 +1144,12 @@ async def create_admin_user(req: CreateUserRequest, db: AsyncSession = Depends(g
 
 
 @router.put("/users/{user_id}", response_model=AdminUserDTO, summary="Update Staff / Admin User Details")
-async def update_admin_user(user_id: str, req: UpdateUserRequest, db: AsyncSession = Depends(get_db)):
+async def update_admin_user(
+    user_id: str,
+    req: UpdateUserRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_manager),
+):
     """
     Edit account name, email, role, or toggle active status.
     Guards prevent disabling or removing the Master Super Admin.
@@ -997,6 +1158,10 @@ async def update_admin_user(user_id: str, req: UpdateUserRequest, db: AsyncSessi
     user = res.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+
+    eff_shop = enforce_tenant_scope(current_user)
+    if current_user.role != "super_admin" and user.shop_id and user.shop_id != eff_shop:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cross-tenant user update forbidden.")
 
     is_master = user.email.lower() == "mohandass@nexooai.in"
 
@@ -1043,7 +1208,11 @@ async def update_admin_user(user_id: str, req: UpdateUserRequest, db: AsyncSessi
 
 
 @router.delete("/users/{user_id}", summary="Delete or Deactivate Staff Account")
-async def delete_admin_user(user_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_admin_user(
+    user_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_manager),
+):
     """
     Remove or deactivate a staff user account.
     """
@@ -1051,6 +1220,10 @@ async def delete_admin_user(user_id: str, db: AsyncSession = Depends(get_db)):
     user = res.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found.")
+
+    eff_shop = enforce_tenant_scope(current_user)
+    if current_user.role != "super_admin" and user.shop_id and user.shop_id != eff_shop:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cross-tenant user deletion forbidden.")
 
     if user.email.lower() == "mohandass@nexooai.in":
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Master Super Admin account cannot be deleted.")
@@ -1144,7 +1317,9 @@ class UpdateCounterTokenStatusRequest(BaseModel):
 
 
 @router.get("/showroom/settings", response_model=ShowroomProfileSettingsDTO, summary="Get Boutique Branding & Dynamic WhatsApp Gateway Settings")
-async def get_showroom_settings():
+async def get_showroom_settings(
+    current_user: AuthenticatedUser = Depends(require_manager),
+):
     """Returns dynamic showroom configuration. Tokens are masked for security."""
     raw_wa_token = str(get_setting("whatsapp_access_token", "")).strip()
 
@@ -1172,7 +1347,11 @@ async def get_showroom_settings():
 
 
 @router.put("/showroom/settings", summary="Update Boutique Branding & WhatsApp Gateway Credentials")
-async def update_showroom_settings(req: UpdateShowroomSettingsRequest, db: AsyncSession = Depends(get_db)):
+async def update_showroom_settings(
+    req: UpdateShowroomSettingsRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_manager),
+):
     """Persists dynamic boutique and WhatsApp settings to database with ZERO hardcoding."""
     field_mapping = {
         "custom_store_name": req.custom_store_name,
@@ -1218,7 +1397,10 @@ async def update_showroom_settings(req: UpdateShowroomSettingsRequest, db: Async
 
 
 @router.post("/whatsapp/test", summary="Test Live WhatsApp Gateway Connectivity")
-async def test_whatsapp_connection(req: TestWhatsAppRequest):
+async def test_whatsapp_connection(
+    req: TestWhatsAppRequest,
+    current_user: AuthenticatedUser = Depends(require_manager),
+):
     """Sends a live test message to verify WhatsApp Cloud API credentials."""
     from backend.app.services.notifications.whatsapp_service import whatsapp_service
     res = await whatsapp_service.send_test_message(req.test_phone)
@@ -1232,7 +1414,10 @@ class TestPOSWebhookRequest(BaseModel):
 
 
 @router.post("/pos/test-sync", summary="Test POS / ERP Webhook Connectivity")
-async def test_pos_sync(req: TestPOSWebhookRequest):
+async def test_pos_sync(
+    req: TestPOSWebhookRequest,
+    current_user: AuthenticatedUser = Depends(require_manager),
+):
     """Sends a ping handshake to verify showroom POS/ERP endpoint connectivity."""
     from backend.app.services.pos.pos_service import pos_service
     res = await pos_service.test_pos_connectivity(req.test_url)
@@ -1242,7 +1427,10 @@ async def test_pos_sync(req: TestPOSWebhookRequest):
 
 
 @router.get("/family-polls", summary="List All Showroom Family Polls")
-async def list_family_polls(db: AsyncSession = Depends(get_db)):
+async def list_family_polls(
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_staff),
+):
     """Returns active showroom family and friends polls with current tally."""
     from backend.app.db.models import FamilyPollModel, FamilyPollVoteModel
     import json
@@ -1269,13 +1457,25 @@ async def list_family_polls(db: AsyncSession = Depends(get_db)):
 
 
 @router.get("/counter-tokens", response_model=List[CounterTokenItemDTO], summary="Floor Sales Desk Live Tokens Queue")
-async def get_counter_tokens(db: AsyncSession = Depends(get_db)):
+async def get_counter_tokens(
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_staff),
+    shop_id: Optional[str] = Query(None),
+):
     """Returns active floor requests where customers tapped 'Buy This Saree' on Kiosk."""
     from backend.app.db.models import CounterTokenModel, ProductModel
 
+    eff_shop = enforce_tenant_scope(current_user, shop_id)
     stmt = select(CounterTokenModel, ProductModel).join(
         ProductModel, ProductModel.id == CounterTokenModel.product_id, isouter=True
-    ).order_by(CounterTokenModel.created_at.desc()).limit(100)
+    )
+    if eff_shop:
+        stmt = stmt.where(
+            or_(CounterTokenModel.shop_id == eff_shop, CounterTokenModel.shop_id.is_(None))
+            if eff_shop == "shop_default"
+            else CounterTokenModel.shop_id == eff_shop
+        )
+    stmt = stmt.order_by(CounterTokenModel.created_at.desc()).limit(100)
 
     res = await db.execute(stmt)
     records = res.all()
@@ -1306,7 +1506,12 @@ async def get_counter_tokens(db: AsyncSession = Depends(get_db)):
 
 
 @router.patch("/counter-tokens/{token_id}", summary="Update Floor Token Status")
-async def update_counter_token_status(token_id: str, req: UpdateCounterTokenStatusRequest, db: AsyncSession = Depends(get_db)):
+async def update_counter_token_status(
+    token_id: str,
+    req: UpdateCounterTokenStatusRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_staff),
+):
     """Updates floor staff attending status ('attending', 'completed', 'cancelled')."""
     from backend.app.db.models import CounterTokenModel
 
@@ -1315,6 +1520,10 @@ async def update_counter_token_status(token_id: str, req: UpdateCounterTokenStat
     token = res.scalar_one_or_none()
     if not token:
         raise HTTPException(status_code=404, detail="Counter token not found.")
+
+    eff_shop = enforce_tenant_scope(current_user)
+    if current_user.role != "super_admin" and token.shop_id and token.shop_id != eff_shop:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Cross-tenant token update forbidden.")
 
     token.status = req.status
     if req.notes:
@@ -1329,7 +1538,10 @@ async def update_counter_token_status(token_id: str, req: UpdateCounterTokenStat
 # =========================================================================
 
 @router.get("/analytics/showroom-insights", summary="Showroom Sales & Rack Heatmap Analytics")
-async def get_showroom_insights(db: AsyncSession = Depends(get_db)):
+async def get_showroom_insights(
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_manager),
+):
     """
     Computes floor sales analytics:
     - Rack Location Heatmap (most visited racks)
@@ -1470,7 +1682,10 @@ PLAN_PRICING = {
 
 
 @router.get("/customers", summary="List All Onboarded Boutique Customers & SaaS Revenue")
-async def list_saas_customers(db: AsyncSession = Depends(get_db)):
+async def list_saas_customers(
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_super_admin),
+):
     """
     Returns list of all onboarded boutique clients, their subscription plan,
     token utilization, payment status, and private catalog API keys.
@@ -1521,7 +1736,11 @@ async def list_saas_customers(db: AsyncSession = Depends(get_db)):
 
 
 @router.post("/customers", summary="Onboard New Boutique Customer with Dedicated Login & API Key")
-async def onboard_new_customer(req: OnboardCustomerRequest, db: AsyncSession = Depends(get_db)):
+async def onboard_new_customer(
+    req: OnboardCustomerRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_super_admin),
+):
     """
     Onboards a new boutique shop:
     1. Creates Shop profile with chosen subscription tier.
@@ -1598,7 +1817,7 @@ async def onboard_new_customer(req: OnboardCustomerRequest, db: AsyncSession = D
     await db.flush()
 
     # Seed Default Kiosk
-    kiosk_code = f"KIOSK-{slug_base.upper()[:4]}-01"
+    kiosk_code = f"KIOSK-{slug_base.replace('-', '').upper()[:4]}-{secrets.token_hex(2).upper()}"
     kiosk = KioskModel(
         id=f"kiosk_{secrets.token_hex(6)}",
         branch_id=branch_id,
@@ -1635,6 +1854,7 @@ async def update_customer_subscription(
     shop_id: str,
     req: UpdateCustomerSubscriptionRequest,
     db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_super_admin),
 ):
     stmt = select(ShopModel).where(ShopModel.id == shop_id)
     res = await db.execute(stmt)
@@ -1661,7 +1881,11 @@ async def update_customer_subscription(
 
 
 @router.delete("/customers/{shop_id}", summary="Offboard Boutique Customer")
-async def delete_customer_shop(shop_id: str, db: AsyncSession = Depends(get_db)):
+async def delete_customer_shop(
+    shop_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_super_admin),
+):
     if shop_id == "shop_default":
         raise HTTPException(status_code=400, detail="Cannot delete default flagship showroom.")
 
