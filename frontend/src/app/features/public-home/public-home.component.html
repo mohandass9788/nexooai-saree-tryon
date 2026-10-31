@@ -5,20 +5,7 @@
       <!-- Brand Logo -->
       <a routerLink="/" class="nav-brand">
         <div class="logo-brain-icon">
-          <svg viewBox="0 0 40 40" width="36" height="36" fill="none">
-            <defs>
-              <linearGradient id="brainGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                <stop offset="0%" stop-color="#00e5ff" />
-                <stop offset="30%" stop-color="#7c4dff" />
-                <stop offset="70%" stop-color="#ff177d" />
-                <stop offset="100%" stop-color="#ff9100" />
-              </linearGradient>
-            </defs>
-            <path d="M20 5C14 5 10 9 10 14C10 16 11 18 12 19C10 20 8 23 8 26C8 30 11 34 16 35L17 35C18 35 19 33 20 33C21 33 22 35 23 35L24 35C29 34 32 30 32 26C32 23 30 20 28 19C29 18 30 16 30 14C30 9 26 5 20 5Z" fill="url(#brainGrad)" opacity="0.9" />
-            <circle cx="16" cy="15" r="2" fill="#fff" />
-            <circle cx="24" cy="15" r="2" fill="#fff" />
-            <path d="M15 22C17 24 23 24 25 22" stroke="#fff" stroke-width="2" stroke-linecap="round" />
-          </svg>
+          <img src="assets/images/nexooai_logo.svg" alt="NeXooAI Logo" width="38" height="38" />
         </div>
         <div class="brand-text-block">
           <span class="brand-title">NeXoo<span class="brand-ai">AI</span></span>
@@ -26,19 +13,32 @@
         </div>
       </a>
 
-      <!-- Center Navigation Links -->
+      <!-- Center Navigation Links (With Smooth Scrolling) -->
       <nav class="center-nav">
-        <a href="#home" class="nav-item active">Home</a>
-        <a href="#features" class="nav-item">Features</a>
-        <a href="#how-it-works" class="nav-item">How It Works</a>
-        <a href="#collections" class="nav-item">Collections</a>
-        <a href="#for-stores" class="nav-item">For Stores</a>
-        <a href="#pricing" class="nav-item">Pricing</a>
-        <a href="#contact" class="nav-item">Contact</a>
+        <a href="#home" class="nav-item active" (click)="scrollToSection('home', $event)">Home</a>
+        <a href="#features" class="nav-item" (click)="scrollToSection('features', $event)">Features</a>
+        <a href="#how-it-works" class="nav-item" (click)="scrollToSection('how-it-works', $event)">How It Works</a>
+        <a href="#collections" class="nav-item" (click)="scrollToSection('collections', $event)">Collections</a>
+        <a href="#for-stores" class="nav-item" (click)="scrollToSection('for-stores', $event)">For Stores</a>
+        <a href="#pricing" class="nav-item" (click)="scrollToSection('pricing', $event)">Pricing</a>
       </nav>
 
       <!-- Right Action Items -->
       <div class="nav-right-actions">
+        <!-- 6 Indian Languages Selector Dropdown -->
+        <div class="language-dropdown-wrap">
+          <span class="lang-globe-icon">🌐</span>
+          <select
+            class="lang-select-box"
+            [ngModel]="currentLang()"
+            (ngModelChange)="setLanguage($event)"
+            aria-label="Select website language">
+            @for (lang of languages; track lang.code) {
+              <option [value]="lang.code">{{ lang.nativeLabel }} ({{ lang.label }})</option>
+            }
+          </select>
+        </div>
+
         <!-- Theme Toggle Switch -->
         <button
           type="button"
@@ -61,23 +61,27 @@
     </div>
   </header>
 
-  <!-- Hero Section -->
+  <!-- Hero Section with Synchronized Multi-Garment Dynamic Carousel -->
   <section id="home" class="hero-section">
     <div class="hero-container">
-      <!-- Left Column: Typography & CTAs -->
-      <div class="hero-left">
-        <div class="hero-pill-badge">
-          <span class="sparkle-dot">✦</span> AI POWERED VIRTUAL SAREE TRY-ON
+      <!-- Left Column: Dynamic Typography Synchronized with Carousel -->
+      <div class="hero-left animate-slide-left">
+        <!-- Badge with Category Pill -->
+        <div class="hero-pill-badge" [style.border-color]="currentSlide().accentColor">
+          <span class="sparkle-dot">✦</span>
+          <span>{{ currentSlide().badge[currentLang()] }}</span>
         </div>
 
+        <!-- Animated Heading in Selected Language -->
         <h1 class="hero-heading">
-          See Yourself<br />
-          In Every Saree<br />
-          <span class="gradient-text-instant">Instantly</span>
+          {{ currentSlide().headlineLine1[currentLang()] }}<br />
+          {{ currentSlide().headlineLine2[currentLang()] }}<br />
+          <span class="gradient-text-instant">{{ currentSlide().headlineHighlight[currentLang()] }}</span>
         </h1>
 
+        <!-- Localized Subtext in Selected Language -->
         <p class="hero-subtext">
-          Transform your showroom with AI. Let your customers experience Kanchipuram, Banarasi, Silk and designer sarees on themselves in seconds.
+          {{ currentSlide().subtext[currentLang()] }}
         </p>
 
         <!-- CTA Buttons Group -->
@@ -91,34 +95,80 @@
           </button>
         </div>
 
-        <!-- 4 Feature Badges Under Hero -->
+        <!-- 4 Multi-Garment Feature Badges Under Hero -->
         <div class="hero-pills-row">
-          <div class="feature-pill">
-            <span class="pill-icon">👗</span>
-            <span class="pill-label">Realistic AI Try-On</span>
+          <div class="feature-pill active-pill">
+            <span class="pill-icon">{{ currentSlide().pillIcon }}</span>
+            <span class="pill-label">{{ currentSlide().pillText[currentLang()] }}</span>
           </div>
           <div class="feature-pill">
-            <span class="pill-icon">🧵</span>
-            <span class="pill-label">3D Fabric Visualization</span>
+            <span class="pill-icon">⚡</span>
+            <span class="pill-label">{{ currentSlide().statsPill[currentLang()] }}</span>
           </div>
           <div class="feature-pill">
             <span class="pill-icon">🖥️</span>
-            <span class="pill-label">Works on Large Screens</span>
+            <span class="pill-label">Works on 55" Kiosks</span>
           </div>
           <div class="feature-pill">
-            <span class="pill-icon">🏛️</span>
-            <span class="pill-label">Perfect for Showrooms</span>
+            <span class="pill-icon">👑</span>
+            <span class="pill-label">Men, Women & Bridal</span>
           </div>
         </div>
       </div>
 
-      <!-- Right Column: Model & Interactive Virtual Try-On Screen Frame -->
-      <div class="hero-right">
-        <div class="hero-image-wrapper">
-          <img
-            [src]="isDarkMode() ? 'assets/images/hero_model_dark.png' : 'assets/images/hero_model_light.jpg'"
-            alt="NeXooAi Virtual Saree Try-On Model and Tablet UI"
-            class="hero-main-img" />
+      <!-- Right Column: Interactive Multi-Garment Image Slider Frame -->
+      <div class="hero-right animate-slide-right">
+        <div
+          class="hero-slider-card"
+          (mouseenter)="pauseAutoSlide()"
+          (mouseleave)="resumeAutoSlide()"
+          (touchstart)="onTouchStart($event)"
+          (touchend)="onTouchEnd($event)">
+
+          <!-- Top Outfit Switcher Pills Bar -->
+          <div class="slider-top-bar">
+            <div class="slider-top-pills">
+              @for (slide of heroSlides; track slide.id; let idx = $index) {
+                <button
+                  type="button"
+                  class="slider-top-pill"
+                  [class.active]="currentSlideIndex() === idx"
+                  (click)="goToSlide(idx)">
+                  <span class="pill-emoji">{{ slide.pillIcon }}</span>
+                  <span class="pill-text">{{ slide.categoryTag[currentLang()] }}</span>
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Main Image Layer -->
+          <div class="hero-image-wrapper">
+            <img
+              [src]="isDarkMode() ? currentSlide().imageDark : currentSlide().imageLight"
+              [alt]="currentSlide().headlineLine1[currentLang()] + ' ' + currentSlide().headlineLine2[currentLang()]"
+              class="hero-main-img" />
+
+            <!-- Manual Arrow Navigation Buttons -->
+            <button
+              type="button"
+              class="slider-arrow-btn prev-arrow"
+              (click)="prevSlide()"
+              aria-label="Previous Outfit">
+              ‹
+            </button>
+            <button
+              type="button"
+              class="slider-arrow-btn next-arrow"
+              (click)="nextSlide()"
+              aria-label="Next Outfit">
+              ›
+            </button>
+          </div>
+
+          <!-- Bottom Automated Countdown Progress Loader Bar -->
+          <div class="slider-loader-bar-wrap" title="Slide timer progress">
+            <div class="slider-loader-bar-fill" [style.width.%]="slideProgress()"></div>
+          </div>
         </div>
       </div>
     </div>
@@ -141,17 +191,17 @@
         <span class="metric-icon">📈</span>
         <div class="metric-details">
           <span class="metric-value">3.2X</span>
-          <span class="metric-label">Increase in Sales</span>
+          <span class="metric-label">Increase in Showroom Sales</span>
         </div>
       </div>
 
       <div class="metric-divider"></div>
 
       <div class="metric-item">
-        <span class="metric-icon">🛡️</span>
+        <span class="metric-icon">👑</span>
         <div class="metric-details">
-          <span class="metric-value">100%</span>
-          <span class="metric-label">Tenant Data Isolation</span>
+          <span class="metric-value">ALL APPAREL</span>
+          <span class="metric-label">Men, Women & Bridal</span>
         </div>
       </div>
 
@@ -160,8 +210,8 @@
       <div class="metric-item">
         <span class="metric-icon">🌐</span>
         <div class="metric-details">
-          <span class="metric-value">TAMIL & ENGLISH</span>
-          <span class="metric-label">Touchscreen Native</span>
+          <span class="metric-value">6 LANGUAGES</span>
+          <span class="metric-label">Native Indian Support</span>
         </div>
       </div>
 
@@ -177,16 +227,110 @@
     </div>
   </section>
 
-  <!-- How It Works Section -->
+  <!-- Instant Purpose Clarity: Interactive AI Try-On Before/After Split Comparison -->
+  <section id="features" class="section-before-after">
+    <div class="section-container">
+      <div class="section-header-centered">
+        <span class="section-tag-sub">INSTANT AI VIRTUAL TRY-ON DEMO</span>
+        <h2 class="section-title-large">
+          Experience the AI Transformation <span class="gradient-text-pink">In Real-Time</span>
+        </h2>
+        <p class="section-subtitle-muted">
+          See how a showroom customer's photo instantly transforms into authentic photorealistic Sarees, Salwars, or Men's Sherwanis with zero physical dressing trials.
+        </p>
+
+        <!-- Garment Switcher Toggle Pills -->
+        <div class="compare-toggle-pills">
+          <button
+            type="button"
+            class="compare-pill-btn"
+            [class.active]="activeCompareGarment() === 'saree'"
+            (click)="setCompareOutfit('saree')">
+            <span>👗</span>
+            <span>Royal Saree</span>
+          </button>
+          <button
+            type="button"
+            class="compare-pill-btn"
+            [class.active]="activeCompareGarment() === 'salwar'"
+            (click)="setCompareOutfit('salwar')">
+            <span>✨</span>
+            <span>Emerald Salwar</span>
+          </button>
+          <button
+            type="button"
+            class="compare-pill-btn"
+            [class.active]="activeCompareGarment() === 'sherwani'"
+            (click)="setCompareOutfit('sherwani')">
+            <span>👑</span>
+            <span>Groom Sherwani</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Draggable Split Compare Frame -->
+      <div class="compare-stage-box">
+        <div class="compare-frame">
+          <!-- After Layer (Fitted AI Result) -->
+          <div class="compare-layer layer-after">
+            <img
+              [src]="activeCompareData().afterImg"
+              [alt]="activeCompareData().name[currentLang()]"
+              class="compare-img" />
+            <div class="compare-tag tag-after">
+              <span class="status-pulse-green"></span>
+              <span>NeXooAI Fitted Try-On Result ({{ activeCompareData().fitTime }})</span>
+            </div>
+          </div>
+
+          <!-- Before Layer (Original Customer Photo, clipped) -->
+          <div class="compare-layer layer-before" [style.width.%]="comparePosition()">
+            <img
+              [src]="activeCompareData().beforeImg"
+              alt="Original Customer Photo"
+              class="compare-img" />
+            <div class="compare-tag tag-before">
+              <span>Original Customer Photo</span>
+            </div>
+          </div>
+
+          <!-- Divider Handle Line -->
+          <div class="compare-divider-handle" [style.left.%]="comparePosition()">
+            <div class="divider-line"></div>
+            <div class="divider-knob">
+              <span class="knob-arrows">‹ ›</span>
+            </div>
+          </div>
+
+          <!-- Accessible Range Input Layer -->
+          <input
+            type="range"
+            min="0"
+            max="100"
+            [value]="comparePosition()"
+            (input)="onCompareSliderChange($event)"
+            class="compare-slider-control"
+            aria-label="Drag slider to compare original photo and AI try-on result" />
+        </div>
+
+        <div class="compare-caption-bar">
+          <span class="outfit-caption-name">{{ activeCompareData().name[currentLang()] }} ({{ activeCompareData().category }})</span>
+          <span class="drag-hint-pill">👈 Drag Slider to Reveal AI Transformation 👉</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- How It Works Section: 4 Steps for Any Garment -->
   <section id="how-it-works" class="section-how-it-works">
     <div class="section-container">
       <div class="section-header-centered">
         <span class="section-tag-sub">HOW IT WORKS</span>
         <h2 class="section-title-large">
-          Try a Saree in <span class="gradient-text-pink">4 Simple Steps</span>
+          Try Any Outfit in <span class="gradient-text-pink">4 Simple Steps</span>
         </h2>
         <p class="section-subtitle-muted">
-          Fast, intuitive, and designed specifically for showroom use.
+          Fast, touch-first, and designed for showroom shoppers across Sarees, Salwars, Lehengas, and Men's Wear.
         </p>
       </div>
 
@@ -201,7 +345,7 @@
             <img src="assets/images/step_01.png" alt="Step 1 Take a Photo" class="step-img" />
           </div>
           <h3 class="step-title">Take a Photo</h3>
-          <p class="step-desc">Use the kiosk camera or upload a photo.</p>
+          <p class="step-desc">Stand in front of the kiosk HD camera or upload a customer photo.</p>
         </div>
 
         <div class="step-flow-arrow">→</div>
@@ -212,10 +356,10 @@
             <span class="step-circle-badge">02</span>
           </div>
           <div class="step-thumb-box">
-            <img src="assets/images/step_02.png" alt="Step 2 Choose a Saree" class="step-img" />
+            <img src="assets/images/step_02.png" alt="Step 2 Choose Outfit" class="step-img" />
           </div>
-          <h3 class="step-title">Choose a Saree</h3>
-          <p class="step-desc">Browse our collection by category, color or design.</p>
+          <h3 class="step-title">Choose Any Garment</h3>
+          <p class="step-desc">Browse Silk Sarees, Salwars, Lehengas or Men's Sherwanis & Kurtas.</p>
         </div>
 
         <div class="step-flow-arrow">→</div>
@@ -228,8 +372,8 @@
           <div class="step-thumb-box">
             <img src="assets/images/step_03.png" alt="Step 3 AI Try-On" class="step-img" />
           </div>
-          <h3 class="step-title">AI Try-On</h3>
-          <p class="step-desc">See yourself in real-time with high accuracy.</p>
+          <h3 class="step-title">Instant AI Fitting</h3>
+          <p class="step-desc">Neural AI renders authentic drape, fit, folds, and fabric sheen in 5 seconds.</p>
         </div>
 
         <div class="step-flow-arrow">→</div>
@@ -242,114 +386,85 @@
           <div class="step-thumb-box">
             <img src="assets/images/step_04.png" alt="Step 4 Save & Share" class="step-img" />
           </div>
-          <h3 class="step-title">Save & Share</h3>
-          <p class="step-desc">Save, share or send to sales counter with QR or POS slip.</p>
+          <h3 class="step-title">QR & POS Slip</h3>
+          <p class="step-desc">Send HD photos to customer WhatsApp or print POS barcode slip for billing.</p>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Explore Our Collections Section -->
+  <!-- Explore Our Collections Section: Balanced Men & Women -->
   <section id="collections" class="section-collections">
     <div class="section-container">
       <div class="section-header-split">
         <div>
-          <span class="section-tag-sub">EXPLORE OUR COLLECTIONS</span>
-          <h2 class="section-title-large">A Saree for Every Occasion</h2>
+          <span class="section-tag-sub">EXPLORE ALL COLLECTIONS</span>
+          <h2 class="section-title-large">Styles for Every Occasion & Everyone</h2>
           <p class="section-subtitle-muted">
-            From traditional Kanchipuram silks to modern designer sarees, explore thousands of styles.
+            From traditional Kanchipuram silks and designer salwars to royal wedding sherwanis and bridal lehengas.
           </p>
         </div>
         <a routerLink="/kiosk" class="link-view-all">
-          View All Collections <span class="arrow-icon">→</span>
+          Launch Showroom Kiosk <span class="arrow-icon">→</span>
         </a>
       </div>
 
-      <!-- 6 Collections Cards Carousel / Row -->
+      <!-- Category Filter Tabs -->
+      <div class="collections-category-bar">
+        <button
+          type="button"
+          class="category-tab-btn"
+          [class.active]="activeCategory() === 'all'"
+          (click)="setCategory('all')">
+          <span>✨</span>
+          <span>All Styles ({{ allCollections.length }})</span>
+        </button>
+        <button
+          type="button"
+          class="category-tab-btn"
+          [class.active]="activeCategory() === 'women'"
+          (click)="setCategory('women')">
+          <span>👗</span>
+          <span>Women's Sarees & Salwars</span>
+        </button>
+        <button
+          type="button"
+          class="category-tab-btn"
+          [class.active]="activeCategory() === 'men'"
+          (click)="setCategory('men')">
+          <span>👑</span>
+          <span>Men's Sherwanis & Kurtas</span>
+        </button>
+        <button
+          type="button"
+          class="category-tab-btn"
+          [class.active]="activeCategory() === 'bridal'"
+          (click)="setCategory('bridal')">
+          <span>💎</span>
+          <span>Bridal & Festive Wear</span>
+        </button>
+      </div>
+
+      <!-- Collections Dynamic Cards Grid -->
       <div class="collections-carousel-wrapper">
-        <button type="button" class="carousel-nav-btn prev" aria-label="Previous collection">‹</button>
-
         <div class="collections-cards-grid">
-          <div class="collection-card">
-            <div class="col-img-box">
-              <img src="assets/images/col_kanchipuram.png" alt="Kanchipuram Silk" class="col-img" />
+          @for (item of filteredCollections(); track item.id) {
+            <div class="collection-card">
+              <div class="col-img-box">
+                <img [src]="item.image" [alt]="item.name[currentLang()]" class="col-img" />
+                <span class="col-badge-tag">{{ item.tag[currentLang()] }}</span>
+              </div>
+              <div class="col-card-footer">
+                <div class="col-text-group">
+                  <span class="col-name">{{ item.name[currentLang()] }}</span>
+                  <span class="col-tamil-name">{{ item.categoryLabel[currentLang()] }}</span>
+                </div>
+                <span class="col-arrow">→</span>
+              </div>
             </div>
-            <div class="col-card-footer">
-              <span class="col-name">Kanchipuram Silk</span>
-              <span class="col-arrow">→</span>
-            </div>
-          </div>
-
-          <div class="collection-card">
-            <div class="col-img-box">
-              <img src="assets/images/col_banarasi.png" alt="Banarasi Sarees" class="col-img" />
-            </div>
-            <div class="col-card-footer">
-              <span class="col-name">Banarasi Sarees</span>
-              <span class="col-arrow">→</span>
-            </div>
-          </div>
-
-          <div class="collection-card">
-            <div class="col-img-box">
-              <img src="assets/images/col_bridal.png" alt="Bridal Collection" class="col-img" />
-            </div>
-            <div class="col-card-footer">
-              <span class="col-name">Bridal Collection</span>
-              <span class="col-arrow">→</span>
-            </div>
-          </div>
-
-          <div class="collection-card">
-            <div class="col-img-box">
-              <img src="assets/images/col_designer.png" alt="Designer Collection" class="col-img" />
-            </div>
-            <div class="col-card-footer">
-              <span class="col-name">Designer Collection</span>
-              <span class="col-arrow">→</span>
-            </div>
-          </div>
-
-          <div class="collection-card">
-            <div class="col-img-box">
-              <img src="assets/images/col_partywear.png" alt="Party Wear" class="col-img" />
-            </div>
-            <div class="col-card-footer">
-              <span class="col-name">Party Wear</span>
-              <span class="col-arrow">→</span>
-            </div>
-          </div>
-
-          <div class="collection-card">
-            <div class="col-img-box">
-              <img src="assets/images/col_pastel.png" alt="Pastel Shades" class="col-img" />
-            </div>
-            <div class="col-card-footer">
-              <span class="col-name">Pastel Shades</span>
-              <span class="col-arrow">→</span>
-            </div>
-          </div>
+          }
         </div>
-
-        <button type="button" class="carousel-nav-btn next" aria-label="Next collection">›</button>
       </div>
-    </div>
-  </section>
-
-  <!-- Interactive 3D Silk & Drape Studio Powered by Three.js & Theatre.js -->
-  <section id="3d-studio" class="section-3d-studio">
-    <div class="section-container">
-      <div class="section-header-centered">
-        <span class="section-tag-sub">CINEMATIC 3D FABRIC ENGINE</span>
-        <h2 class="section-title-large">
-          Real-Time 3D Silk Drape & <span class="gradient-text-pink">Zari Physics</span>
-        </h2>
-        <p class="section-subtitle-muted">
-          Powered by Three.js WebGL and Theatre.js timeline cinematics. Inspect authentic metallic sheen, weave grain, and fluid cloth drape in real time.
-        </p>
-      </div>
-
-      <app-three-saree-viewer></app-three-saree-viewer>
     </div>
   </section>
 
@@ -369,7 +484,7 @@
             Create an <span class="gradient-text-pink">Unforgettable<br />Shopping Experience</span>
           </h2>
           <p class="section-subtitle-muted">
-            Install NeXooAi in your showroom and let customers explore sarees virtually. Increase engagement, conversions and sales.
+            Install NeXooAi in your showroom and let customers explore sarees, salwars and men's wear virtually. Increase engagement, conversions and sales.
           </p>
 
           <div class="features-2col-list">
@@ -379,7 +494,7 @@
             </div>
             <div class="feature-bullet">
               <div class="bullet-icon-box">🏷️</div>
-              <span class="bullet-text">Customize with your brand logo</span>
+              <span class="bullet-text">Customize with your showroom logo</span>
             </div>
             <div class="feature-bullet">
               <div class="bullet-icon-box">🧾</div>
@@ -387,15 +502,15 @@
             </div>
             <div class="feature-bullet">
               <div class="bullet-icon-box">📶</div>
-              <span class="bullet-text">Offline mode support</span>
+              <span class="bullet-text">Offline resilient caching support</span>
             </div>
             <div class="feature-bullet">
               <div class="bullet-icon-box">👥</div>
-              <span class="bullet-text">Multi-branch & multi-user support</span>
+              <span class="bullet-text">Multi-branch & staff account support</span>
             </div>
             <div class="feature-bullet">
               <div class="bullet-icon-box">📊</div>
-              <span class="bullet-text">Analytics & reports</span>
+              <span class="bullet-text">Real-time analytics & reports</span>
             </div>
           </div>
 
@@ -403,41 +518,6 @@
             <button type="button" class="btn-hero-primary" (click)="openDemoModal()">
               Book a Showroom Demo <span class="arrow-icon">→</span>
             </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- 3D Fabric Visualization Banner -->
-  <section id="features" class="section-fabric-3d">
-    <div class="fabric-banner-content">
-      <div class="fabric-banner-text">
-        <span class="section-tag-sub">3D FABRIC VISUALIZATION</span>
-        <h2 class="section-title-large">
-          See the Beauty in <span class="gradient-text-pink">Every Detail</span>
-        </h2>
-        <p class="section-subtitle-muted">
-          Experience true-to-life draping, fabric texture and design patterns with our advanced 3D visualization.
-        </p>
-
-        <!-- 4 Badges -->
-        <div class="fabric-pills-row">
-          <div class="fabric-badge">
-            <span class="f-icon">🌸</span>
-            <span>Realistic Fabric Texture</span>
-          </div>
-          <div class="fabric-badge">
-            <span class="f-icon">🎨</span>
-            <span>True Color Rendering</span>
-          </div>
-          <div class="fabric-badge">
-            <span class="f-icon">🔄</span>
-            <span>Rotate & Zoom in 3D</span>
-          </div>
-          <div class="fabric-badge">
-            <span class="f-icon">🌈</span>
-            <span>Multiple Color Variants</span>
           </div>
         </div>
       </div>
@@ -453,7 +533,7 @@
           Choose the Plan Built for <span class="gradient-text-gold">Your Retail Scale</span>
         </h2>
         <p class="section-subtitle-muted">
-          All plans include enterprise-grade security, Tamil/English support and regular updates.
+          All plans include enterprise-grade tenant security, multi-language support and regular AI updates.
         </p>
 
         <!-- Monthly / Yearly Billing Toggle -->
@@ -496,240 +576,266 @@
           <ul class="plan-features-list">
             <li><span class="chk">✓</span> 500 virtual try-ons / month</li>
             <li><span class="chk">✓</span> 1 active floor kiosk</li>
-            <li><span class="chk">✓</span> Basic catalog access</li>
+            <li><span class="chk">✓</span> Sarees, Salwars & Men's suits</li>
             <li><span class="chk">✓</span> QR & POS integration</li>
-            <li><span class="chk">✓</span> Email support</li>
           </ul>
 
-          <button type="button" class="btn-plan-outline" (click)="openDemoModal()">
-            Get Started
-          </button>
+          <button type="button" class="btn-plan-outline" (click)="openDemoModal()">Choose Silver</button>
         </div>
 
-        <!-- 2. Gold Retail Growth (MOST POPULAR) -->
+        <!-- 2. Gold Showroom (Popular) -->
         <div class="pricing-card gold-card featured">
           <div class="most-popular-banner">MOST POPULAR</div>
-
           <div class="plan-header">
-            <div class="plan-icon-square gold-sq">🏬</div>
+            <div class="plan-icon-square gold-sq">👑</div>
             <div>
-              <h3 class="plan-name">Gold Retail Growth</h3>
-              <p class="plan-caption">Perfect for multi-floor stores</p>
+              <h3 class="plan-name">Gold Retailer</h3>
+              <p class="plan-caption">For leading retail & multi-floor showrooms</p>
             </div>
           </div>
 
           <div class="price-display">
             <span class="currency">₹</span>
-            <span class="amount">{{ billingCycle() === 'monthly' ? '24,999' : '249,990' }}</span>
+            <span class="amount">{{ billingCycle() === 'monthly' ? '19,999' : '1,99,990' }}</span>
             <span class="period">/{{ billingCycle() === 'monthly' ? 'month' : 'year' }}</span>
           </div>
 
           <ul class="plan-features-list">
-            <li><span class="chk gold-chk">✓</span> 1,500 virtual try-ons / month</li>
-            <li><span class="chk gold-chk">✓</span> 3 active floor kiosks</li>
-            <li><span class="chk gold-chk">✓</span> Advanced catalog access</li>
-            <li><span class="chk gold-chk">✓</span> WhatsApp delivery & family voting</li>
-            <li><span class="chk gold-chk">✓</span> Analytics dashboard</li>
-            <li><span class="chk gold-chk">✓</span> Priority support</li>
+            <li><span class="chk gold-chk">✓</span> 2,500 virtual try-ons / month</li>
+            <li><span class="chk gold-chk">✓</span> Up to 3 active floor kiosks</li>
+            <li><span class="chk gold-chk">✓</span> Full bridal & custom catalog upload</li>
+            <li><span class="chk gold-chk">✓</span> Dedicated WhatsApp delivery line</li>
           </ul>
 
-          <button type="button" class="btn-plan-gold" (click)="openDemoModal()">
-            Start Gold Trial
-          </button>
+          <button type="button" class="btn-plan-gold" (click)="openDemoModal()">Choose Gold</button>
         </div>
 
-        <!-- 3. Platinum Enterprise -->
-        <div class="pricing-card platinum-card">
+        <!-- 3. Diamond Enterprise -->
+        <div class="pricing-card diamond-card">
           <div class="plan-header">
-            <div class="plan-icon-square">🏢</div>
+            <div class="plan-icon-square">🏛️</div>
             <div>
-              <h3 class="plan-name">Platinum Enterprise</h3>
-              <p class="plan-caption">For large chains and franchises</p>
+              <h3 class="plan-name">Diamond Chain</h3>
+              <p class="plan-caption">For multi-branch textile chains</p>
             </div>
           </div>
 
           <div class="price-display">
             <span class="currency">₹</span>
-            <span class="amount">{{ billingCycle() === 'monthly' ? '49,999' : '499,990' }}</span>
+            <span class="amount">{{ billingCycle() === 'monthly' ? '49,999' : '4,99,990' }}</span>
             <span class="period">/{{ billingCycle() === 'monthly' ? 'month' : 'year' }}</span>
           </div>
 
           <ul class="plan-features-list">
-            <li><span class="chk">✓</span> 3,500+ virtual try-ons / month</li>
-            <li><span class="chk">✓</span> 10+ floor kiosks</li>
-            <li><span class="chk">✓</span> Custom branding & integration</li>
-            <li><span class="chk">✓</span> Multi-branch management</li>
-            <li><span class="chk">✓</span> Dedicated account manager</li>
-            <li><span class="chk">✓</span> SLA support</li>
+            <li><span class="chk">✓</span> Unlimited virtual try-ons</li>
+            <li><span class="chk">✓</span> Unlimited kiosks across all branches</li>
+            <li><span class="chk">✓</span> Dedicated private AI cluster</li>
+            <li><span class="chk">✓</span> 24/7 dedicated engineering support</li>
           </ul>
 
-          <button type="button" class="btn-plan-outline" (click)="openDemoModal()">
-            Contact Sales
-          </button>
+          <button type="button" class="btn-plan-outline" (click)="openDemoModal()">Contact Enterprise</button>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- Loved by Showroom Owners (Testimonials) -->
-  <section class="section-testimonials">
-    <div class="section-container">
-      <div class="section-header-split">
-        <div>
-          <span class="section-tag-sub">LOVED BY SHOWROOM OWNERS</span>
-          <h2 class="section-title-large">What Our Clients Say</h2>
-        </div>
-        <div class="carousel-nav-arrows">
-          <button type="button" class="arrow-circle" aria-label="Previous testimonial">‹</button>
-          <button type="button" class="arrow-circle" aria-label="Next testimonial">›</button>
-        </div>
-      </div>
-
-      <div class="testimonials-grid">
-        <!-- Client 1 -->
-        <div class="testimonial-card">
-          <div class="client-info-row">
-            <img src="assets/images/client_sri_kumaran.png" alt="Sri Kumaran Silks" class="client-store-thumb" />
-            <div>
-              <h4 class="client-name">Sri Kumaran Silks</h4>
-              <span class="client-city">Chennai</span>
-            </div>
-            <div class="star-rating">★★★★★</div>
-          </div>
-          <p class="client-quote">
-            "Our customers love the virtual try-on experience. It has increased our walk-ins and sales significantly."
-          </p>
-        </div>
-
-        <!-- Client 2 -->
-        <div class="testimonial-card">
-          <div class="client-info-row">
-            <img src="assets/images/client_akila.png" alt="Akila Textiles" class="client-store-thumb" />
-            <div>
-              <h4 class="client-name">Akila Textiles</h4>
-              <span class="client-city">Coimbatore</span>
-            </div>
-            <div class="star-rating">★★★★★</div>
-          </div>
-          <p class="client-quote">
-            "Easy to use and great support. The 3D visualization is amazing and our customers are really engaged."
-          </p>
-        </div>
-
-        <!-- Client 3 -->
-        <div class="testimonial-card">
-          <div class="client-info-row">
-            <img src="assets/images/client_murugan.png" alt="Murugan Silks" class="client-store-thumb" />
-            <div>
-              <h4 class="client-name">Murugan Silks</h4>
-              <span class="client-city">Madurai</span>
-            </div>
-            <div class="star-rating">★★★★★</div>
-          </div>
-          <p class="client-quote">
-            "NeXooAi has transformed the way we showcase sarees. Highly recommended!"
-          </p>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Pre-Footer CTA Banner -->
+  <!-- Pre-Footer CTA Showcase Banner -->
   <section class="section-prefooter-banner">
     <div class="prefooter-box">
-      <div class="prefooter-inner">
-        <h2 class="prefooter-title">Ready to Transform Your Showroom?</h2>
-        <p class="prefooter-subtitle">Join 500+ textile retailers who are already using NeXooAi.</p>
-        <div class="prefooter-actions">
-          <button type="button" class="btn-hero-primary" (click)="openDemoModal()">
-            Book a Demo <span class="arrow-icon">→</span>
-          </button>
-          <a routerLink="/login" class="btn-prefooter-secondary">
-            Contact Sales
-          </a>
-        </div>
+      <h2 class="prefooter-title">Transform Your Retail Showroom with NeXooAi</h2>
+      <p class="prefooter-subtitle">
+        Join leading textile boutiques and multi-storey showrooms across Tamil Nadu & India.
+        Boost bridal conversions and delight customers with zero trial room wait time.
+      </p>
+      <div class="prefooter-actions">
+        <button type="button" class="btn-primary-glow" (click)="openDemoModal()">
+          Schedule Showroom Demo ➔
+        </button>
+        <a href="tel:+919876543210" class="btn-prefooter-secondary">
+          📞 Speak with Sales Team
+        </a>
       </div>
     </div>
   </section>
 
-  <!-- Footer -->
-  <footer id="contact" class="main-footer">
+  <!-- Main Luxury Footer -->
+  <footer class="main-footer">
     <div class="footer-container">
+      <!-- Top Brand Row -->
       <div class="footer-top-row">
-        <!-- Footer Brand -->
         <div class="footer-brand">
-          <div class="brand-brain-row">
-            <span class="brand-title">NeXoo<span class="brand-ai">AI</span></span>
-          </div>
-          <span class="brand-slogan-small">AI FOR A SMARTER TOMORROW</span>
+          <a routerLink="/" class="nav-brand">
+            <div class="logo-brain-icon">
+              <img src="assets/images/nexooai_logo.svg" alt="NeXooAI Logo" width="34" height="34" />
+            </div>
+            <div class="brand-text-block">
+              <span class="brand-title">NeXoo<span class="brand-ai">AI</span></span>
+              <span class="brand-slogan-small">AI FOR A SMARTER TOMORROW</span>
+            </div>
+          </a>
         </div>
 
-        <!-- Footer Links -->
         <div class="footer-links-row">
-          <a href="#home">Home</a>
-          <a href="#features">Features</a>
-          <a href="#collections">Collections</a>
-          <a href="#for-stores">For Stores</a>
-          <a href="#pricing">Pricing</a>
-          <a href="#contact">Contact</a>
+          <a href="#home" (click)="scrollToSection('home', $event)">Home</a>
+          <a href="#features" (click)="scrollToSection('features', $event)">Features</a>
+          <a href="#how-it-works" (click)="scrollToSection('how-it-works', $event)">How It Works</a>
+          <a href="#collections" (click)="scrollToSection('collections', $event)">Collections</a>
+          <a href="#pricing" (click)="scrollToSection('pricing', $event)">Pricing</a>
+          <a routerLink="/login">Showroom Portal</a>
         </div>
 
-        <!-- Social Icons -->
         <div class="footer-social-icons">
-          <a href="#" class="social-circle" aria-label="Facebook">FB</a>
-          <a href="#" class="social-circle" aria-label="Instagram">IG</a>
-          <a href="#" class="social-circle" aria-label="YouTube">YT</a>
-          <a href="#" class="social-circle" aria-label="LinkedIn">IN</a>
+          <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" class="social-circle" title="WhatsApp Support">WA</a>
+          <a href="#" class="social-circle" title="Instagram">IG</a>
+          <a href="#" class="social-circle" title="LinkedIn">IN</a>
+          <a href="#" class="social-circle" title="YouTube Showcase">YT</a>
         </div>
       </div>
 
+      <!-- Middle 4-Column Directory Grid -->
+      <div class="footer-middle-grid">
+        <div class="footer-col">
+          <h4>Showroom Solutions</h4>
+          <ul>
+            <li>Virtual Saree Drape Engine</li>
+            <li>Salwar & Anarkali AI Fitting</li>
+            <li>Bridal Lehenga Studio</li>
+            <li>Men's Sherwani & Suits</li>
+            <li>55-Inch Portrait Floor Kiosk</li>
+            <li>Instant WhatsApp Slip Delivery</li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Showroom Presence</h4>
+          <ul>
+            <li><strong>Chennai:</strong> T. Nagar Retail Hub</li>
+            <li><strong>Coimbatore:</strong> Cross Cut Road</li>
+            <li><strong>Madurai:</strong> South Masi Street</li>
+            <li><strong>Bengaluru:</strong> Commercial Street</li>
+            <li><strong>Hyderabad:</strong> Jubilee Hills</li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Security & Architecture</h4>
+          <ul>
+            <li>Tenant-Isolated Showroom DB</li>
+            <li>Role-Based Access (Manager/Admin)</li>
+            <li>Zero PII Retained Without Consent</li>
+            <li>Local Edge Kiosk AI Inference</li>
+            <li>99.9% Uptime Showroom SLA</li>
+          </ul>
+        </div>
+
+        <div class="footer-col">
+          <h4>Supported Payment Methods</h4>
+          <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0 0 0.5rem;">
+            Instant billing via Indian payment networks:
+          </p>
+          <div class="payment-badges-wrap">
+            <span class="pay-badge">⚡ UPI</span>
+            <span class="pay-badge">💳 RuPay</span>
+            <span class="pay-badge">💳 Visa</span>
+            <span class="pay-badge">💳 MasterCard</span>
+            <span class="pay-badge">🏦 Net Banking</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom Legal Row -->
       <div class="footer-bottom-row">
-        <span class="copyright-text">
-          © 2026 NeXooAi Technologies Pvt. Ltd. All rights reserved.
-        </span>
-        <span class="footer-tagline">
-          AI Powered | Made for Indian Textile Showrooms
-        </span>
+        <span>© 2026 NeXooAi Technologies Private Limited. All rights reserved.</span>
+        <div class="footer-links-row" style="gap: 1rem; font-size: 0.78rem;">
+          <a href="javascript:void(0)" (click)="openDemoModal()">Privacy Policy</a>
+          <a href="javascript:void(0)" (click)="openDemoModal()">Terms of Service</a>
+          <a href="javascript:void(0)" (click)="openDemoModal()">Showroom Operator Agreement</a>
+          <a href="javascript:void(0)" (click)="openDemoModal()">Security Certifications</a>
+        </div>
       </div>
     </div>
   </footer>
+
+  <!-- Floating Action Hub (Bottom-Right Contact & Scroll-to-Top) -->
+  <div class="floating-action-hub">
+    <!-- Scroll-to-Top Button -->
+    <button
+      type="button"
+      class="btn-float-top"
+      [class.visible]="showScrollTop()"
+      (click)="scrollToTop()"
+      title="Scroll smoothly back to top"
+      aria-label="Scroll to top">
+      ↑
+    </button>
+
+    <!-- Quick Contact Floating Button with Expandable Options -->
+    <div class="float-contact-container">
+      <div class="contact-expand-pills" [class.expanded]="showContactHub()">
+        <a href="tel:+919876543210" class="contact-pill-link call-pill" title="Call Showroom Sales Desk">
+          <span class="cp-icon">📞</span>
+          <span class="cp-text">Call: +91 98765 43210</span>
+        </a>
+        <a
+          href="https://wa.me/919876543210?text=Hello%20NeXooAI,%20I%20would%20like%20to%20book%20a%20showroom%20demo"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="contact-pill-link wa-pill"
+          title="Chat on WhatsApp">
+          <span class="cp-icon">💬</span>
+          <span class="cp-text">WhatsApp Demo</span>
+        </a>
+      </div>
+
+      <button
+        type="button"
+        class="btn-float-contact"
+        (click)="toggleContactHub()"
+        [class.active]="showContactHub()"
+        title="Contact NeXooAI Team"
+        aria-label="Contact options">
+        <span *ngIf="!showContactHub()">💬</span>
+        <span *ngIf="showContactHub()">✕</span>
+      </button>
+    </div>
+  </div>
 
   <!-- Book a Demo Modal -->
   <div *ngIf="showDemoModal()" class="modal-backdrop" (click)="closeDemoModal()">
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3 class="modal-title">Schedule a Live Showroom Demo</h3>
+        <h3 class="modal-title">Schedule an On-Site Showroom Demo</h3>
         <button type="button" class="modal-close" (click)="closeDemoModal()">✕</button>
       </div>
 
-      <div *ngIf="!demoSubmitted()" class="modal-body">
-        <p class="modal-intro">
-          Experience NeXooAi on your showroom inventory. Our enterprise solutions team will set up an interactive 20-minute trial.
+      <div *ngIf="!demoSubmitted()">
+        <p class="modal-subtitle">
+          Experience our 55-inch portrait kiosk in your showroom. Fill your contact details below:
         </p>
 
         <form (ngSubmit)="submitDemo()">
           <div class="form-group">
-            <label>Showroom / Boutique Name</label>
+            <label>Showroom / Boutique Name *</label>
             <input
               type="text"
               name="showroomName"
               [(ngModel)]="demoForm.showroomName"
-              placeholder="e.g. Sri Kumaran Silks"
+              placeholder="e.g. Sri Kumaran Silks & Men's Wear"
               required />
           </div>
 
           <div class="form-group">
-            <label>Contact Person</label>
+            <label>Contact Person Name *</label>
             <input
               type="text"
               name="contactPerson"
               [(ngModel)]="demoForm.contactPerson"
-              placeholder="Your Name"
+              placeholder="e.g. Mr. Murugan / Store Owner"
               required />
           </div>
 
           <div class="form-group">
-            <label>WhatsApp / Mobile Number</label>
+            <label>WhatsApp / Mobile Number *</label>
             <input
               type="tel"
               name="phone"
@@ -739,28 +845,33 @@
           </div>
 
           <div class="form-group">
-            <label>City / Location</label>
+            <label>City / Location *</label>
             <input
               type="text"
               name="city"
               [(ngModel)]="demoForm.city"
-              placeholder="e.g. Chennai, Coimbatore, Madurai"
+              placeholder="e.g. Chennai, Coimbatore, Madurai, Bangalore"
               required />
           </div>
 
           <div class="modal-footer-btns">
             <button type="button" class="btn-cancel" (click)="closeDemoModal()">Cancel</button>
-            <button type="submit" class="btn-submit-demo" [disabled]="!demoForm.phone">
+            <button
+              type="submit"
+              class="btn-submit-demo"
+              [disabled]="!demoForm.phone.trim() || !demoForm.showroomName.trim()">
               Confirm Showroom Demo
             </button>
           </div>
         </form>
       </div>
 
+      <!-- Confirmed Lead Booking Feedback -->
       <div *ngIf="demoSubmitted()" class="modal-success-state">
         <span class="success-icon">✨</span>
-        <h4>Showroom Demo Scheduled!</h4>
-        <p>Our Chennai team will contact you on WhatsApp at {{ demoForm.phone }} within 2 business hours.</p>
+        <h4>Showroom Demo Confirmed!</h4>
+        <p class="lead-id-pill">Booking Reference: <strong>#{{ confirmedLeadId() }}</strong></p>
+        <p>Our team will contact <strong>{{ demoForm.showroomName }}</strong> on WhatsApp at <strong>{{ demoForm.phone }}</strong> within 2 business hours.</p>
       </div>
     </div>
   </div>

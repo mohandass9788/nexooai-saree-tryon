@@ -14,7 +14,7 @@
         @if (customStoreLogo()) {
           <img [src]="customStoreLogo()" alt="Store Logo" class="brand-crest-logo" />
         } @else {
-          <span class="crest-icon">✦</span>
+          <img src="assets/images/nexooai_logo.svg" alt="NeXooAi Logo" class="brand-crest-logo" />
         }
       </div>
       <div class="brand-text">
@@ -41,6 +41,17 @@
         <span class="reach-icon">♿</span>
         <span class="reach-btn-text">{{ isReachModeActive() ? ('restoreStandardHeight' | translate) : ('reachModeBtn' | translate) }}</span>
       </button>
+
+      <!-- Exit to Public Home -->
+      <a
+        href="/"
+        class="btn-kiosk-home"
+        id="btn-kiosk-home"
+        title="Exit to NeXooAi Home Portal"
+      >
+        <span class="home-icon">⌂</span>
+        <span class="home-label">Home</span>
+      </a>
 
       <!-- Theme Switcher (Dark <-> Light) -->
       <button

@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, OnInit, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -10,13 +10,24 @@ import { NotificationService } from '../../core/services/notification.service';
   standalone: true,
   imports: [CommonModule, RouterModule, FormsModule],
   template: `
-    <div class="login-page-wrapper">
+    <div class="login-page-wrapper" [class.light-theme]="!isDarkMode()">
       <div class="login-container">
+        <!-- Top Navigation & Theme Switcher -->
+        <div class="login-header-top">
+          <a routerLink="/" class="back-home-link">← Back to NeXooAi Home</a>
+          <button
+            type="button"
+            class="btn-theme-pill"
+            (click)="toggleTheme()"
+            [title]="isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+            {{ isDarkMode() ? '☀️ Light' : '🌙 Dark' }}
+          </button>
+        </div>
+
         <!-- Brand Crest Header -->
         <div class="login-header">
-          <a routerLink="/" class="back-home-link">← Back to NeXooAi Home</a>
           <div class="brand-badge">
-            <span class="crest-symbol">✦</span>
+            <img src="assets/images/nexooai_logo.svg" alt="NeXooAi Logo" width="42" height="42" class="login-logo-img" />
           </div>
           <h2 class="login-title">Showroom Portal Login</h2>
           <p class="login-subtitle">
@@ -36,7 +47,7 @@ import { NotificationService } from '../../core/services/notification.service';
               placeholder="e.g. shop_default or nexooai-silks"
               class="form-input"
             />
-            <span class="input-hint">Default showroom: <code>shop_default</code></span>
+            <span class="input-hint">Showroom Tenant: <code>{{ tenantSlug || 'shop_default' }}</code> • Data & try-ons strictly isolated per store</span>
           </div>
 
           <div class="form-group">
@@ -93,14 +104,15 @@ import { NotificationService } from '../../core/services/notification.service';
             <span class="btn-arrow" *ngIf="!loading()">➔</span>
           </button>
 
-          <div class="form-footer-links">
-            <span>Need to run a showroom floor screen?</span>
-            <a routerLink="/kiosk" class="kiosk-mode-link">Launch Floor Kiosk Mode</a>
+          <!-- Authorized Staff Protected Floor Screen Notice -->
+          <div class="kiosk-security-box">
+            <span class="security-lock-icon">🔒</span>
+            <span class="security-lock-text">Floor Kiosks are managed and authorized from the Showroom Management Dashboard.</span>
           </div>
         </form>
 
         <div class="support-footer">
-          <span>Protected by NeXooAi Tenant Isolation Engine</span>
+          <span>Protected by NeXooAi Multi-Tenant Engine</span>
           <span>•</span>
           <a href="mailto:support@nexooai.in">Need Help?</a>
         </div>
@@ -117,6 +129,7 @@ import { NotificationService } from '../../core/services/notification.service';
       align-items: center;
       justify-content: center;
       padding: 2rem 1.5rem;
+      transition: background 0.3s ease, color 0.3s ease;
     }
 
     .login-container {
@@ -126,9 +139,11 @@ import { NotificationService } from '../../core/services/notification.service';
       flex-direction: column;
     }
 
-    .login-header {
-      text-align: center;
-      margin-bottom: 2rem;
+    .login-header-top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.5rem;
     }
 
     .back-home-link {
@@ -137,28 +152,47 @@ import { NotificationService } from '../../core/services/notification.service';
       text-decoration: none;
       font-size: 0.88rem;
       font-weight: 600;
-      margin-bottom: 1.5rem;
       transition: opacity 0.2s;
     }
     .back-home-link:hover {
       opacity: 0.8;
     }
 
+    .btn-theme-pill {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #ffffff;
+      padding: 0.4rem 0.85rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-theme-pill:hover {
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    .login-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
     .brand-badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      width: 48px;
-      height: 48px;
+      width: 52px;
+      height: 52px;
       border-radius: 50%;
       background: linear-gradient(135deg, rgba(212, 175, 55, 0.2) 0%, rgba(212, 175, 55, 0.05) 100%);
       border: 1px solid rgba(212, 175, 55, 0.4);
       margin-bottom: 1rem;
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.2);
     }
 
-    .crest-symbol {
-      color: var(--color-gold, #d4af37);
-      font-size: 1.5rem;
+    .login-logo-img {
+      object-fit: contain;
     }
 
     .login-title {
@@ -182,6 +216,7 @@ import { NotificationService } from '../../core/services/notification.service';
       border-radius: 16px;
       padding: 2.25rem;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      transition: all 0.3s ease;
     }
 
     .form-group {
@@ -308,20 +343,23 @@ import { NotificationService } from '../../core/services/notification.service';
       cursor: not-allowed;
     }
 
-    .form-footer-links {
+    .kiosk-security-box {
       margin-top: 1.5rem;
-      text-align: center;
-      font-size: 0.85rem;
-      color: #b5a4b7;
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      background: rgba(212, 175, 55, 0.08);
+      border: 1px dashed rgba(212, 175, 55, 0.3);
       display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
+      align-items: center;
+      gap: 0.65rem;
+      font-size: 0.8rem;
+      color: #dfcfd4;
+      line-height: 1.4;
     }
 
-    .kiosk-mode-link {
-      color: var(--color-gold-light, #fbeea8);
-      font-weight: 600;
-      text-decoration: none;
+    .security-lock-icon {
+      font-size: 1rem;
+      flex-shrink: 0;
     }
 
     .support-footer {
@@ -339,9 +377,112 @@ import { NotificationService } from '../../core/services/notification.service';
       color: var(--color-gold-light, #fbeea8);
       text-decoration: none;
     }
+
+    /* =========================================================================
+       LIGHT THEME STYLES (MATCHES HOMEPAGE LIGHT PREFERENCE)
+       ========================================================================= */
+    .login-page-wrapper.light-theme {
+      background: radial-gradient(circle at 50% 10%, #faf8f5 0%, #f1ecf5 65%, #e8e0ee 100%);
+      color: #1f1426;
+    }
+
+    .login-page-wrapper.light-theme .back-home-link {
+      color: #7b5900;
+    }
+
+    .login-page-wrapper.light-theme .btn-theme-pill {
+      background: rgba(0, 0, 0, 0.06);
+      border: 1px solid rgba(0, 0, 0, 0.15);
+      color: #1f1426;
+    }
+
+    .login-page-wrapper.light-theme .brand-badge {
+      background: #ffffff;
+      border: 1px solid rgba(212, 175, 55, 0.5);
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.25);
+    }
+
+    .login-page-wrapper.light-theme .login-title {
+      color: #1a0f23;
+    }
+
+    .login-page-wrapper.light-theme .login-subtitle {
+      color: #635368;
+    }
+
+    .login-page-wrapper.light-theme .glass-panel {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      box-shadow: 0 20px 45px rgba(45, 10, 60, 0.08);
+    }
+
+    .login-page-wrapper.light-theme .form-group label {
+      color: #2b1a34;
+    }
+
+    .login-page-wrapper.light-theme .forgot-link {
+      color: #845d00;
+    }
+
+    .login-page-wrapper.light-theme .form-input {
+      background: #ffffff;
+      color: #1a0f23;
+      border: 1px solid #d8cedc;
+    }
+
+    .login-page-wrapper.light-theme .form-input:focus {
+      border-color: #d4af37;
+      box-shadow: 0 0 0 2px rgba(212, 175, 55, 0.25);
+    }
+
+    .login-page-wrapper.light-theme .input-hint {
+      color: #7a6a80;
+    }
+
+    .login-page-wrapper.light-theme .input-hint code {
+      background: #e9e2ed;
+      color: #4a2c5a;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+    }
+
+    .login-page-wrapper.light-theme .demo-autofill-box {
+      background: #fcf9ee;
+      border: 1px solid #e8deb8;
+    }
+
+    .login-page-wrapper.light-theme .autofill-title {
+      color: #7b5900;
+    }
+
+    .login-page-wrapper.light-theme .chip-btn {
+      background: #fff;
+      border-color: #d4af37;
+      color: #7b5900;
+    }
+
+    .login-page-wrapper.light-theme .chip-btn.super-chip {
+      background: #fff0f6;
+      border-color: #ff177d;
+      color: #c40c5c;
+    }
+
+    .login-page-wrapper.light-theme .kiosk-security-box {
+      background: #fbf7ec;
+      border-color: #dfcd97;
+      color: #5e4813;
+    }
+
+    .login-page-wrapper.light-theme .support-footer {
+      color: #7a6a80;
+    }
+
+    .login-page-wrapper.light-theme .support-footer a {
+      color: #7b5900;
+    }
   `],
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly http = inject(HttpClient);
   private readonly notificationService = inject(NotificationService);
@@ -350,6 +491,26 @@ export class LoginComponent {
   email = 'admin@nexooai.com';
   password = 'Qwerty@123';
   loading = signal<boolean>(false);
+  isDarkMode = signal<boolean>(true);
+
+  ngOnInit(): void {
+    // Sync theme from public homepage preference
+    try {
+      const savedTheme = localStorage.getItem('nexooai_public_theme');
+      if (savedTheme) {
+        this.isDarkMode.set(savedTheme === 'dark');
+      }
+    } catch {
+      this.isDarkMode.set(true);
+    }
+  }
+
+  toggleTheme(): void {
+    this.isDarkMode.update((v) => !v);
+    try {
+      localStorage.setItem('nexooai_public_theme', this.isDarkMode() ? 'dark' : 'light');
+    } catch {}
+  }
 
   autofill(email: string, pass: string, shop: string) {
     this.email = email;

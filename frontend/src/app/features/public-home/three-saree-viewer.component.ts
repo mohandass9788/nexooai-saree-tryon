@@ -12,8 +12,9 @@ import { CommonModule } from '@angular/common';
 import * as THREE from 'three';
 import { getProject, types } from '@theatre/core';
 
-export interface SareeFabricTheme {
+export interface GarmentFabricTheme {
   name: string;
+  category: string;
   labelEn: string;
   labelTa: string;
   primaryColor: number;
@@ -36,15 +37,15 @@ export interface SareeFabricTheme {
         <div class="three-hud-header">
           <div class="hud-badge">
             <span class="hud-pulse-dot"></span>
-            <span>THREE.JS + THEATRE.JS 3D FABRIC ENGINE</span>
+            <span>THREE.JS + THEATRE.JS 3D SHOWROOM KIOSK</span>
           </div>
-          <span class="hud-tech-note">Physical Silk Sheen • Real-Time Zari Physics</span>
+          <span class="hud-tech-note">55-Inch Kiosk Hardware • Multi-Garment Physics</span>
         </div>
 
         <!-- Center Interactive Tooltip (Dismisses on first interaction) -->
         <div class="hud-gesture-hint" [class.hidden]="hasInteracted()">
           <span class="hint-icon">✦</span>
-          <span>Drag or hover to inspect 3D silk drape • Click presets below</span>
+          <span>Rotate 3D Kiosk • Click Outfits & Camera Angles Below</span>
         </div>
 
         <!-- Bottom Controls Bar -->
@@ -58,7 +59,7 @@ export interface SareeFabricTheme {
               (click)="playPreset('orbit')"
             >
               <span>🎥</span>
-              <span>Cinematic Orbit</span>
+              <span>Kiosk 360°</span>
             </button>
 
             <button
@@ -68,7 +69,7 @@ export interface SareeFabricTheme {
               (click)="playPreset('macro')"
             >
               <span>🔍</span>
-              <span>Zari Macro View</span>
+              <span>Zari Macro</span>
             </button>
 
             <button
@@ -78,13 +79,13 @@ export interface SareeFabricTheme {
               (click)="playPreset('pallu')"
             >
               <span>✨</span>
-              <span>Floating Pallu</span>
+              <span>Fluid Drape</span>
             </button>
           </div>
 
-          <!-- Real-Time Fabric Color Palette Switcher -->
+          <!-- Real-Time Multi-Garment Switcher -->
           <div class="fabric-palette-group">
-            <span class="palette-label">Silk Fabric:</span>
+            <span class="palette-label">Garment:</span>
             <div class="palette-swatches">
               @for (theme of fabricThemes; track theme.name) {
                 <button
@@ -92,11 +93,12 @@ export interface SareeFabricTheme {
                   class="swatch-btn"
                   [class.selected]="activeTheme().name === theme.name"
                   [style.background]="getSwatchCss(theme)"
-                  [title]="theme.labelEn + ' (' + theme.labelTa + ')'"
+                  [title]="theme.category + ': ' + theme.labelEn + ' (' + theme.labelTa + ')'"
                   (click)="selectTheme(theme)"
                 ></button>
               }
             </div>
+            <span class="active-garment-name">{{ activeTheme().labelEn }}</span>
           </div>
         </div>
       </div>
@@ -174,10 +176,11 @@ export interface SareeFabricTheme {
 
       .hud-tech-note {
         font-size: 0.78rem;
-        color: rgba(255, 255, 255, 0.6);
-        background: rgba(0, 0, 0, 0.4);
-        padding: 4px 10px;
+        color: rgba(255, 255, 255, 0.7);
+        background: rgba(0, 0, 0, 0.5);
+        padding: 5px 12px;
         border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
       }
 
       .hud-gesture-hint {
@@ -296,25 +299,42 @@ export interface SareeFabricTheme {
         box-shadow: 0 0 10px #ffd700;
       }
 
+      .active-garment-name {
+        font-size: 0.78rem;
+        font-weight: 600;
+        color: #ffd700;
+        padding-left: 4px;
+      }
+
       @keyframes pulse {
-        0% { transform: scale(0.9); opacity: 0.8; }
-        50% { transform: scale(1.15); opacity: 1; }
-        100% { transform: scale(0.9); opacity: 0.8; }
+        0% {
+          transform: scale(0.9);
+          opacity: 0.8;
+        }
+        50% {
+          transform: scale(1.1);
+          opacity: 1;
+        }
+        100% {
+          transform: scale(0.9);
+          opacity: 0.8;
+        }
       }
 
       @media (max-width: 768px) {
         .three-viewer-container {
-          height: 440px;
+          height: 480px;
         }
-
         .three-hud-controls {
           flex-direction: column;
           align-items: stretch;
         }
-
         .camera-preset-group,
         .fabric-palette-group {
           justify-content: center;
+        }
+        .active-garment-name {
+          display: none;
         }
       }
     `,
@@ -329,7 +349,7 @@ export class ThreeSareeViewerComponent implements OnInit, OnDestroy {
 
   private ngZone = inject(NgZone);
 
-  // Three.js instances
+  // Core Three.js Objects
   private scene!: THREE.Scene;
   private camera!: THREE.PerspectiveCamera;
   private renderer!: THREE.WebGLRenderer;
@@ -337,9 +357,9 @@ export class ThreeSareeViewerComponent implements OnInit, OnDestroy {
   private fabricMaterial!: THREE.MeshPhysicalMaterial;
   private zariGoldBorderMesh!: THREE.Mesh;
   private particlesGroup!: THREE.Points;
-  private mannequinGroup!: THREE.Group;
+  private kioskGroup!: THREE.Group;
   private animationFrameId: number | null = null;
-  private clock = new THREE.Clock();
+  private startTime = performance.now();
 
   // Mouse / Raycaster interaction
   private mouseX = 0;
@@ -356,34 +376,38 @@ export class ThreeSareeViewerComponent implements OnInit, OnDestroy {
   hasInteracted = signal<boolean>(false);
   activePreset = signal<'orbit' | 'macro' | 'pallu'>('orbit');
 
-  fabricThemes: SareeFabricTheme[] = [
+  fabricThemes: GarmentFabricTheme[] = [
     {
-      name: 'crimson',
-      labelEn: 'Royal Crimson Gold',
+      name: 'crimson-saree',
+      category: 'Saree',
+      labelEn: 'Royal Crimson Saree',
       labelTa: 'அரக்கு பட்டு',
       primaryColor: 0x8a0d28,
       sheenColor: 0xffd700,
       zariGold: 0xe5b838,
     },
     {
-      name: 'peacock',
-      labelEn: 'Peacock Mayilkazhutthu',
+      name: 'peacock-salwar',
+      category: 'Salwar',
+      labelEn: 'Peacock Blue Salwar',
       labelTa: 'மயில்கழுத்து நீலம்',
       primaryColor: 0x094866,
       sheenColor: 0x00e5ff,
       zariGold: 0xe5c158,
     },
     {
-      name: 'emerald',
-      labelEn: 'Temple Emerald Green',
+      name: 'emerald-sherwani',
+      category: 'Sherwani',
+      labelEn: 'Temple Emerald Sherwani',
       labelTa: 'கிளிப்பச்சை பட்டு',
       primaryColor: 0x0e5c38,
       sheenColor: 0x55ff99,
       zariGold: 0xdfae26,
     },
     {
-      name: 'rani',
-      labelEn: 'Rani Magenta Rose',
+      name: 'rani-lehenga',
+      category: 'Lehenga',
+      labelEn: 'Rani Rose Bridal Lehenga',
       labelTa: 'ராணி ரோஸ்',
       primaryColor: 0x9e1250,
       sheenColor: 0xff66cc,
@@ -391,7 +415,7 @@ export class ThreeSareeViewerComponent implements OnInit, OnDestroy {
     },
   ];
 
-  activeTheme = signal<SareeFabricTheme>(this.fabricThemes[0]);
+  activeTheme = signal<GarmentFabricTheme>(this.fabricThemes[0]);
 
   ngOnInit() {
     this.ngZone.runOutsideAngular(() => {
@@ -410,6 +434,7 @@ export class ThreeSareeViewerComponent implements OnInit, OnDestroy {
     if (this.renderer) {
       this.renderer.dispose();
     }
+    window.removeEventListener('resize', this.onResize);
   }
 
   private initThree(): boolean {
@@ -418,7 +443,6 @@ export class ThreeSareeViewerComponent implements OnInit, OnDestroy {
       const canvas = this.canvasRef?.nativeElement;
       if (!container || !canvas) return false;
 
-      // Check for WebGL support
       const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
       if (!gl) return false;
 
@@ -449,53 +473,103 @@ export class ThreeSareeViewerComponent implements OnInit, OnDestroy {
       const ambientLight = new THREE.AmbientLight(0x2a142e, 1.8);
       this.scene.add(ambientLight);
 
-    const goldKeyLight = new THREE.DirectionalLight(0xffecc2, 2.8);
-    goldKeyLight.position.set(3, 4, 3);
-    this.scene.add(goldKeyLight);
+      const goldKeyLight = new THREE.DirectionalLight(0xffecc2, 2.8);
+      goldKeyLight.position.set(3, 4, 3);
+      this.scene.add(goldKeyLight);
 
-    const mandapamRimLight = new THREE.DirectionalLight(0xd4af37, 2.5);
-    mandapamRimLight.position.set(-3, 2, -2);
-    this.scene.add(mandapamRimLight);
+      const mandapamRimLight = new THREE.DirectionalLight(0xd4af37, 2.5);
+      mandapamRimLight.position.set(-3, 2, -2);
+      this.scene.add(mandapamRimLight);
 
-    const bottomUplight = new THREE.PointLight(0xa61c48, 1.5, 10);
-    bottomUplight.position.set(0, -1.5, 1.5);
-    this.scene.add(bottomUplight);
+      const bottomUplight = new THREE.PointLight(0xa61c48, 1.5, 10);
+      bottomUplight.position.set(0, -1.5, 1.5);
+      this.scene.add(bottomUplight);
 
-    // 5. Build 3D Saree Drape Geometry & Material
-    this.buildSareeDrape();
+      // 5. Build 3D 55-inch Showroom Kiosk Frame
+      this.buildShowroomKioskHardware();
 
-    // 6. Build Floating Zari Glitter Sparkles
-    this.buildZariGlitter();
+      // 6. Build 3D Fabric Drape Geometry & Material
+      this.buildFabricDrape();
 
-    // 7. Build Elegant Pedestal
-    this.buildMannequinPedestal();
+      // 7. Build Floating Zari Glitter Sparkles
+      this.buildZariGlitter();
 
-    // Handle Window Resize
-    window.addEventListener('resize', this.onResize);
-    return true;
-  } catch {
-    return false;
+      // Handle Window Resize
+      window.addEventListener('resize', this.onResize);
+      return true;
+    } catch {
+      return false;
+    }
   }
-}
 
-  private buildSareeDrape() {
-    // Curving wave cloth mesh representing flowing pleated Kanchipuram silk
-    const geometry = new THREE.PlaneGeometry(2.4, 3.2, 64, 64);
+  private buildShowroomKioskHardware() {
+    this.kioskGroup = new THREE.Group();
 
-    // Initial cloth drape curve
+    // Pedestal Base (Metallic Round Stand with Gold Accent)
+    const baseGeom = new THREE.CylinderGeometry(1.3, 1.45, 0.15, 32);
+    const baseMat = new THREE.MeshStandardMaterial({
+      color: 0x140d18,
+      metalness: 0.85,
+      roughness: 0.25,
+    });
+    const baseMesh = new THREE.Mesh(baseGeom, baseMat);
+    baseMesh.position.y = -1.55;
+    this.kioskGroup.add(baseMesh);
+
+    // Glowing LED Ring on Base
+    const ringGeom = new THREE.TorusGeometry(1.4, 0.02, 16, 48);
+    const ringMat = new THREE.MeshStandardMaterial({
+      color: 0xd4af37,
+      metalness: 0.9,
+      roughness: 0.15,
+      emissive: 0xaa7c11,
+      emissiveIntensity: 0.6,
+    });
+    const ringMesh = new THREE.Mesh(ringGeom, ringMat);
+    ringMesh.rotation.x = Math.PI / 2;
+    ringMesh.position.y = -1.47;
+    this.kioskGroup.add(ringMesh);
+
+    // 55" Portrait Kiosk Chassis (Back Casing)
+    const chassisGeom = new THREE.BoxGeometry(2.55, 3.5, 0.12);
+    const chassisMat = new THREE.MeshStandardMaterial({
+      color: 0x0d0711,
+      metalness: 0.9,
+      roughness: 0.2,
+    });
+    const chassisMesh = new THREE.Mesh(chassisGeom, chassisMat);
+    chassisMesh.position.set(0, 0.35, -0.06);
+    this.kioskGroup.add(chassisMesh);
+
+    // Golden Bezel Border Frame around Kiosk Screen
+    const bezelGeom = new THREE.BoxGeometry(2.6, 3.55, 0.04);
+    const bezelMat = new THREE.MeshStandardMaterial({
+      color: 0xd4af37,
+      metalness: 0.95,
+      roughness: 0.18,
+    });
+    const bezelMesh = new THREE.Mesh(bezelGeom, bezelMat);
+    bezelMesh.position.set(0, 0.35, -0.08);
+    this.kioskGroup.add(bezelMesh);
+
+    this.scene.add(this.kioskGroup);
+  }
+
+  private buildFabricDrape() {
+    // Dynamic cloth drape wave representing saree/garment inside kiosk view
+    const geometry = new THREE.PlaneGeometry(2.35, 3.15, 64, 64);
+
     const pos = geometry.attributes['position'];
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i);
       const y = pos.getY(i);
-      // Create S-curve pleat cascade
-      const z = Math.sin(x * 3.5) * 0.25 + Math.cos(y * 2.0) * 0.15;
+      const z = Math.sin(x * 3.5) * 0.2 + Math.cos(y * 2.0) * 0.12;
       pos.setZ(i, z);
     }
     geometry.computeVertexNormals();
 
     const theme = this.activeTheme();
 
-    // Luxury Physical Sheen Material (Charlie Sheen BRDF model)
     this.fabricMaterial = new THREE.MeshPhysicalMaterial({
       color: theme.primaryColor,
       roughness: 0.32,
@@ -509,19 +583,19 @@ export class ThreeSareeViewerComponent implements OnInit, OnDestroy {
     });
 
     this.fabricMesh = new THREE.Mesh(geometry, this.fabricMaterial);
-    this.fabricMesh.position.set(0, 0.4, 0);
-    this.scene.add(this.fabricMesh);
+    this.fabricMesh.position.set(0, 0.38, 0.03);
+    this.kioskGroup.add(this.fabricMesh);
 
-    // Add Heavy Golden Zari Border Strip at Bottom & Pallu
-    const zariGeom = new THREE.PlaneGeometry(2.4, 0.35, 32, 8);
+    // Zari Border Strip
+    const zariGeom = new THREE.PlaneGeometry(2.35, 0.32, 32, 8);
     const zariMat = new THREE.MeshStandardMaterial({
       color: theme.zariGold,
-      metalness: 0.85,
-      roughness: 0.22,
+      metalness: 0.88,
+      roughness: 0.2,
       side: THREE.DoubleSide,
     });
     this.zariGoldBorderMesh = new THREE.Mesh(zariGeom, zariMat);
-    this.zariGoldBorderMesh.position.set(0, -1.05, 0.05);
+    this.zariGoldBorderMesh.position.set(0, -1.02, 0.05);
     this.fabricMesh.add(this.zariGoldBorderMesh);
   }
 
@@ -560,39 +634,10 @@ export class ThreeSareeViewerComponent implements OnInit, OnDestroy {
     this.scene.add(this.particlesGroup);
   }
 
-  private buildMannequinPedestal() {
-    this.mannequinGroup = new THREE.Group();
-
-    // Pedestal Cylinder
-    const baseGeom = new THREE.CylinderGeometry(1.2, 1.35, 0.15, 32);
-    const baseMat = new THREE.MeshStandardMaterial({
-      color: 0x180d1a,
-      metalness: 0.7,
-      roughness: 0.3,
-    });
-    const baseMesh = new THREE.Mesh(baseGeom, baseMat);
-    baseMesh.position.y = -1.45;
-    this.mannequinGroup.add(baseMesh);
-
-    // Golden Rim Ring on Pedestal
-    const ringGeom = new THREE.TorusGeometry(1.3, 0.02, 16, 48);
-    const ringMat = new THREE.MeshStandardMaterial({
-      color: 0xd4af37,
-      metalness: 0.9,
-      roughness: 0.15,
-    });
-    const ringMesh = new THREE.Mesh(ringGeom, ringMat);
-    ringMesh.rotation.x = Math.PI / 2;
-    ringMesh.position.y = -1.37;
-    this.mannequinGroup.add(ringMesh);
-
-    this.scene.add(this.mannequinGroup);
-  }
-
   private initTheatreJs() {
     try {
-      this.theatreProject = getProject('NeXooAiSaree3D');
-      this.theatreSheet = this.theatreProject.sheet('CinematicDrapeAnimation');
+      this.theatreProject = getProject('NeXooAiKiosk3D');
+      this.theatreSheet = this.theatreProject.sheet('CinematicKioskAnimation');
 
       this.theatreCameraObj = this.theatreSheet.object('CameraCinematics', {
         distance: types.number(4.2, { range: [2.0, 8.0] }),
@@ -601,7 +646,7 @@ export class ThreeSareeViewerComponent implements OnInit, OnDestroy {
         waveIntensity: types.number(1.2, { range: [0.2, 3.0] }),
       });
     } catch {
-      // Graceful fallback if project store initializes in memory
+      // fallback
     }
   }
 
@@ -609,29 +654,27 @@ export class ThreeSareeViewerComponent implements OnInit, OnDestroy {
     if (!this.renderer || !this.scene || !this.camera) return;
     this.animationFrameId = requestAnimationFrame(this.animate);
 
-    const delta = this.clock.getDelta();
-    const elapsedTime = this.clock.getElapsedTime();
+    const elapsedTime = (performance.now() - this.startTime) * 0.001;
 
     // 1. Fluid Fabric Wave Simulation on Vertex Geometry
     if (this.fabricMesh) {
       const pos = this.fabricMesh.geometry.attributes['position'];
       const waveFreq = 2.4;
-      const waveAmp = 0.08;
+      const waveAmp = 0.07;
 
       for (let i = 0; i < pos.count; i++) {
         const x = pos.getX(i);
         const y = pos.getY(i);
-        // Dynamic procedural ripples
         const z =
-          Math.sin(x * 3.5 + elapsedTime * 1.5) * 0.2 +
+          Math.sin(x * 3.5 + elapsedTime * 1.5) * 0.18 +
           Math.sin(y * waveFreq + elapsedTime * 2.2) * waveAmp;
         pos.setZ(i, z);
       }
       pos.needsUpdate = true;
       this.fabricMesh.geometry.computeVertexNormals();
 
-      // Gentle cloth breathing floating rotation
-      this.fabricMesh.rotation.y = Math.sin(elapsedTime * 0.4) * 0.12;
+      // Gentle kiosk cloth breathing motion
+      this.fabricMesh.rotation.y = Math.sin(elapsedTime * 0.4) * 0.08;
     }
 
     // 2. Slow orbital drift of glittering gold sparkles
@@ -651,64 +694,62 @@ export class ThreeSareeViewerComponent implements OnInit, OnDestroy {
       baseDist = 3.2;
     }
 
-    this.camera.position.x = Math.sin(this.targetCameraRotationY) * baseDist;
+    this.camera.position.x =
+      Math.sin(this.targetCameraRotationY) * baseDist + Math.sin(elapsedTime * 0.15) * 0.2;
     this.camera.position.z = Math.cos(this.targetCameraRotationY) * baseDist;
-    this.camera.position.y = 1.1 + this.targetCameraRotationX;
-    this.camera.lookAt(0, 0.2, 0);
+    this.camera.position.y = 1.2 + this.targetCameraRotationX + Math.cos(elapsedTime * 0.2) * 0.1;
+    this.camera.lookAt(0, 0.35, 0);
 
-    // 4. Render
     this.renderer.render(this.scene, this.camera);
   };
 
+  private onResize = () => {
+    const container = this.containerRef?.nativeElement;
+    if (!container || !this.renderer || !this.camera) return;
+
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+
+    this.camera.aspect = width / height;
+    this.camera.updateProjectionMatrix();
+    this.renderer.setSize(width, height);
+  };
+
   onMouseMove(event: MouseEvent) {
-    this.hasInteracted.set(true);
-    const rect = this.containerRef.nativeElement.getBoundingClientRect();
-    this.mouseX = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    this.mouseY = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
+    if (!this.hasInteracted()) {
+      this.hasInteracted.set(true);
+    }
+    const container = this.containerRef?.nativeElement;
+    if (!container) return;
+
+    const rect = container.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+
+    this.mouseX = (x / rect.width) * 2 - 1;
+    this.mouseY = -(y / rect.height) * 2 + 1;
+  }
+
+  selectTheme(theme: GarmentFabricTheme) {
+    this.activeTheme.set(theme);
+    if (this.fabricMaterial) {
+      this.fabricMaterial.color.setHex(theme.primaryColor);
+      this.fabricMaterial.sheenColor = new THREE.Color(theme.sheenColor);
+    }
+    if (this.zariGoldBorderMesh) {
+      const mat = this.zariGoldBorderMesh.material as THREE.MeshStandardMaterial;
+      if (mat) mat.color.setHex(theme.zariGold);
+    }
   }
 
   playPreset(preset: 'orbit' | 'macro' | 'pallu') {
     this.activePreset.set(preset);
     this.hasInteracted.set(true);
-
-    if (preset === 'orbit') {
-      this.mouseX = 0.5;
-    } else if (preset === 'macro') {
-      this.mouseX = 0.1;
-      this.mouseY = -0.3;
-    } else if (preset === 'pallu') {
-      this.mouseX = -0.6;
-      this.mouseY = 0.2;
-    }
   }
 
-  selectTheme(theme: SareeFabricTheme) {
-    this.activeTheme.set(theme);
-    this.hasInteracted.set(true);
-
-    if (this.fabricMaterial) {
-      this.fabricMaterial.color.setHex(theme.primaryColor);
-      this.fabricMaterial.sheenColor.setHex(theme.sheenColor);
-    }
-    if (this.zariGoldBorderMesh) {
-      (this.zariGoldBorderMesh.material as THREE.MeshStandardMaterial).color.setHex(
-        theme.zariGold
-      );
-    }
-  }
-
-  getSwatchCss(theme: SareeFabricTheme): string {
+  getSwatchCss(theme: GarmentFabricTheme): string {
     const hex = '#' + theme.primaryColor.toString(16).padStart(6, '0');
     const gold = '#' + theme.zariGold.toString(16).padStart(6, '0');
-    return `linear-gradient(135deg, ${hex} 60%, ${gold} 100%)`;
+    return `linear-gradient(135deg, ${hex} 0%, ${gold} 100%)`;
   }
-
-  private onResize = () => {
-    if (!this.containerRef || !this.renderer || !this.camera) return;
-    const width = this.containerRef.nativeElement.clientWidth;
-    const height = this.containerRef.nativeElement.clientHeight;
-    this.camera.aspect = width / height;
-    this.camera.updateProjectionMatrix();
-    this.renderer.setSize(width, height);
-  };
 }

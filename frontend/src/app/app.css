@@ -107,6 +107,40 @@
   flex-shrink: 0;
 }
 
+.btn-kiosk-home {
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid var(--border-gold-bright, rgba(212, 175, 55, 0.4));
+  color: var(--color-gold-light, #fbeea8);
+  padding: 10px 18px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  font-size: 0.92rem;
+  text-decoration: none;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.btn-kiosk-home:hover {
+  background: rgba(212, 175, 55, 0.25);
+  transform: translateY(-1px);
+  color: #ffffff;
+}
+
+.btn-kiosk-home:active {
+  transform: scale(0.96);
+}
+
+.home-icon {
+  font-size: 1.15rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .btn-theme-toggle {
   background: rgba(212, 175, 55, 0.12);
   border: 1px solid var(--border-gold-bright);
@@ -6036,6 +6070,14 @@
   background: #ffffff;
   border: 1px solid #e2d7c5;
   color: #374151;
+  border-radius: 999px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
+}
+
+.kiosk-app-wrapper.light-theme .btn-kiosk-home {
+  background: #fdf3d8;
+  border: 1px solid #eed69d;
+  color: #5c4314;
   border-radius: 999px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
 }
