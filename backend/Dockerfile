@@ -19,9 +19,9 @@ COPY backend/requirements.txt /app/backend/requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r /app/backend/requirements.txt
 
-# Copy source code and media
+# Copy source code and ensure media directory exists
 COPY backend /app/backend
-COPY media /app/media
+RUN mkdir -p /app/media
 
 # Expose FastAPI backend port
 EXPOSE 8000
