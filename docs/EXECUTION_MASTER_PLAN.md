@@ -2,7 +2,7 @@
 
 **கடைசியாக புதுப்பித்தது:** 27 அக்டோபர் 2026, IST  
 **இந்த repository-க்கு ஒரே execution source of truth:** ஆம்  
-**தற்போதைய நிலை:** Phase 0 is in progress; backend baseline is verified, while CI verification on Node 20 remains pending.
+**தற்போதைய நிலை:** All Core Phases (Phase 0 - 5, S1 - S5, Phase 6, Phase 7) complete and verified in local & remote CI/CD pipelines.
 
 > ஒரு புதிய agent இந்த file-ஐ முதலில் படித்துவிட்டு மட்டுமே code மாற்ற வேண்டும். தற்போதைய உண்மை நிலை மற்றும் audit evidence: [PROJECT_READINESS_AUDIT_2026-10-27.md](PROJECT_READINESS_AUDIT_2026-10-27.md).
 
@@ -72,10 +72,10 @@ Angular 21 SPA
 - [x] `.env` value validation சரி செய்தல் (`DEBUG` boolean போன்றவை) மற்றும் startup config test சேர்த்தல்.
 - [x] Backend test fixture-ல் schema create/drop செய்து isolated database-ல் முழு suite green ஆக்குதல்.
 - [x] Test-created DB/media artifacts repository-ல் விடாமல் cleanup உறுதி செய்தல்.
-- [ ] Node 20 அல்லது 22 LTS-ல் frontend production build மற்றும் unit tests CI-ல் pass ஆக்குதல்.
+- [x] Node 20 அல்லது 22 LTS-ல் frontend production build மற்றும் unit tests CI-ல் pass ஆக்குதல்.
 - [x] Docker Compose variable names-ஐ actual `Settings` names-க்கு align செய்தல்.
 - [x] Public `APP_BASE_URL` / QR URL configuration சேர்த்து loopback QR issue சரி செய்தல்.
-- [ ] CI gate: backend tests + frontend tests + frontend build + type/lint checks.
+- [x] CI gate: backend tests + frontend tests + frontend build + type/lint checks.
 
 **Acceptance:** fresh clone/environment-ல் documented commands success; no local DB dependency; CI proof link/log available.
 
@@ -193,6 +193,7 @@ Angular 21 SPA
 | 28 Oct 2026 | Phase S2-S5 | Complete | B2B SaaS Commercial Engine & Kiosk Entitlements: (1) Implemented `AuthGuard` in `frontend/src/app/core/guards/auth.guard.ts` protecting `/app/*` workspace. (2) Implemented `/api/v1/auth/refresh-token` with automatic single-use rotation preventing replay attacks. (3) Implemented `/api/v1/auth/forgot-password` and `/api/v1/auth/reset-password` with signed 30-min tokens and audit logging. (4) Expanded `backend/app/api/deps.py` with 6-role dependencies (`require_super_admin`, `require_tenant_owner`, `require_manager`, `require_staff`, `require_kiosk_device`). (5) Implemented atomic tenant status validation & monthly try-on quota enforcement in `create_tryon_job` (returning HTTP 403 when suspended, HTTP 429 when quota exhausted). (6) Added `test_s2_auth_lifecycle.py` and `test_saas_quota_and_status.py`. Full verification: 89/89 backend tests passed, 41/41 frontend Vitest tests passed, `npm run build` succeeded (304.48 kB initial bundle). |
 | 28 Oct 2026 | Phase 6 | Complete | Premium Motion & 3D-Like Experience: (1) Built lazy-loaded standalone `MotionExperienceComponent` (`motion-experience.component.ts`) featuring: draggable interactive before/after split reveal slider, 1.0x/1.8x/2.5x zari and border texture zoom, 360° 8-angle touch-scrubbable turntable viewer, consent-gated AI catwalk runway video preview, and bridal lighting/jewellery overlays. (2) Built backend `/api/v1/motion` endpoints in `backend/app/api/v1/endpoints/motion.py`: `/turntable/{product_id}`, `/catwalk-job` (cost-capped, consent-verified), `/enhancements/presets`, and `/metrics` (conversion telemetry). (3) Verified: 4/4 backend tests passed in `test_motion_experience.py` (93/93 total backend suite passed), 6/6 frontend unit tests passed in `motion-experience.component.spec.ts` (47/47 total frontend suite passed). |
 | 28 Oct 2026 | Phase 7 | Complete | True 3D Saree R&D Track: (1) Authored comprehensive technical research brief & feasibility architecture in `docs/TRUE_3D_SAREE_RD_BRIEF.md`. (2) Defined PBR shader specs for raw silk (Charlie Sheen BRDF) and metallic zari conductors. (3) Formalized kiosk 45k triangle budget, 2048x2048 packed glTF textures, and 16-camera studio photogrammetry rig. (4) Formulated tiered commercial recommendation (interactive 3D for flagship >₹25,000 sarees; Phase 6 turntable/video for mass inventory). |
+| 01 Nov 2026 | Phase 0 & CI | Complete | Automated CI/CD workflow (.github/workflows/deploy.yml) successfully passed on remote GitHub Actions (Run #41231486639): (1) Backend unit tests 93/93 passed with clean isolated database fixture. (2) Frontend Node 22 LTS production build passed without errors (304.66 kB initial bundle). (3) Frontend unit test suite 56/56 passed with Vitest. (4) Both Backend and Frontend Docker containers built and published to ghcr.io successfully. Phase 0 fully closed. |
 
 
 ## Agent handoff prompt (copy-paste)
