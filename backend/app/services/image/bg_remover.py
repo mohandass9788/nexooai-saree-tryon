@@ -1,7 +1,12 @@
 import io
 import logging
 from PIL import Image
-from rembg import remove, new_session
+
+try:
+    from rembg import remove, new_session
+except ImportError:
+    remove = None
+    new_session = None
 
 logger = logging.getLogger("services.bg_remover")
 
@@ -10,6 +15,8 @@ _session = None
 
 def get_rembg_session():
     global _session
+    if remove is None or new_session is None:
+        return None
     if _session is None:
         try:
             _session = new_session("u2net")
@@ -25,6 +32,9 @@ def remove_bg_and_apply_studio(
     Automatically isolates the person and replaces cluttered backgrounds
     with an ultra-clean, high-fashion showroom studio white backdrop.
     """
+    if remove is None:
+        logger.info("rembg package not installed; skipping background isolation")
+        return image_bytes
     try:
         input_img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
         session = get_rembg_session()

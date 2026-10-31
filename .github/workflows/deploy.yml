@@ -49,7 +49,7 @@ jobs:
           DATABASE_URL: sqlite+aiosqlite:///./backend/test.db
           STORAGE_LOCAL_DIR: ./backend/test-media
         run: |
-          PYTHONPATH=. pytest -c backend/pytest.ini backend/tests -v
+          PYTHONPATH=. pytest -c pytest.ini -v
 
       - name: Set up Node.js 20
         uses: actions/setup-node@v4

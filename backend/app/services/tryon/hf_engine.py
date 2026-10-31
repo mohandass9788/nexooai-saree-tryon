@@ -8,7 +8,12 @@ import asyncio
 import numpy as np
 from typing import Optional, Dict, Any, List
 from PIL import Image, ImageOps, ImageFilter
-from gradio_client import Client, handle_file
+
+try:
+    from gradio_client import Client, handle_file
+except ImportError:
+    Client = None
+    handle_file = None
 
 from backend.app.core.config import settings
 from backend.app.services.tryon.base import BaseTryOnEngine, TryOnEngineResult
@@ -34,7 +39,9 @@ class HuggingFaceVTONEngine(BaseTryOnEngine):
     def __init__(self):
         self._clients: Dict[str, Client] = {}
 
-    def _get_client(self, space_name: str) -> Client:
+    def _get_client(self, space_name: str) -> Any:
+        if Client is None:
+            raise RuntimeError("gradio_client is required for HuggingFace engine. Install with: pip install gradio_client")
         token = getattr(settings, "HF_TOKEN", "") or os.getenv("HF_TOKEN") or None
         if token:
             os.environ["HF_TOKEN"] = token

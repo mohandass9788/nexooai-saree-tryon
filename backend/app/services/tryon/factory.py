@@ -1,12 +1,12 @@
 import os
+import logging
 from backend.app.core.config import settings
 from backend.app.core.system_settings import get_setting
 from backend.app.services.tryon.base import BaseTryOnEngine
 from backend.app.services.tryon.mock_engine import MockTryOnEngine
 from backend.app.services.tryon.cloud_engine import CloudApiTryOnEngine
-from backend.app.services.tryon.gemini_engine import GeminiTryOnEngine
-from backend.app.services.tryon.hf_engine import HuggingFaceVTONEngine
-from backend.app.services.tryon.openai_engine import OpenAITryOnEngine
+
+logger = logging.getLogger("tryon.factory")
 
 
 def get_tryon_engine() -> BaseTryOnEngine:
@@ -17,11 +17,18 @@ def get_tryon_engine() -> BaseTryOnEngine:
     provider = str(get_setting("ai_provider") or settings.AI_TRYON_PROVIDER or "mock").lower().strip()
 
     if provider in ("hf", "huggingface", "idm-vton", "idmvton"):
-        return HuggingFaceVTONEngine()
+        try:
+            from backend.app.services.tryon.hf_engine import HuggingFaceVTONEngine
+            return HuggingFaceVTONEngine()
+        except Exception as e:
+            logger.warning("HF engine unavailable, falling back to mock: %s", e)
+            return MockTryOnEngine()
     elif provider in ("gemini", "google", "nano"):
+        from backend.app.services.tryon.gemini_engine import GeminiTryOnEngine
         gemini_key = get_setting("gemini_api_key") or getattr(settings, "GEMINI_API_KEY", "")
         return GeminiTryOnEngine(api_key=gemini_key)
     elif provider in ("openai", "chatgpt", "dalle", "gpt4"):
+        from backend.app.services.tryon.openai_engine import OpenAITryOnEngine
         openai_key = get_setting("openai_api_key") or os.getenv("OPENAI_API_KEY", "")
         return OpenAITryOnEngine(api_key=openai_key)
     elif provider in ("fal-fashn", "fashn-fal", "fal_fashn"):
