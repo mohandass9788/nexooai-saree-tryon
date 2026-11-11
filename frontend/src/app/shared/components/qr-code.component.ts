@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, SimpleChanges, signal } from '@angular/core';
+import { Component, Input, OnChanges, OnInit, SimpleChanges, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import * as QRCode from 'qrcode';
 
@@ -43,11 +43,15 @@ import * as QRCode from 'qrcode';
     }
   `]
 })
-export class QrCodeComponent implements OnChanges {
+export class QrCodeComponent implements OnInit, OnChanges {
   @Input() value: string = '';
   @Input() size: number = 130;
 
   readonly qrDataUrl = signal<string>('');
+
+  ngOnInit(): void {
+    this.generateQr();
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['value'] || changes['size']) {
@@ -56,12 +60,12 @@ export class QrCodeComponent implements OnChanges {
   }
 
   private async generateQr(): Promise<void> {
-    if (!this.value) {
-      this.qrDataUrl.set('');
-      return;
-    }
+    const targetValue = this.value && this.value.trim().length > 0
+      ? this.value
+      : 'https://tryon.nexooai.in/kiosk';
+
     try {
-      const url = await QRCode.toDataURL(this.value, {
+      const url = await QRCode.toDataURL(targetValue, {
         width: this.size * 2,
         margin: 1,
         color: {
@@ -72,7 +76,8 @@ export class QrCodeComponent implements OnChanges {
       });
       this.qrDataUrl.set(url);
     } catch (err) {
-      console.error('Error generating QR code:', err);
+      console.warn('Local QR generation error, using fallback API:', err);
+      this.qrDataUrl.set(`https://api.qrserver.com/v1/create-qr-code/?size=${this.size * 2}x${this.size * 2}&data=${encodeURIComponent(targetValue)}`);
     }
   }
 }

@@ -14,6 +14,8 @@ class ShopModel(Base):
     contact_person = Column(String(255), nullable=True)
     contact_email = Column(String(255), nullable=True)
     contact_phone = Column(String(50), nullable=True)
+    city = Column(String(100), default='Chennai', nullable=True)
+    address = Column(Text, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -27,6 +29,13 @@ class ShopModel(Base):
     api_key = Column(String(128), unique=True, index=True, nullable=True)  # private catalog ingestion API key
     catalog_feed_url = Column(String(500), nullable=True)  # external JSON catalog feed URL
     last_catalog_sync_at = Column(DateTime, nullable=True)
+    feature_flags_json = Column(Text, nullable=True)  # JSON dictionary of boutique-specific enabled features
+    ai_provider = Column(String(50), default="auto_by_plan", nullable=False)  # 'auto_by_plan' or specific provider
+    ai_api_key = Column(String(255), nullable=True)  # Optional tenant-specific custom API key (BYOK)
+    temp_password = Column(String(255), nullable=True)  # Administrative reference for Super Admin provisioning
+    kiosk_count = Column(Integer, default=1, nullable=False)
+    kiosk_password = Column(String(255), nullable=True)
+    kiosk_pin = Column(String(10), nullable=True)
 
     branches = relationship("BranchModel", back_populates="shop")
     categories = relationship("CategoryModel", back_populates="shop")
@@ -56,8 +65,16 @@ class KioskModel(Base):
 
     id = Column(String(64), primary_key=True, index=True)
     branch_id = Column(String(64), ForeignKey("branches.id"), nullable=True)
+    shop_id = Column(String(64), ForeignKey("shops.id"), nullable=True, index=True)
     kiosk_code = Column(String(64), unique=True, index=True, nullable=False)
     display_name = Column(String(255), nullable=False)
+    username = Column(String(255), nullable=True)
+    kiosk_password = Column(String(255), nullable=True)
+    kiosk_pin = Column(String(10), nullable=True)
+    section = Column(String(100), nullable=True, default="Main Showroom Floor")
+    screen_resolution = Column(String(50), nullable=True, default="1080x1920 (Portrait)")
+    hardware_price_inr = Column(Float, nullable=True, default=0.0)
+    active_session_id = Column(String(128), nullable=True)
     status = Column(String(32), default="online", index=True)  # "online", "idle", "maintenance"
     device_ip = Column(String(64), nullable=True)
     last_ping_at = Column(DateTime, default=datetime.utcnow)
@@ -181,6 +198,7 @@ class AdminUserModel(Base):
     email = Column(String(255), unique=True, index=True, nullable=False)
     name = Column(String(255), nullable=False)
     hashed_password = Column(String(255), nullable=False)
+    temp_password = Column(String(255), nullable=True)
     role = Column(String(50), default="store_manager")  # "super_admin", "store_manager"
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -351,3 +369,29 @@ class KioskDeviceSessionModel(Base):
     shop = relationship("ShopModel")
 
 
+
+
+class SalesInquiryModel(Base):
+    __tablename__ = "sales_inquiries"
+
+    id = Column(String(64), primary_key=True, index=True)
+    name = Column(String(255), nullable=False)
+    email = Column(String(255), nullable=False)
+    phone = Column(String(50), nullable=True)
+    showroom_name = Column(String(255), nullable=False)
+    city = Column(String(100), nullable=True)
+    estimated_kiosks = Column(Integer, default=1)
+    message = Column(Text, nullable=True)
+    status = Column(String(32), default="new", index=True)  # "new", "contacted", "converted", "closed"
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+
+class PasswordResetModel(Base):
+    __tablename__ = "password_resets"
+
+    id = Column(String(64), primary_key=True, index=True)
+    email = Column(String(255), index=True, nullable=False)
+    token_hash = Column(String(128), unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime, nullable=False)
+    used = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

@@ -44,11 +44,11 @@ _CACHE: Dict[str, Any] = {
     "custom_store_ad_video_url": "",
     "store_contact_phone": "+91 98401 23456",
     "store_city": "Chennai",
-    # Showroom Watermark on Generated Portraits
-    "watermark_enabled": "true",
+    # Showroom Watermark on Generated Portraits (Default: disabled to keep portraits 100% clean)
+    "watermark_enabled": "false",
     "watermark_text": "NeXooAi Luxury Silks",
     "watermark_subtext": "Exclusively Styled at Showroom",
-    "watermark_position": "bottom_banner",  # 'bottom_banner', 'bottom_right', 'crest_overlay'
+    "watermark_position": "bottom_right",  # 'bottom_banner', 'bottom_right', 'crest_overlay'
     # Showroom Dynamic WhatsApp Gateway (No Hardcoding!)
     "whatsapp_enabled": "false",
     "whatsapp_provider": "meta_cloud",  # 'meta_cloud', 'wati', 'twilio', 'webhook'

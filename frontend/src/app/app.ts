@@ -11,6 +11,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
+import { Router } from '@angular/router';
 import { TranslationService } from './core/services/translation.service';
 import { KioskService, KioskStep } from './core/services/kiosk.service';
 import { ThemeService } from './core/services/theme.service';
@@ -50,6 +51,7 @@ export class App implements OnInit, OnDestroy {
   readonly notificationService = inject(NotificationService);
   private readonly apiService = inject(ApiService);
   private readonly sanitizer = inject(DomSanitizer);
+  private readonly router = inject(Router);
 
   // Multi-language menu state
   readonly showLanguageMenu = signal<boolean>(false);
@@ -115,6 +117,8 @@ export class App implements OnInit, OnDestroy {
   readonly isProductCameraActive = signal<boolean>(false);
   readonly productCameraError = signal<string | null>(null);
   readonly productValidationError = signal<string | null>(null);
+  readonly isValidatingGarment = signal<boolean>(false);
+  readonly isCustomGarmentValid = signal<boolean>(false);
   readonly productSelectionMode = signal<'catalog' | 'custom'>('catalog');
 
   // Processing state
@@ -123,10 +127,26 @@ export class App implements OnInit, OnDestroy {
   private progressInterval: any = null;
   readonly tryOnError = signal<string | null>(null);
 
-  // Result state (Haute Couture Interactive Split-Drape Slider default)
-  readonly resultViewMode = signal<'slider' | 'compare' | 'result' | 'original'>('slider');
+  // Result state (Full Draped Saree Result view default)
+  readonly resultViewMode = signal<'slider' | 'compare' | 'result' | 'original' | 'saree'>('result');
+  readonly showRecentTrialsDrawer = signal<boolean>(false);
+  readonly selectedRecoveryLook = signal<LookbookFeedItem | null>(null);
   readonly sliderPosition = signal<number>(50);
   readonly selectedJewellery = signal<'none' | 'temple' | 'polki' | 'antique'>('none');
+  readonly isFillScreenMode = signal<boolean>(false);
+
+  // Result Speed-Dial Action Wave
+  readonly isResultActionWaveOpen = signal<boolean>(false);
+
+  // Kiosk Header auto-hidden & Quick Menu
+  readonly isHeaderHovered = signal<boolean>(false);
+  readonly isKioskQuickMenuOpen = signal<boolean>(false);
+
+  // WhatsApp Status Style "Today's Trials" Stories
+  readonly showTodayStoriesModal = signal<boolean>(false);
+  readonly activeStoryIndex = signal<number>(0);
+  readonly storyProgress = signal<number>(0);
+  private storyProgressInterval: any = null;
 
   // Phase 2: Wedding Lighting Simulation & Blouse Styling Engine
   readonly selectedLighting = signal<'daylight' | 'mandapam' | 'reception'>('daylight');
@@ -190,7 +210,11 @@ export class App implements OnInit, OnDestroy {
     const cat = this.activeCategory();
     const list = this.sarees();
     if (!cat || cat === 'all') return list;
-    return list.filter((item) => item.category.toLowerCase().includes(cat.toLowerCase()));
+    const cleanCat = cat.toLowerCase().replace(/[-_]/g, ' ').trim();
+    return list.filter((item) => {
+      const itemCat = (item.category || '').toLowerCase().replace(/[-_]/g, ' ').trim();
+      return itemCat.includes(cleanCat) || cleanCat.includes(itemCat);
+    });
   });
 
   readonly Math = Math;
@@ -351,6 +375,7 @@ export class App implements OnInit, OnDestroy {
   readonly adminCustomers = signal<CustomerTodayResponse | null>(null);
   readonly selectedCustomerPreview = signal<CustomerHistoryItem | null>(null);
   readonly customerPhotoZoomMode = signal<'both' | 'customer' | 'result'>('both');
+  readonly showGarmentFullscreen = signal<boolean>(false);
 
   // Admin AI & System Settings state
   readonly adminSettings = signal<SystemSettingsDTO | null>(null);
@@ -388,11 +413,27 @@ export class App implements OnInit, OnDestroy {
   readonly poseValidation = signal<{
     is_valid: boolean;
     pose_score: number;
+    view_type?: string;
     guidance_message_ta: string;
     guidance_message_en: string;
     green_tick: boolean;
   } | null>(null);
   readonly isValidatingPose = signal<boolean>(false);
+  readonly isPoseIssuePanelDismissed = signal<boolean>(false);
+
+  dismissPoseIssuePanel(): void {
+    this.isPoseIssuePanelDismissed.set(true);
+  }
+
+  expandPoseIssuePanel(): void {
+    this.isPoseIssuePanelDismissed.set(false);
+  }
+
+  readonly isCapturedPoseValid = computed<boolean>(() => {
+    const pv = this.poseValidation();
+    if (!pv) return false;
+    return pv.is_valid && pv.green_tick && pv.pose_score >= 0.5;
+  });
 
   // B2B Client Feature Toggles & Public Kiosk Config
   readonly publicFeatures = signal<PublicKioskFeatures>({
@@ -409,9 +450,22 @@ export class App implements OnInit, OnDestroy {
   });
 
   // Showroom Custom Branding Signals
+  readonly customShowroomNameOverride = signal<string>('');
   readonly customStoreName = computed(() => {
-    return this.adminSettings()?.custom_store_name || this.publicFeatures()?.custom_store_name || '';
+    return (
+      this.customShowroomNameOverride() ||
+      (typeof localStorage !== 'undefined' ? localStorage.getItem('nexooai_custom_store_name') : null) ||
+      this.adminSettings()?.custom_store_name ||
+      this.publicFeatures()?.custom_store_name ||
+      ''
+    );
   });
+
+  // Showroom Authenticated Session Identity Signals
+  readonly authUserRole = signal<string>('');
+  readonly authUserName = signal<string>('');
+  readonly authShopId = signal<string>('');
+  readonly authShopName = signal<string>('');
 
   readonly customStoreLogo = computed(() => {
     return this.adminSettings()?.custom_store_logo_url || this.publicFeatures()?.custom_store_logo_url || '';
@@ -436,6 +490,7 @@ export class App implements OnInit, OnDestroy {
   readonly cropZoom = signal<number>(1.0);
   readonly cropPanX = signal<number>(0);
   readonly cropPanY = signal<number>(0);
+  readonly cropRotation = signal<number>(0);
   readonly isDraggingCrop = signal<boolean>(false);
   private dragStartX = 0;
   private dragStartY = 0;
@@ -490,6 +545,45 @@ export class App implements OnInit, OnDestroy {
     this.loadPublicFeatures();
     this.loadLookbookFeed();
     this.startLookbookRotation();
+
+    // Bind authenticated showroom / staff identity
+    if (typeof window !== 'undefined') {
+      const role = sessionStorage.getItem('nexooai_user_role') || (localStorage.getItem('nexooai_session_token') ? 'store_manager' : '');
+      const name = sessionStorage.getItem('nexooai_user_name') || (role === 'super_admin' ? 'Mohandass (Super Admin)' : (role === 'kiosk_terminal' ? 'Floor Terminal #1' : 'Showroom Staff'));
+      const shop = sessionStorage.getItem('nexooai_shop_id') || localStorage.getItem('nexooai_kiosk_store_id') || 'shop_default';
+      const storeName = (role === 'super_admin' ? 'NeXooAi Super Admin HQ' : (localStorage.getItem('nexooai_custom_store_name') || 'Showroom Floor Kiosk'));
+
+      this.authUserRole.set(role);
+      this.authUserName.set(name);
+      this.authShopId.set(shop);
+      this.authShopName.set(storeName);
+    }
+
+    // Check for Kiosk Terminal Pairing / Direct Launch URL (?terminal=...&store=...)
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const qTerminal = urlParams.get('terminal') || urlParams.get('kiosk') || urlParams.get('device_id');
+      const qStore = urlParams.get('store') || urlParams.get('shop_id');
+      const qName = urlParams.get('name') || urlParams.get('device_name');
+      const qPairToken = urlParams.get('token') || urlParams.get('pair_token');
+
+      if (qName) {
+        this.customShowroomNameOverride.set(qName);
+        try { localStorage.setItem('nexooai_custom_store_name', qName); } catch {}
+      }
+      if (qStore) {
+        try { localStorage.setItem('nexooai_kiosk_store_id', qStore); } catch {}
+      }
+
+      if (qTerminal || qStore) {
+        const terminalId = qTerminal || 'KIOSK-FLOOR-01';
+        this.kioskService.pairDevice(terminalId, qStore || 'shop_default', qName || undefined, qPairToken || undefined);
+        this.notificationService.showSuccess(`✨ Connected to Showroom: ${qName || qStore || 'Default'} [${terminalId}]`);
+        try {
+          window.history.replaceState({}, document.title, window.location.pathname);
+        } catch {}
+      }
+    }
 
     // Check if voter arrived via Family Poll link: ?poll=POLL-xxxx or /poll/POLL-xxxx
     if (typeof window !== 'undefined') {
@@ -569,6 +663,25 @@ export class App implements OnInit, OnDestroy {
     this.kioskService.lockKiosk();
     this.staffPinInput.set('');
     this.staffPinError.set(null);
+  }
+
+  logoutKiosk(): void {
+    if (typeof window !== 'undefined') {
+      try {
+        sessionStorage.removeItem('nexooai_auth_token');
+        sessionStorage.removeItem('nexooai_user_role');
+        sessionStorage.removeItem('nexooai_user_name');
+        sessionStorage.removeItem('nexooai_shop_id');
+        localStorage.removeItem('nexooai_session_token');
+      } catch {}
+    }
+    this.notificationService.showToast('Logged out of Showroom Kiosk session.');
+    this.router.navigate(['/login']);
+  }
+
+  unlockDemoKiosk(): void {
+    this.kioskService.pairDevice('KIOSK-DEMO-01', 'shop_default', 'Showroom Demo Display');
+    this.notificationService.showSuccess('Unlocked Showroom Kiosk in Demo Mode!');
   }
 
   // --- Mobile Drawer Navigation Methods ---
@@ -721,11 +834,13 @@ export class App implements OnInit, OnDestroy {
 
   // --- Interactive Touch Photo Cropper Methods ---
   openCropper(dataUrl: string, source: 'customer' | 'product' = 'customer'): void {
+    this.isPoseIssuePanelDismissed.set(true);
     this.rawImageForCrop.set(dataUrl);
     this.cropSource.set(source);
     this.cropZoom.set(1.0);
     this.cropPanX.set(0);
     this.cropPanY.set(0);
+    this.cropRotation.set(0);
     this.showCropModal.set(true);
   }
 
@@ -740,10 +855,15 @@ export class App implements OnInit, OnDestroy {
     this.cropZoom.set(Number(updated.toFixed(2)));
   }
 
+  rotateCrop(): void {
+    this.cropRotation.update((deg) => (deg + 90) % 360);
+  }
+
   resetCrop(): void {
     this.cropZoom.set(1.0);
     this.cropPanX.set(0);
     this.cropPanY.set(0);
+    this.cropRotation.set(0);
   }
 
   onCropMouseDown(event: MouseEvent | TouchEvent): void {
@@ -782,14 +902,35 @@ export class App implements OnInit, OnDestroy {
         ctx.fillStyle = '#0f0c12';
         ctx.fillRect(0, 0, targetW, targetH);
 
+        // Viewport is 270x480 in UI, target is 720x1280 (exact 2.666x scaling)
+        const scaleFactorX = targetW / 270;
+        const scaleFactorY = targetH / 480;
+        const panX = this.cropPanX() * scaleFactorX;
+        const panY = this.cropPanY() * scaleFactorY;
         const zoom = this.cropZoom();
-        const baseScale = Math.max(targetW / img.width, targetH / img.height);
-        const drawW = img.width * baseScale * zoom;
-        const drawH = img.height * baseScale * zoom;
-        const drawX = (targetW - drawW) / 2 + this.cropPanX();
-        const drawY = (targetH - drawH) / 2 + this.cropPanY();
+        const rotationRad = (this.cropRotation() * Math.PI) / 180;
 
-        ctx.drawImage(img, drawX, drawY, drawW, drawH);
+        ctx.save();
+        ctx.translate(targetW / 2 + panX, targetH / 2 + panY);
+        ctx.rotate(rotationRad);
+        ctx.scale(zoom, zoom);
+
+        // Calculate fit dimensions matching the CSS contain preview in 270x480
+        const imgAspect = img.width / img.height;
+        const viewAspect = targetW / targetH;
+        let drawW: number;
+        let drawH: number;
+        if (imgAspect > viewAspect) {
+          drawW = targetW;
+          drawH = targetW / imgAspect;
+        } else {
+          drawH = targetH;
+          drawW = targetH * imgAspect;
+        }
+
+        ctx.drawImage(img, -drawW / 2, -drawH / 2, drawW, drawH);
+        ctx.restore();
+
         const croppedDataUrl = canvas.toDataURL('image/jpeg', 0.92);
         canvas.toBlob((blob) => {
           if (blob) {
@@ -873,8 +1014,22 @@ export class App implements OnInit, OnDestroy {
 
   stopCamera(): void {
     if (this.mediaStream) {
-      this.mediaStream.getTracks().forEach((track) => track.stop());
+      this.mediaStream.getTracks().forEach((track) => {
+        try {
+          track.stop();
+        } catch (e) {
+          console.warn('Error stopping camera track:', e);
+        }
+      });
       this.mediaStream = null;
+    }
+    if (this.videoElement?.nativeElement) {
+      try {
+        this.videoElement.nativeElement.srcObject = null;
+        this.videoElement.nativeElement.pause();
+      } catch (e) {
+        console.warn('Error clearing video element:', e);
+      }
     }
     this.isCameraActive.set(false);
   }
@@ -895,6 +1050,9 @@ export class App implements OnInit, OnDestroy {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
       this.capturedPreviewUrl.set(dataUrl);
+
+      // Immediately shut off camera hardware stream so indicator light turns off
+      this.stopCamera();
 
       this.kioskService.tryOnResult.set(null);
       // Convert to Blob for API submission and Gemini Pose Validation
@@ -922,6 +1080,7 @@ export class App implements OnInit, OnDestroy {
   }
 
   evaluateCapturedPose(blob: Blob): void {
+    this.isPoseIssuePanelDismissed.set(false);
     this.isValidatingPose.set(true);
     if (this.poseToastTimeout) {
       clearTimeout(this.poseToastTimeout);
@@ -931,28 +1090,37 @@ export class App implements OnInit, OnDestroy {
       next: (res) => {
         this.isValidatingPose.set(false);
         this.poseValidation.set(res);
-        // Auto-dismiss after 3.5 seconds so toast doesn't obscure face
-        this.poseToastTimeout = setTimeout(() => {
-          this.poseValidation.set(null);
-        }, 3500);
+        // If valid, keep confirmation open. If invalid, DO NOT dismiss - keep warning visible!
+        if (res.is_valid && res.green_tick && res.pose_score >= 0.5) {
+          this.poseToastTimeout = setTimeout(() => {
+            // Leave valid state intact
+          }, 4000);
+        } else {
+          this.poseToastTimeout = null;
+        }
       },
       error: () => {
         this.isValidatingPose.set(false);
         this.poseValidation.set({
-          is_valid: true,
-          pose_score: 0.92,
-          guidance_message_ta: 'போர்ட்ரெய்ட் தோற்றம் ஏற்கப்பட்டது.',
-          guidance_message_en: 'Portrait posture confirmed.',
-          green_tick: true,
+          is_valid: false,
+          pose_score: 0.15,
+          view_type: 'invalid',
+          guidance_message_ta: '⚠️ படத்தில் மனித உருவம் தெளிவாகக் கண்டறியப்படவில்லை. வெளிச்சத்தில் நேராக நின்று படம் எடுக்கவும்.',
+          guidance_message_en: '⚠️ No person detected in the photo. Please stand in good lighting facing the camera.',
+          green_tick: false,
         });
-        this.poseToastTimeout = setTimeout(() => {
-          this.poseValidation.set(null);
-        }, 3500);
       },
     });
   }
 
   retakePhoto(): void {
+    this.isPoseIssuePanelDismissed.set(false);
+    if (this.poseToastTimeout) {
+      clearTimeout(this.poseToastTimeout);
+      this.poseToastTimeout = null;
+    }
+    this.poseValidation.set(null);
+    this.isValidatingPose.set(false);
     this.capturedPreviewUrl.set(null);
     this.kioskService.customerPhotoDataUrl.set(null);
     this.kioskService.customerPhotoBlob.set(null);
@@ -962,6 +1130,22 @@ export class App implements OnInit, OnDestroy {
   }
 
   confirmPhotoAndProceed(): void {
+    if (this.isValidatingPose()) {
+      this.notificationService.showToast(
+        this.translationService.currentLanguage() === 'ta'
+          ? '⏳ AI புகைப்படத்தை சரிபார்க்கிறது... தயவுசெய்து காத்திருக்கவும்.'
+          : '⏳ AI is validating photo posture... Please wait.'
+      );
+      return;
+    }
+    if (!this.isCapturedPoseValid()) {
+      this.notificationService.showWarning(
+        this.translationService.currentLanguage() === 'ta'
+          ? '⚠️ புகைப்படம் தகுதி பெறவில்லை! AI டோக்கனை சேமிக்க மீண்டும் படம் எடுக்கவும்.'
+          : '⚠️ Photo posture is invalid! Please retake photo to save tokens.'
+      );
+      return;
+    }
     this.stopCamera();
     this.kioskService.setStep('CATALOGUE');
   }
@@ -1061,9 +1245,11 @@ export class App implements OnInit, OnDestroy {
   async onFileUpload(event: Event): Promise<void> {
     const input = event.target as HTMLInputElement;
     if (input?.files && input.files[0]) {
+      this.stopCamera();
       this.isValidatingPose.set(true);
       const rawFile = input.files[0];
       const file = await this.convertHeicToJpeg(rawFile);
+      input.value = '';
 
       const reader = new FileReader();
       reader.onload = () => {
@@ -1167,8 +1353,22 @@ export class App implements OnInit, OnDestroy {
 
   stopProductCamera(): void {
     if (this.productMediaStream) {
-      this.productMediaStream.getTracks().forEach((track) => track.stop());
+      this.productMediaStream.getTracks().forEach((track) => {
+        try {
+          track.stop();
+        } catch (e) {
+          console.warn('Error stopping product camera track:', e);
+        }
+      });
       this.productMediaStream = null;
+    }
+    if (this.productVideoElement?.nativeElement) {
+      try {
+        this.productVideoElement.nativeElement.srcObject = null;
+        this.productVideoElement.nativeElement.pause();
+      } catch (e) {
+        console.warn('Error clearing product video element:', e);
+      }
     }
     this.isProductCameraActive.set(false);
   }
@@ -1189,11 +1389,13 @@ export class App implements OnInit, OnDestroy {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
 
+      // Immediately shut off product camera hardware stream
+      this.stopProductCamera();
+
       canvas.toBlob(
         (blob) => {
           if (blob) {
-            this.kioskService.setCustomGarment(dataUrl, blob);
-            this.stopProductCamera();
+            this.validateAndSetGarment(dataUrl, blob);
           }
         },
         'image/jpeg',
@@ -1206,6 +1408,7 @@ export class App implements OnInit, OnDestroy {
     this.productValidationError.set(null);
     const input = event.target as HTMLInputElement;
     if (input?.files && input.files[0]) {
+      this.stopProductCamera();
       let file = input.files[0];
       file = await this.convertHeicToJpeg(file);
 
@@ -1227,16 +1430,53 @@ export class App implements OnInit, OnDestroy {
       const reader = new FileReader();
       reader.onload = () => {
         const dataUrl = reader.result as string;
-        this.kioskService.setCustomGarment(dataUrl, file);
-        this.stopProductCamera();
+        this.validateAndSetGarment(dataUrl, file);
       };
       reader.readAsDataURL(file);
     }
   }
 
+  validateAndSetGarment(dataUrl: string, blob: Blob): void {
+    this.kioskService.setCustomGarment(dataUrl, blob);
+    this.stopProductCamera();
+    this.isValidatingGarment.set(true);
+    this.productValidationError.set(null);
+    this.isCustomGarmentValid.set(false);
+
+    this.apiService.validateGarment(blob).subscribe({
+      next: (res) => {
+        this.isValidatingGarment.set(false);
+        if (res.is_valid && res.green_tick && res.garment_score >= 0.4) {
+          this.isCustomGarmentValid.set(true);
+          this.productValidationError.set(null);
+        } else {
+          this.isCustomGarmentValid.set(false);
+          this.productValidationError.set(
+            this.translationService.currentLanguage() === 'ta'
+              ? (res.guidance_message_ta || '⚠️ படத்தில் சேலை அல்லது ஆடை தெளிவாகத் தெரியவில்லை. துணியை விரித்துப் படம் எடுக்கவும்.')
+              : (res.guidance_message_en || '⚠️ No fabric or clothing detected. Please spread the garment clearly.')
+          );
+        }
+      },
+      error: () => {
+        this.isValidatingGarment.set(false);
+        this.isCustomGarmentValid.set(false);
+        this.productValidationError.set(
+          this.translationService.currentLanguage() === 'ta'
+            ? '⚠️ சேலை அல்லது ஆடை தெளிவாகக் கண்டறியப்படவில்லை. வெளிச்சத்தில் துணியை விரித்துப் படம் எடுக்கவும்.'
+            : '⚠️ Garment could not be verified. Please capture a clear photo in good lighting.'
+        );
+      }
+    });
+  }
+
   retakeProductPhoto(): void {
     this.kioskService.clearCustomGarment();
-    this.startProductCamera();
+    this.stopProductCamera();
+    this.productValidationError.set(null);
+    this.productCameraError.set(null);
+    this.isCustomGarmentValid.set(false);
+    this.isValidatingGarment.set(false);
   }
 
   removeCustomGarment(): void {
@@ -1244,9 +1484,20 @@ export class App implements OnInit, OnDestroy {
     this.stopProductCamera();
     this.productValidationError.set(null);
     this.productCameraError.set(null);
+    this.isCustomGarmentValid.set(false);
+    this.isValidatingGarment.set(false);
   }
 
   confirmCustomProductAndProceed(): void {
+    if (!this.isCustomGarmentValid()) {
+      const msg = this.productValidationError() || (
+        this.translationService.currentLanguage() === 'ta'
+          ? 'சேலை அல்லது ஆடை தெளிவாக இல்லை. மீண்டும் படம் எடுக்கவும்.'
+          : 'Please provide a clear photo of the garment before proceeding.'
+      );
+      this.notificationService.showWarning(msg);
+      return;
+    }
     this.stopProductCamera();
     this.kioskService.setStep('COMBINE');
   }
@@ -1259,6 +1510,20 @@ export class App implements OnInit, OnDestroy {
 
   changeProduct(): void {
     this.kioskService.setStep('CATALOGUE');
+  }
+
+  handleGarmentImgError(event: Event): void {
+    const target = event.target as HTMLImageElement;
+    if (target && !target.src.includes('col_kanchipuram.png')) {
+      target.src = '/assets/images/col_kanchipuram.png';
+    }
+  }
+
+  handleUserImgError(event: Event): void {
+    const target = event.target as HTMLImageElement;
+    if (target && !target.src.includes('welcome_arch_model_clean.jpg')) {
+      target.src = '/assets/images/welcome_arch_model_clean.jpg';
+    }
   }
 
   startAiTryOn(): void {
@@ -1389,8 +1654,102 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
-  setResultViewMode(mode: 'slider' | 'compare' | 'result' | 'original'): void {
+  setResultViewMode(mode: 'slider' | 'compare' | 'result' | 'original' | 'saree'): void {
     this.resultViewMode.set(mode);
+  }
+
+  toggleResultActionWave(): void {
+    this.isResultActionWaveOpen.update((v) => !v);
+  }
+
+  toggleKioskQuickMenu(): void {
+    this.isKioskQuickMenuOpen.update((v) => !v);
+  }
+
+  closeKioskQuickMenu(): void {
+    this.isKioskQuickMenuOpen.set(false);
+  }
+
+  openTodayStories(): void {
+    this.loadLookbookFeed();
+    this.activeStoryIndex.set(0);
+    this.storyProgress.set(0);
+    this.showTodayStoriesModal.set(true);
+    this.startStoryTimer();
+  }
+
+  openRecentTrialsDrawer(): void {
+    this.loadLookbookFeed();
+    this.showRecentTrialsDrawer.set(true);
+  }
+
+  closeRecentTrialsDrawer(): void {
+    this.showRecentTrialsDrawer.set(false);
+  }
+
+  openRecoveryQrModal(look: LookbookFeedItem): void {
+    this.selectedRecoveryLook.set(look);
+  }
+
+  closeRecoveryQrModal(): void {
+    this.selectedRecoveryLook.set(null);
+  }
+
+  closeTodayStories(): void {
+    this.stopStoryTimer();
+    this.showTodayStoriesModal.set(false);
+  }
+
+  nextStory(): void {
+    const list = this.lookbookFeed();
+    if (!list || list.length === 0) return;
+    const nextIdx = (this.activeStoryIndex() + 1) % list.length;
+    this.activeStoryIndex.set(nextIdx);
+    this.storyProgress.set(0);
+  }
+
+  prevStory(): void {
+    const list = this.lookbookFeed();
+    if (!list || list.length === 0) return;
+    const prevIdx = (this.activeStoryIndex() - 1 + list.length) % list.length;
+    this.activeStoryIndex.set(prevIdx);
+    this.storyProgress.set(0);
+  }
+
+  private startStoryTimer(): void {
+    this.stopStoryTimer();
+    this.storyProgressInterval = setInterval(() => {
+      const p = this.storyProgress() + 2;
+      if (p >= 100) {
+        this.nextStory();
+      } else {
+        this.storyProgress.set(p);
+      }
+    }, 100);
+  }
+
+  private stopStoryTimer(): void {
+    if (this.storyProgressInterval) {
+      clearInterval(this.storyProgressInterval);
+      this.storyProgressInterval = null;
+    }
+  }
+
+  selectStoryGarmentAndTry(story: LookbookFeedItem): void {
+    this.closeTodayStories();
+    const match = this.sarees().find((s) => s.id === story.job_id || s.name_en === story.saree_name_en);
+    if (match) {
+      this.kioskService.selectedSaree.set(match);
+    }
+    if (!this.kioskService.customerPhotoDataUrl()) {
+      this.kioskService.setStep('CAMERA');
+    } else {
+      this.kioskService.setStep('COMBINE');
+    }
+  }
+
+  toggleFillScreenMode(): void {
+    this.isFillScreenMode.update((v) => !v);
   }
 
   onSliderRangeChange(event: Event): void {
@@ -1573,6 +1932,25 @@ export class App implements OnInit, OnDestroy {
   }
 
   // --- Admin Dashboard & Security PIN Methods ---
+  private logoTapCount = 0;
+  private logoTapResetTimer: any = null;
+
+  onSecretLogoTap(event: Event): void {
+    event.stopPropagation();
+    this.logoTapCount++;
+    if (this.logoTapResetTimer) {
+      clearTimeout(this.logoTapResetTimer);
+    }
+    this.logoTapResetTimer = setTimeout(() => {
+      this.logoTapCount = 0;
+    }, 2500);
+
+    if (this.logoTapCount >= 5) {
+      this.logoTapCount = 0;
+      this.openAdminPinModal();
+    }
+  }
+
   openAdminPinModal(): void {
     if (this.isAdminMode()) {
       this.lockAdminPortal();
@@ -2103,6 +2481,14 @@ export class App implements OnInit, OnDestroy {
 
   closeCustomerPreview(): void {
     this.selectedCustomerPreview.set(null);
+  }
+
+  openGarmentFullscreen(): void {
+    this.showGarmentFullscreen.set(true);
+  }
+
+  closeGarmentFullscreen(): void {
+    this.showGarmentFullscreen.set(false);
   }
 
   async deleteCustomerRecord(jobId: string): Promise<void> {

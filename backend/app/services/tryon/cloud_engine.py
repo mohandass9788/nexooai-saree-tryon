@@ -26,8 +26,11 @@ class CloudApiTryOnEngine(BaseTryOnEngine):
     PROVIDER_COST_MAP = {
         "fal-fashn": 0.075,
         "fal-kolors": 0.070,
+        "fal-catvton": 0.025,
+        "fal-leffa": 0.040,
+        "fal-vton": 0.040,
         "fashn": 0.075,
-        "fal": 0.075,
+        "fal": 0.040,
         "replicate": 0.035,
         "cloud": 0.03,
     }
@@ -35,6 +38,9 @@ class CloudApiTryOnEngine(BaseTryOnEngine):
     PROVIDER_DEFAULT_URL_MAP = {
         "fal-fashn": "https://fal.run/fal-ai/fashn/tryon/v1.6",
         "fal-kolors": "https://fal.run/fal-ai/kling/v1-5/kolors-virtual-try-on",
+        "fal-catvton": "https://fal.run/fal-ai/cat-vton",
+        "fal-leffa": "https://fal.run/fal-ai/leffa/virtual-try-on",
+        "fal-vton": "https://fal.run/fal-ai/image-apps-v2/virtual-try-on",
         "fashn": "https://fal.run/fal-ai/fashn/tryon/v1.6",
         "replicate": "https://api.replicate.com/v1/predictions",
     }

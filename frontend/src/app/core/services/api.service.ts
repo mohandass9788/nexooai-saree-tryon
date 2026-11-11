@@ -112,6 +112,8 @@ export interface LookbookFeedItem {
   category: string;
   price: number;
   result_image_url: string;
+  download_token?: string;
+  qr_download_url?: string;
 }
 
 export interface AdminUserItem {
@@ -298,7 +300,9 @@ export class ApiService {
     sareeId: string,
     consent: boolean,
     language: string,
-    garmentBlob?: Blob | null
+    garmentBlob?: Blob | null,
+    kioskId?: string,
+    shopId?: string
   ): Observable<TryOnJobResponse> {
     const formData = new FormData();
     formData.append('person_image', personBlob, 'customer_photo.jpg');
@@ -307,6 +311,21 @@ export class ApiService {
     formData.append('language', language);
     if (garmentBlob) {
       formData.append('garment_image', garmentBlob, 'garment_photo.jpg');
+    }
+
+    const resolvedKioskId = kioskId
+      || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('nexooai_kiosk_code') : null)
+      || (typeof localStorage !== 'undefined' ? localStorage.getItem('nexooai_paired_kiosk_id') || localStorage.getItem('nexooai_kiosk_id') : null)
+      || 'KIOSK-TN-CHN-01';
+
+    const resolvedShopId = shopId
+      || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('nexooai_shop_id') : null)
+      || (typeof localStorage !== 'undefined' ? localStorage.getItem('nexooai_paired_store_id') || localStorage.getItem('nexooai_kiosk_store_id') : null)
+      || '';
+
+    formData.append('kiosk_id', resolvedKioskId);
+    if (resolvedShopId) {
+      formData.append('shop_id', resolvedShopId);
     }
 
     return this.http.post<TryOnJobResponse>(`${this.baseUrl}/tryon`, formData).pipe(
@@ -336,6 +355,22 @@ export class ApiService {
     const formData = new FormData();
     formData.append('person_image', personBlob, 'pose_frame.jpg');
     return this.http.post<any>(`${this.baseUrl}/tryon/validate-pose`, formData);
+  }
+
+  /**
+   * Calls Garment Validator via Backend API to ensure custom photo contains genuine fabric/saree.
+   */
+  validateGarment(garmentBlob: Blob): Observable<{
+    is_valid: boolean;
+    garment_score: number;
+    category: string;
+    guidance_message_ta: string;
+    guidance_message_en: string;
+    green_tick: boolean;
+  }> {
+    const formData = new FormData();
+    formData.append('garment_image', garmentBlob, 'garment_frame.jpg');
+    return this.http.post<any>(`${this.baseUrl}/tryon/validate-garment`, formData);
   }
 
   // --- Admin Dashboard Methods (100% DB-driven) ---
@@ -455,334 +490,335 @@ export class ApiService {
   }
 
   // --- Showroom Staff Kiosk Gate & Lookbook Feed ---
-  verifyStaffKioskPin(pin: string, deviceId: string = 'KIOSK-01'): Observable<any> {
-    return this.http.post<any>(`${this.baseUrl}/auth/staff-kiosk-verify`, { pin, device_id: deviceId });
-  }
+    verifyStaffKioskPin(pin: string, deviceId: string = 'KIOSK-01', shopId ?: string): Observable < any > {
+      const activeShop = shopId || (typeof sessionStorage !== 'undefined' ? (sessionStorage.getItem('nexooai_shop_id') || '') : '') || '';
+      return this.http.post<any>(`${this.baseUrl}/auth/staff-kiosk-verify`, { pin, device_id: deviceId, shop_id: activeShop || undefined });
+    }
 
-  getTodayLookbookFeed(): Observable<LookbookFeedItem[]> {
-    return this.http.get<LookbookFeedItem[]>(`${this.baseUrl}/tryon/today-feed`);
-  }
+    getTodayLookbookFeed(): Observable < LookbookFeedItem[] > {
+      return this.http.get<LookbookFeedItem[]>(`${this.baseUrl}/tryon/today-feed`);
+    }
 
-  changeAdminPin(currentPin: string, newPin: string): Observable<{ success: boolean; message: string; admin_pin_masked: string }> {
-    return this.http.post<{ success: boolean; message: string; admin_pin_masked: string }>(
-      `${this.baseUrl}/auth/change-admin-pin`,
-      { current_pin: currentPin, new_pin: newPin }
-    );
-  }
+    changeAdminPin(currentPin: string, newPin: string): Observable < { success: boolean; message: string; admin_pin_masked: string } > {
+      return this.http.post<{ success: boolean; message: string; admin_pin_masked: string }>(
+        `${this.baseUrl}/auth/change-admin-pin`,
+        { current_pin: currentPin, new_pin: newPin }
+      );
+    }
 
-  // --- Staff & Admin Role-Based Access Control (RBAC) ---
-  adminLogin(email: string, password: string): Observable<AdminLoginResponse> {
-    return this.http.post<AdminLoginResponse>(`${this.baseUrl}/auth/login`, { email, password });
-  }
+    // --- Staff & Admin Role-Based Access Control (RBAC) ---
+    adminLogin(email: string, password: string): Observable < AdminLoginResponse > {
+      return this.http.post<AdminLoginResponse>(`${this.baseUrl}/auth/login`, { email, password });
+    }
 
-  getAdminUsers(): Observable<AdminUserItem[]> {
-    return this.http.get<AdminUserItem[]>(`${this.baseUrl}/admin/users`);
-  }
+    getAdminUsers(): Observable < AdminUserItem[] > {
+      return this.http.get<AdminUserItem[]>(`${this.baseUrl}/admin/users`);
+    }
 
-  createAdminUser(data: { email: string; name: string; password: string; role: string }): Observable<AdminUserItem> {
-    return this.http.post<AdminUserItem>(`${this.baseUrl}/admin/users`, data);
-  }
+    createAdminUser(data: { email: string; name: string; password: string; role: string }): Observable < AdminUserItem > {
+      return this.http.post<AdminUserItem>(`${this.baseUrl}/admin/users`, data);
+    }
 
-  updateAdminUser(userId: string, data: any): Observable<AdminUserItem> {
-    return this.http.put<AdminUserItem>(`${this.baseUrl}/admin/users/${userId}`, data);
-  }
+    updateAdminUser(userId: string, data: any): Observable < AdminUserItem > {
+      return this.http.put<AdminUserItem>(`${this.baseUrl}/admin/users/${userId}`, data);
+    }
 
-  deleteAdminUser(userId: string): Observable<{ message: string }> {
-    return this.http.delete<{ message: string }>(`${this.baseUrl}/admin/users/${userId}`);
-  }
+    deleteAdminUser(userId: string): Observable < { message: string } > {
+      return this.http.delete<{ message: string }>(`${this.baseUrl}/admin/users/${userId}`);
+    }
 
-  // --- Public Kiosk Feature Configuration & Video Motion ---
-  getPublicFeatures(): Observable<PublicKioskFeatures> {
-    return this.http.get<PublicKioskFeatures>(`${this.baseUrl}/admin/features-public`);
-  }
+    // --- Public Kiosk Feature Configuration & Video Motion ---
+    getPublicFeatures(): Observable < PublicKioskFeatures > {
+      return this.http.get<PublicKioskFeatures>(`${this.baseUrl}/admin/features-public`);
+    }
 
-  generateVideoMotion(payload: { job_id?: string; image_url?: string; duration?: number }): Observable<{ status: string; video_url: string; prediction_id: string; duration: number }> {
-    return this.http.post<{ status: string; video_url: string; prediction_id: string; duration: number }>(`${this.baseUrl}/tryon/video-motion`, payload);
-  }
+    generateVideoMotion(payload: { job_id?: string; image_url?: string; duration?: number }): Observable < { status: string; video_url: string; prediction_id: string; duration: number } > {
+      return this.http.post<{ status: string; video_url: string; prediction_id: string; duration: number }>(`${this.baseUrl}/tryon/video-motion`, payload);
+    }
 
-  // --- Dynamic Showroom Branding & WhatsApp Gateway ---
-  getShowroomSettings(): Observable<ShowroomSettingsItem> {
-    return this.http.get<ShowroomSettingsItem>(`${this.baseUrl}/admin/showroom/settings`);
-  }
+    // --- Dynamic Showroom Branding & WhatsApp Gateway ---
+    getShowroomSettings(): Observable < ShowroomSettingsItem > {
+      return this.http.get<ShowroomSettingsItem>(`${this.baseUrl}/admin/showroom/settings`);
+    }
 
-  updateShowroomSettings(data: Partial<ShowroomSettingsItem> & { whatsapp_access_token?: string }): Observable<any> {
-    return this.http.put(`${this.baseUrl}/admin/showroom/settings`, data);
-  }
+    updateShowroomSettings(data: Partial<ShowroomSettingsItem> & { whatsapp_access_token?: string }): Observable < any > {
+      return this.http.put(`${this.baseUrl}/admin/showroom/settings`, data);
+    }
 
-  testWhatsAppConnection(testPhone: string): Observable<any> {
-    return this.http.post(`${this.baseUrl}/admin/whatsapp/test`, { test_phone: testPhone });
-  }
+    testWhatsAppConnection(testPhone: string): Observable < any > {
+      return this.http.post(`${this.baseUrl}/admin/whatsapp/test`, { test_phone: testPhone });
+    }
 
-  // --- Showroom Floor Counter Slips / POS Tokens ---
-  createCounterToken(payload: {
-    product_id: string;
-    job_id?: string;
-    kiosk_id?: string;
-    customer_phone?: string;
-    customer_name?: string;
-    notes?: string;
-  }): Observable<{
-    success: boolean;
-    token_id: string;
-    token_code: string;
-    product_name_en: string;
-    product_name_ta: string;
-    sku: string;
-    rack_location: string;
-    price: number;
-    created_at: string;
-    status: string;
-  }> {
-    return this.http.post<any>(`${this.baseUrl}/tryon/counter-token`, payload);
-  }
-
-  getCounterTokens(): Observable<CounterTokenItem[]> {
-    return this.http.get<CounterTokenItem[]>(`${this.baseUrl}/admin/counter-tokens`);
-  }
-
-  updateCounterTokenStatus(tokenId: string, status: string, notes?: string): Observable<any> {
-    return this.http.patch(`${this.baseUrl}/admin/counter-tokens/${tokenId}`, { status, notes });
-  }
-
-  sendTryOnWhatsApp(payload: {
-    job_id: string;
-    customer_phone: string;
-    garment_name?: string;
-    jewellery_type?: string;
-    lighting_mode?: string;
-  }): Observable<any> {
-    return this.http.post(`${this.baseUrl}/tryon/send-whatsapp`, payload);
-  }
-
-  // --- Phase 2: Bridal Styling Transformation ---
-  applyBridalStyling(payload: {
-    job_id: string;
-    jewellery_type?: string;
-    lighting_preset?: string;
-    blouse_tone?: string;
-    drape_style?: string;
-  }): Observable<{
-    status: string;
-    job_id: string;
-    styled_image_url: string;
-    jewellery_applied: string;
-    lighting_applied: string;
-  }> {
-    return this.http.post<any>(`${this.baseUrl}/tryon/apply-styling`, payload);
-  }
-
-  // --- Phase 5: Showroom Sales Analytics & Rack Heatmap ---
-  getShowroomInsights(): Observable<{
-    total_tryons: number;
-    total_tokens: number;
-    conversion_rate_percent: number;
-    rack_heatmap: Array<{
-      rack: string;
-      tokens: number;
-      tryons: number;
-      conversion_percent: number;
-      revenue_inr: number;
-      heat_level: string;
-    }>;
-    color_trends: Array<{
-      color_name: string;
-      percentage: number;
-      color_hex: string;
-    }>;
-    restock_alerts: Array<{
+    // --- Showroom Floor Counter Slips / POS Tokens ---
+    createCounterToken(payload: {
+      product_id: string;
+      job_id?: string;
+      kiosk_id?: string;
+      customer_phone?: string;
+      customer_name?: string;
+      notes?: string;
+    }): Observable < {
+      success: boolean;
+      token_id: string;
+      token_code: string;
+      product_name_en: string;
+      product_name_ta: string;
       sku: string;
-      name: string;
-      rack: string;
-      tryons_today: number;
-      token_demand: number;
-      alert_level: string;
-      advice: string;
-    }>;
-  }> {
-    return this.http.get<any>(`${this.baseUrl}/admin/analytics/showroom-insights`);
-  }
-
-  // --- Phase 5: Couple & Groom Coordinated Drape Lookbook ---
-  generateCoupleDrape(payload: {
-    job_id: string;
-    groom_attire?: string;
-    saree_color_hex?: string;
-    saree_name?: string;
-  }): Observable<{
-    success: boolean;
-    couple_image_url: string;
-    groom_attire: string;
-  }> {
-    return this.http.post<any>(`${this.baseUrl}/tryon/couple-drape`, payload);
-  }
-
-  // --- Phase 3: Family Poll & Opinion Voting Engine ---
-  createFamilyPoll(payload: {
-    customer_name?: string;
-    customer_phone?: string;
-    title?: string;
-    candidates: Array<{
-      job_id: string;
-      image_url: string;
-      saree_name: string;
-      color: string;
-      sku: string;
+      rack_location: string;
       price: number;
-    }>;
-  }): Observable<{
-    success: boolean;
-    poll_id: string;
-    poll_code: string;
-    poll_url: string;
-    share_text: string;
-    candidate_count: number;
-  }> {
-    return this.http.post<any>(`${this.baseUrl}/tryon/family-poll`, payload);
-  }
+      created_at: string;
+      status: string;
+    } > {
+      return this.http.post<any>(`${this.baseUrl}/tryon/counter-token`, payload);
+    }
 
-  getFamilyPoll(pollCode: string): Observable<{
-    poll_code: string;
-    title: string;
-    customer_name: string;
-    status: string;
-    total_votes: number;
-    candidates: Array<{
-      index: number;
+    getCounterTokens(): Observable < CounterTokenItem[] > {
+      return this.http.get<CounterTokenItem[]>(`${this.baseUrl}/admin/counter-tokens`);
+    }
+
+    updateCounterTokenStatus(tokenId: string, status: string, notes ?: string): Observable < any > {
+      return this.http.patch(`${this.baseUrl}/admin/counter-tokens/${tokenId}`, { status, notes });
+    }
+
+    sendTryOnWhatsApp(payload: {
       job_id: string;
-      image_url: string;
-      saree_name: string;
-      color: string;
-      sku: string;
-      price: number;
-      vote_count: number;
-      vote_percentage: number;
-    }>;
-    recent_votes: Array<{
+      customer_phone: string;
+      garment_name?: string;
+      jewellery_type?: string;
+      lighting_mode?: string;
+    }): Observable < any > {
+      return this.http.post(`${this.baseUrl}/tryon/send-whatsapp`, payload);
+    }
+
+    // --- Phase 2: Bridal Styling Transformation ---
+    applyBridalStyling(payload: {
+      job_id: string;
+      jewellery_type?: string;
+      lighting_preset?: string;
+      blouse_tone?: string;
+      drape_style?: string;
+    }): Observable < {
+      status: string;
+      job_id: string;
+      styled_image_url: string;
+      jewellery_applied: string;
+      lighting_applied: string;
+    } > {
+      return this.http.post<any>(`${this.baseUrl}/tryon/apply-styling`, payload);
+    }
+
+    // --- Phase 5: Showroom Sales Analytics & Rack Heatmap ---
+    getShowroomInsights(): Observable < {
+      total_tryons: number;
+      total_tokens: number;
+      conversion_rate_percent: number;
+      rack_heatmap: Array<{
+        rack: string;
+        tokens: number;
+        tryons: number;
+        conversion_percent: number;
+        revenue_inr: number;
+        heat_level: string;
+      }>;
+      color_trends: Array<{
+        color_name: string;
+        percentage: number;
+        color_hex: string;
+      }>;
+      restock_alerts: Array<{
+        sku: string;
+        name: string;
+        rack: string;
+        tryons_today: number;
+        token_demand: number;
+        alert_level: string;
+        advice: string;
+      }>;
+    } > {
+      return this.http.get<any>(`${this.baseUrl}/admin/analytics/showroom-insights`);
+    }
+
+    // --- Phase 5: Couple & Groom Coordinated Drape Lookbook ---
+    generateCoupleDrape(payload: {
+      job_id: string;
+      groom_attire?: string;
+      saree_color_hex?: string;
+      saree_name?: string;
+    }): Observable < {
+      success: boolean;
+      couple_image_url: string;
+      groom_attire: string;
+    } > {
+      return this.http.post<any>(`${this.baseUrl}/tryon/couple-drape`, payload);
+    }
+
+    // --- Phase 3: Family Poll & Opinion Voting Engine ---
+    createFamilyPoll(payload: {
+      customer_name?: string;
+      customer_phone?: string;
+      title?: string;
+      candidates: Array<{
+        job_id: string;
+        image_url: string;
+        saree_name: string;
+        color: string;
+        sku: string;
+        price: number;
+      }>;
+    }): Observable < {
+      success: boolean;
+      poll_id: string;
+      poll_code: string;
+      poll_url: string;
+      share_text: string;
+      candidate_count: number;
+    } > {
+      return this.http.post<any>(`${this.baseUrl}/tryon/family-poll`, payload);
+    }
+
+    getFamilyPoll(pollCode: string): Observable < {
+      poll_code: string;
+      title: string;
+      customer_name: string;
+      status: string;
+      total_votes: number;
+      candidates: Array<{
+        index: number;
+        job_id: string;
+        image_url: string;
+        saree_name: string;
+        color: string;
+        sku: string;
+        price: number;
+        vote_count: number;
+        vote_percentage: number;
+      }>;
+      recent_votes: Array<{
+        voter_name: string;
+        voter_relation: string;
+        candidate_index: number;
+        comment?: string;
+        created_at: string;
+      }>;
+    } > {
+      return this.http.get<any>(`${this.baseUrl}/tryon/family-poll/${pollCode}`);
+    }
+
+    castPollVote(pollCode: string, payload: {
       voter_name: string;
-      voter_relation: string;
+      voter_relation?: string;
       candidate_index: number;
       comment?: string;
-      created_at: string;
-    }>;
-  }> {
-    return this.http.get<any>(`${this.baseUrl}/tryon/family-poll/${pollCode}`);
-  }
+    }): Observable < {
+      success: boolean;
+      message: string;
+      candidate_voted: string;
+    } > {
+      return this.http.post<any>(`${this.baseUrl}/tryon/family-poll/${pollCode}/vote`, payload);
+    }
 
-  castPollVote(pollCode: string, payload: {
-    voter_name: string;
-    voter_relation?: string;
-    candidate_index: number;
-    comment?: string;
-  }): Observable<{
-    success: boolean;
-    message: string;
-    candidate_voted: string;
-  }> {
-    return this.http.post<any>(`${this.baseUrl}/tryon/family-poll/${pollCode}/vote`, payload);
-  }
+    testPOSSync(test_url ?: string): Observable < {
+      success: boolean;
+      http_status?: number;
+      response?: string;
+      error?: string;
+    } > {
+      return this.http.post<any>(`${this.baseUrl}/admin/pos/test-sync`, { test_url });
+    }
 
-  testPOSSync(test_url?: string): Observable<{
-    success: boolean;
-    http_status?: number;
-    response?: string;
-    error?: string;
-  }> {
-    return this.http.post<any>(`${this.baseUrl}/admin/pos/test-sync`, { test_url });
-  }
+    // --- B2B SaaS Multi-Tenant Customers & Catalog Ingestion ---
+    getSaaSCustomers(): Observable < {
+      customers: Array<{
+        id: string;
+        name: string;
+        code: string;
+        contact_email: string;
+        contact_phone?: string;
+        address?: string;
+        is_active: boolean;
+        plan_tier: string;
+        subscription_price_inr: number;
+        monthly_token_quota: number;
+        tokens_used_this_month: number;
+        payment_status: string;
+        billing_cycle: string;
+        api_key?: string;
+        catalog_feed_url?: string;
+        last_catalog_sync_at?: string;
+        branch_count: number;
+        kiosk_count: number;
+        manager_count: number;
+        created_at: string;
+      }>;
+      metrics: {
+        total_customers: number;
+        active_customers: number;
+        total_mrr_inr: number;
+        total_tokens_consumed_this_month: number;
+      };
+    } > {
+      return this.http.get<any>(`${this.baseUrl}/admin/customers`);
+    }
 
-  // --- B2B SaaS Multi-Tenant Customers & Catalog Ingestion ---
-  getSaaSCustomers(): Observable<{
-    customers: Array<{
-      id: string;
+    onboardCustomer(payload: {
       name: string;
       code: string;
-      contact_email: string;
+      manager_name: string;
+      manager_email: string;
+      manager_password?: string;
       contact_phone?: string;
       address?: string;
-      is_active: boolean;
-      plan_tier: string;
-      subscription_price_inr: number;
-      monthly_token_quota: number;
-      tokens_used_this_month: number;
-      payment_status: string;
-      billing_cycle: string;
-      api_key?: string;
+      plan_tier?: string;
+      subscription_price_inr?: number;
+      monthly_token_quota?: number;
+      billing_cycle?: string;
       catalog_feed_url?: string;
-      last_catalog_sync_at?: string;
-      branch_count: number;
-      kiosk_count: number;
-      manager_count: number;
-      created_at: string;
-    }>;
-    metrics: {
-      total_customers: number;
-      active_customers: number;
-      total_mrr_inr: number;
-      total_tokens_consumed_this_month: number;
-    };
-  }> {
-    return this.http.get<any>(`${this.baseUrl}/admin/customers`);
-  }
+    }): Observable < {
+      success: boolean;
+      shop_id: string;
+      name: string;
+      api_key: string;
+      manager_email: string;
+      default_password_generated: boolean;
+      message: string;
+    } > {
+      return this.http.post<any>(`${this.baseUrl}/admin/customers`, payload);
+    }
 
-  onboardCustomer(payload: {
-    name: string;
-    code: string;
-    manager_name: string;
-    manager_email: string;
-    manager_password?: string;
-    contact_phone?: string;
-    address?: string;
-    plan_tier?: string;
-    subscription_price_inr?: number;
-    monthly_token_quota?: number;
-    billing_cycle?: string;
-    catalog_feed_url?: string;
-  }): Observable<{
-    success: boolean;
-    shop_id: string;
-    name: string;
-    api_key: string;
-    manager_email: string;
-    default_password_generated: boolean;
-    message: string;
-  }> {
-    return this.http.post<any>(`${this.baseUrl}/admin/customers`, payload);
-  }
+    updateCustomer(shopId: string, payload: any): Observable < { success: boolean; message: string } > {
+      return this.http.patch<any>(`${this.baseUrl}/admin/customers/${shopId}`, payload);
+    }
 
-  updateCustomer(shopId: string, payload: any): Observable<{ success: boolean; message: string }> {
-    return this.http.patch<any>(`${this.baseUrl}/admin/customers/${shopId}`, payload);
-  }
-
-  deleteCustomer(shopId: string): Observable<{ success: boolean; message: string }> {
-    return this.http.delete<any>(`${this.baseUrl}/admin/customers/${shopId}`);
-  }
+    deleteCustomer(shopId: string): Observable < { success: boolean; message: string } > {
+      return this.http.delete<any>(`${this.baseUrl}/admin/customers/${shopId}`);
+    }
 
 
-  syncTenantCatalog(items: any[], apiKey: string): Observable<{
-    success: boolean;
-    shop_name: string;
-    items_received: number;
-    created: number;
-    updated: number;
-    skipped: number;
-  }> {
-    return this.http.post<any>(`${this.baseUrl}/tenant/catalog/sync`, { items }, {
-      headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' }
-    });
-  }
+    syncTenantCatalog(items: any[], apiKey: string): Observable < {
+      success: boolean;
+      shop_name: string;
+      items_received: number;
+      created: number;
+      updated: number;
+      skipped: number;
+    } > {
+      return this.http.post<any>(`${this.baseUrl}/tenant/catalog/sync`, { items }, {
+        headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' }
+      });
+    }
 
-  importTenantCatalogUrl(feedUrl: string, apiKey: string): Observable<{
-    success: boolean;
-    shop_name: string;
-    items_imported: number;
-    feed_url: string;
-  }> {
-    return this.http.post<any>(`${this.baseUrl}/tenant/catalog/import-url`, { feed_url: feedUrl }, {
-      headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' }
-    });
-  }
+    importTenantCatalogUrl(feedUrl: string, apiKey: string): Observable < {
+      success: boolean;
+      shop_name: string;
+      items_imported: number;
+      feed_url: string;
+    } > {
+      return this.http.post<any>(`${this.baseUrl}/tenant/catalog/import-url`, { feed_url: feedUrl }, {
+        headers: { 'X-API-Key': apiKey, 'Content-Type': 'application/json' }
+      });
+    }
 
-  getTenantCatalogSample(): Observable<any> {
-    return this.http.get<any>(`${this.baseUrl}/tenant/catalog/feed-sample`);
+    getTenantCatalogSample(): Observable < any > {
+      return this.http.get<any>(`${this.baseUrl}/tenant/catalog/feed-sample`);
+    }
   }
-}

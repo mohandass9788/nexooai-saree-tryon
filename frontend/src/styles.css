@@ -36,6 +36,15 @@
   --radius-sm: 8px;
   --radius-md: 16px;
   --radius-lg: 24px;
+
+  /* Emil Kowalski Design Engineering Motion Tokens */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-spring: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  --duration-snap: 120ms;
+  --duration-fast: 160ms;
+  --duration-normal: 220ms;
 }
 
 * {
@@ -47,13 +56,29 @@
 }
 
 html, body {
+  overscroll-behavior: none;
+}
+
+button, a, [role="button"], .tappable {
+  touch-action: manipulation;
+  user-select: none;
+}
+
+html {
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  overflow-x: clip;
+}
+
+body {
   width: 100%;
   min-height: 100%;
   font-family: var(--font-body);
   background: var(--color-bg-primary);
   color: var(--color-text-primary);
   overflow-x: hidden;
-  overflow-y: auto;
+  overflow-x: clip;
   -webkit-overflow-scrolling: touch;
   background-image: 
     radial-gradient(circle at 15% 15%, rgba(133, 15, 41, 0.18) 0%, transparent 40%),

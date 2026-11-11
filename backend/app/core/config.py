@@ -61,6 +61,10 @@ class Settings(BaseSettings):
     KIOSK_INACTIVITY_TIMEOUT_SECONDS: int = 90
     KIOSK_ADMIN_PIN: str = "849201"
 
+    # API Documentation Security
+    DOCS_USERNAME: str = "nexooai_dev"
+    DOCS_PASSWORD: str = "NexooDocs@2026!"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

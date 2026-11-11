@@ -184,30 +184,6 @@ def render_realistic_tryon_drape(
     garment_layer = garment_layer.filter(ImageFilter.GaussianBlur(radius=1.0))
     result = Image.alpha_composite(result, garment_layer)
 
-    # Minimalist Luxury Showroom Watermark Badge (Non-intrusive floating pill at bottom-right)
-    draw_final = ImageDraw.Draw(result)
-    badge_w = min(int(w * 0.70), 340)
-    badge_h = 34
-    bx = w - badge_w - 18
-    by = h - badge_h - 18
-
-    # Sleek glassmorphic dark container
-    glass_badge = Image.new("RGBA", (w, h), (0, 0, 0, 0))
-    gb_draw = ImageDraw.Draw(glass_badge)
-    gb_draw.rounded_rectangle(
-        [(bx, by), (bx + badge_w, by + badge_h)],
-        radius=10,
-        fill=(14, 10, 18, 190),
-        outline=(212, 175, 55, 210),
-        width=1,
-    )
-    result = Image.alpha_composite(result, glass_badge)
-
-    # Badge text
-    draw_final = ImageDraw.Draw(result)
-    text_label = f"✦ {garment_name} • {price}"
-    draw_final.text((bx + 12, by + 9), text_label, fill=(250, 242, 225, 240))
-
     out_buf = io.BytesIO()
-    result.convert("RGB").save(out_buf, format="JPEG", quality=92)
+    result.convert("RGB").save(out_buf, format="JPEG", quality=95)
     return out_buf.getvalue()

@@ -52,8 +52,16 @@ async def get_catalogue(
     try:
         stmt = select(ProductModel).where(ProductModel.is_active == True)
         if category:
-            cat_filter = f"%{category.lower()}%"
-            stmt = stmt.where(func.lower(ProductModel.category).like(cat_filter))
+            cat_lower = category.lower().strip()
+            cat_spaced = cat_lower.replace("-", " ")
+            stmt = stmt.where(
+                or_(
+                    func.lower(ProductModel.category).like(f"%{cat_lower}%"),
+                    func.lower(ProductModel.category).like(f"%{cat_spaced}%"),
+                    func.replace(func.lower(ProductModel.category), "-", " ").like(f"%{cat_spaced}%"),
+                    func.replace(func.lower(ProductModel.category), " ", "-").like(f"%{cat_lower}%"),
+                )
+            )
 
         if search:
             s_filter = f"%{search.lower()}%"

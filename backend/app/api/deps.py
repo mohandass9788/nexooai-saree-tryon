@@ -42,6 +42,18 @@ async def get_current_user(
 
     claims = decode_access_token(raw_token)
     if not claims:
+        # Support development simulated tokens in non-production environments
+        from backend.app.core.config import settings
+        if settings.APP_ENV != "production" and raw_token.startswith("jwt_token_"):
+            is_super = "super" in raw_token
+            return AuthenticatedUser(
+                user_id="dev_admin_user",
+                role="super_admin" if is_super else "store_manager",
+                shop_id=None if is_super else "shop_default",
+                name="Mohandass (NeXooAi Super Admin)" if is_super else "Store Manager",
+                email="mohandass@nexooai.in" if is_super else "admin@nexooai.com",
+            )
+
         # Fallback to in-memory store for transitional tokens during migration
         from backend.app.api.v1.endpoints.auth import ACTIVE_KIOSK_TOKENS
         if raw_token in ACTIVE_KIOSK_TOKENS:
@@ -118,13 +130,15 @@ def enforce_tenant_scope(
     - Any attempt to access or mutate another shop's resources raises HTTP 403 Forbidden.
     """
     if current_user.role == "super_admin":
+        if target_shop_id in ("shop_default", "default", "me", "current", ""):
+            return None
         return target_shop_id
 
     user_shop = current_user.shop_id or "shop_default"
-    if target_shop_id and target_shop_id != user_shop:
+    if target_shop_id and target_shop_id not in ("shop_default", "default", "me", "current", user_shop):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail=f"Cross-tenant access denied. Your account is bound to shop '{user_shop}' and cannot access resources of shop '{target_shop_id}'.",
         )
-    return user_shop
+    return current_user.shop_id or user_shop
 

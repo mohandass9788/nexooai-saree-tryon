@@ -14,6 +14,8 @@ from backend.app.db.models import (
     CounterTokenModel,
     FamilyPollModel,
     FamilyPollVoteModel,
+    SalesInquiryModel,
+    PasswordResetModel,
 )
 from backend.app.api.v1.endpoints.catalog import SAMPLE_SAREES
 
@@ -120,9 +122,27 @@ async def migrate_db_columns(conn):
             "ALTER TABLE shops ADD COLUMN IF NOT EXISTS api_key VARCHAR(128)",
             "ALTER TABLE shops ADD COLUMN IF NOT EXISTS catalog_feed_url VARCHAR(500)",
             "ALTER TABLE shops ADD COLUMN IF NOT EXISTS last_catalog_sync_at TIMESTAMP",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS feature_flags_json TEXT",
             "ALTER TABLE products ADD COLUMN IF NOT EXISTS rack_location VARCHAR(100) DEFAULT 'Section A - Rack 04'",
             "ALTER TABLE tryon_jobs ADD COLUMN IF NOT EXISTS shop_id VARCHAR(64)",
             "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS shop_id VARCHAR(64)",
+            "ALTER TABLE admin_users ADD COLUMN IF NOT EXISTS temp_password VARCHAR(255)",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS city VARCHAR(100) DEFAULT 'Chennai'",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS address TEXT",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS temp_password VARCHAR(255)",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS ai_provider VARCHAR(50) DEFAULT 'auto_by_plan'",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS ai_api_key VARCHAR(255)",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS kiosk_count INTEGER DEFAULT 1",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS kiosk_password VARCHAR(255)",
+            "ALTER TABLE shops ADD COLUMN IF NOT EXISTS kiosk_pin VARCHAR(20)",
+            "ALTER TABLE kiosks ADD COLUMN IF NOT EXISTS shop_id VARCHAR(64)",
+            "ALTER TABLE kiosks ADD COLUMN IF NOT EXISTS username VARCHAR(255)",
+            "ALTER TABLE kiosks ADD COLUMN IF NOT EXISTS kiosk_password VARCHAR(255)",
+            "ALTER TABLE kiosks ADD COLUMN IF NOT EXISTS kiosk_pin VARCHAR(20) DEFAULT '5521'",
+            "ALTER TABLE kiosks ADD COLUMN IF NOT EXISTS section VARCHAR(100) DEFAULT 'Main Showroom Floor'",
+            "ALTER TABLE kiosks ADD COLUMN IF NOT EXISTS screen_resolution VARCHAR(50) DEFAULT '1080x1920 (Portrait)'",
+            "ALTER TABLE kiosks ADD COLUMN IF NOT EXISTS hardware_price_inr FLOAT DEFAULT 0.0",
+            "ALTER TABLE kiosks ADD COLUMN IF NOT EXISTS active_session_id VARCHAR(128)",
         ]
         for q in queries:
             try:
@@ -161,6 +181,8 @@ async def migrate_db_columns(conn):
                     await conn.execute(text("ALTER TABLE shops ADD COLUMN catalog_feed_url VARCHAR(500)"))
                 if "last_catalog_sync_at" not in cols:
                     await conn.execute(text("ALTER TABLE shops ADD COLUMN last_catalog_sync_at DATETIME"))
+                if "feature_flags_json" not in cols:
+                    await conn.execute(text("ALTER TABLE shops ADD COLUMN feature_flags_json TEXT"))
 
             res_p = await conn.execute(text("PRAGMA table_info(products)"))
             cols_p = [row[1] for row in res_p.fetchall()]
@@ -188,75 +210,26 @@ async def init_database():
     print("Database tables created & migrated successfully.")
 
     async with AsyncSessionLocal() as session:
-        # 1. Seed Flagship Boutique Showroom
-        res_s = await session.execute(select(ShopModel).where(ShopModel.id == "shop_default"))
-        shop_obj = res_s.scalar_one_or_none()
-        if not shop_obj:
-            shop_obj = ShopModel(
-                id="shop_default",
-                name="NeXooAi Luxury Silks",
-                slug="nexooai-silks",
-                logo_url="/assets/branding/logo.png",
-                contact_person="Store Head",
-                contact_email="manager@nexooai.in",
-                contact_phone="+91 98401 23456",
-                is_active=True,
-                plan_tier="platinum",
-                subscription_price_inr=49999.0,
-                monthly_token_quota=3500,
-                tokens_used_this_month=48,
-                payment_status="paid",
-                billing_cycle="monthly",
-                api_key="sk_live_nexooai_default_01",
-                created_at=datetime.utcnow(),
+        # 1. Seed Categories Taxonomy (Bridal Silk, Banarasi, Cotton, Mysore, Chudidhar, Men Dhoti, Kurta, Kids)
+        for cat in CATEGORIES_SEED:
+            res_c = await session.execute(
+                select(CategoryModel).where(CategoryModel.id == cat["id"])
             )
-            session.add(shop_obj)
-            print(f"Seeded Flagship Showroom: {shop_obj.name}")
-        else:
-            if not getattr(shop_obj, "api_key", None):
-                shop_obj.api_key = "sk_live_nexooai_default_01"
-                shop_obj.plan_tier = "platinum"
-                shop_obj.subscription_price_inr = 49999.0
-                shop_obj.monthly_token_quota = 3500
-                shop_obj.payment_status = "paid"
+            if not res_c.scalar_one_or_none():
+                new_cat = CategoryModel(
+                    id=cat["id"],
+                    name_en=cat["name_en"],
+                    name_ta=cat["name_ta"],
+                    slug=cat["slug"],
+                    display_order=cat.get("display_order", 0),
+                    is_active=True,
+                    created_at=datetime.utcnow(),
+                )
+                session.add(new_cat)
         await session.flush()
+        print("Category taxonomy synchronized (8 categories ready).")
 
-        # 2. Seed Branch
-        res = await session.execute(select(BranchModel).where(BranchModel.id == "branch_tnagar"))
-        branch = res.scalar_one_or_none()
-        if not branch:
-            branch = BranchModel(
-                id="branch_tnagar",
-                shop_id="shop_default",
-                branch_name="T. Nagar Flagship Showroom",
-                city="Chennai",
-                address="Usman Road, T. Nagar, Chennai - 600017",
-                phone="+91 44 2434 5678",
-                created_at=datetime.utcnow(),
-            )
-            session.add(branch)
-            await session.flush()
-            print("Seeded default branch: T. Nagar Flagship Showroom")
-
-        # 3. Seed Kiosk
-        res = await session.execute(select(KioskModel).where(KioskModel.kiosk_code == "KIOSK-TN-CHN-01"))
-        kiosk = res.scalar_one_or_none()
-        if not kiosk:
-            kiosk = KioskModel(
-                id="kiosk_tn_01",
-                branch_id="branch_tnagar",
-                kiosk_code="KIOSK-TN-CHN-01",
-                display_name='Ground Floor 55" Portrait Totem Mirror',
-                status="online",
-                device_ip="192.168.1.101",
-                last_ping_at=datetime.utcnow(),
-                created_at=datetime.utcnow(),
-            )
-            session.add(kiosk)
-            await session.flush()
-            print("Seeded default kiosk: KIOSK-TN-CHN-01")
-
-        # 4. Seed Super Admin User (mohandass@nexooai.in)
+        # 2. Seed Master Super Admin User (mohandass@nexooai.in)
         from backend.app.core.security import hash_password
 
         res_master = await session.execute(select(AdminUserModel).where(AdminUserModel.email == "mohandass@nexooai.in"))
@@ -277,30 +250,16 @@ async def init_database():
         else:
             # Ensure password matches user's specified credential
             master_user.hashed_password = hash_password("mohandass@1992")
+            master_user.role = "super_admin"
+            master_user.is_active = True
             await session.flush()
 
-        # 4b. Seed Store Manager
-        res = await session.execute(select(AdminUserModel).where(AdminUserModel.email == "admin@nexooai.com"))
-        admin_user = res.scalar_one_or_none()
-        if not admin_user:
-            admin_user = AdminUserModel(
-                id="admin_001",
-                email="admin@nexooai.com",
-                name="Showroom Store Manager",
-                hashed_password=hash_password("Qwerty@123"),
-                role="store_manager",
-                is_active=True,
-                created_at=datetime.utcnow(),
-            )
-            session.add(admin_user)
-            await session.flush()
-            print("Seeded store manager user: admin@nexooai.com")
+        # Pristine Day-0 Production State:
+        # No mock showrooms, branches, kiosks, dummy managers, or mock drapes.
+        # Super Admin creates boutiques via Admin portal -> Onboard Boutique.
+        print("Catalogue & Users initialized in pristine Day-0 state (no mock showrooms or dummy users).")
 
-        # Mock category & product seeding completely disabled.
-        # User will upload production sarees & categories directly from Admin portal.
-        print("Catalogue initialized in clean state (no mock data).")
-
-        # Ensure a fallback custom product exists for custom garment try-ons
+        # 3. Ensure a fallback custom product exists for custom garment try-ons
         res_custom = await session.execute(select(ProductModel).where(ProductModel.id == "custom_product"))
         if not res_custom.scalar_one_or_none():
             custom_prod = ProductModel(
@@ -323,7 +282,7 @@ async def init_database():
             session.add(custom_prod)
 
         await session.commit()
-        print(f"Database successfully synchronized with {len(SAMPLE_SAREES)} products.")
+        print("Database initialized in clean Day-0 live state.")
 
 
 if __name__ == "__main__":

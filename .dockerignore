@@ -1,0 +1,26 @@
+# Git & IDE
+.git
+.github
+.vscode
+.agents
+scratch/
+
+# Python Virtual Environments & Cache
+backend/venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+*.egg-info/
+
+# Local databases & media files
+*.sqlite3*
+media/
+*.log
+
+# Node & Frontend build artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/.angular/

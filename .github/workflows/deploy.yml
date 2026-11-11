@@ -17,8 +17,6 @@ permissions:
 
 env:
   REGISTRY: ghcr.io
-  BACKEND_IMAGE_NAME: ${{ github.repository }}/backend
-  FRONTEND_IMAGE_NAME: ${{ github.repository }}/frontend
 
 jobs:
   # =========================================================================
@@ -46,8 +44,8 @@ jobs:
         env:
           APP_ENV: testing
           AI_TRYON_PROVIDER: mock
-          DATABASE_URL: sqlite+aiosqlite:///./backend/test.db
-          STORAGE_LOCAL_DIR: ./backend/test-media
+          DATABASE_URL: sqlite+aiosqlite:///./test.db
+          STORAGE_LOCAL_DIR: ./media
         run: |
           PYTHONPATH=. pytest -c pytest.ini -v
 
@@ -74,11 +72,15 @@ jobs:
   build-and-push-docker:
     needs: test-and-validate
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+
+      - name: Lowercase Repository Name
+        id: repo
+        run: echo "repo_lower=${GITHUB_REPOSITORY,,}" >> $GITHUB_OUTPUT
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -94,7 +96,7 @@ jobs:
         id: meta-backend
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.repo.outputs.repo_lower }}/backend
           tags: |
             type=raw,value=latest
             type=sha,format=short
@@ -114,7 +116,7 @@ jobs:
         id: meta-frontend
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ steps.repo.outputs.repo_lower }}/frontend
           tags: |
             type=raw,value=latest
             type=sha,format=short

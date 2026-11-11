@@ -32,17 +32,38 @@ describe('AppShellComponent', () => {
   });
 
   it('should toggle saree active status', () => {
-    const saree = component.sarees[0];
-    const initialStatus = saree.is_active;
-    component.toggleSareeStatus(saree);
-    expect(saree.is_active).toBe(!initialStatus);
+    const testSaree = {
+      id: 'sar-test',
+      sku: 'TEST-01',
+      name_en: 'Test Saree',
+      name_ta: 'டெஸ்ட் புடவை',
+      category: 'Silk',
+      fabric: 'Mulberry',
+      price: 15000,
+      rack_location: 'A-01',
+      is_active: true,
+      thumbnail: 'test.jpg',
+    };
+    component.sarees = [testSaree];
+    const initialStatus = testSaree.is_active;
+    component.toggleSareeStatus(testSaree);
+    expect(testSaree.is_active).toBe(!initialStatus);
   });
 
   it('should toggle kiosk lock status', () => {
-    const kiosk = component.kiosks[0];
-    const initialLock = kiosk.isLocked;
-    component.toggleKioskLock(kiosk);
-    expect(kiosk.isLocked).toBe(!initialLock);
+    const testKiosk = {
+      id: 'KIOSK-01',
+      name: 'Test Kiosk',
+      section: 'Main',
+      status: 'online' as const,
+      lastPing: 'now',
+      screenResolution: '1080x1920',
+      isLocked: false,
+    };
+    component.kiosks = [testKiosk];
+    const initialLock = testKiosk.isLocked;
+    component.toggleKioskLock(testKiosk);
+    expect(testKiosk.isLocked).toBe(!initialLock);
   });
 
   it('should allow adding try-on quota tokens', () => {

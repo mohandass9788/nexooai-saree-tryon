@@ -1,11 +1,17 @@
 <div class="page-container" [class.theme-dark]="isDarkMode()" [class.theme-light]="!isDarkMode()">
-  <!-- Top Navigation Bar -->
-  <header class="top-navbar">
+  <!-- Top Navigation Bar (Guaranteed Sticky with Scroll Elevation) -->
+  <header class="top-navbar" [class.is-scrolled]="isScrolled()">
     <div class="nav-content">
       <!-- Brand Logo -->
       <a routerLink="/" class="nav-brand">
         <div class="logo-brain-icon">
-          <img src="assets/images/nexooai_logo.svg" alt="NeXooAI Logo" width="38" height="38" />
+          <img
+            [src]="isDarkMode() ? 'assets/images/nexooai_icon.png' : 'assets/images/nexooai_icon_black.png'"
+            alt="NeXooAI Logo"
+            width="42"
+            height="42"
+            class="brand-logo-img"
+          />
         </div>
         <div class="brand-text-block">
           <span class="brand-title">NeXoo<span class="brand-ai">AI</span></span>
@@ -25,8 +31,8 @@
 
       <!-- Right Action Items -->
       <div class="nav-right-actions">
-        <!-- 6 Indian Languages Selector Dropdown -->
-        <div class="language-dropdown-wrap">
+        <!-- Compact Language Selector (Icon Pill) -->
+        <div class="language-dropdown-wrap desktop-only" title="Select Website Language">
           <span class="lang-globe-icon">🌐</span>
           <select
             class="lang-select-box"
@@ -34,32 +40,110 @@
             (ngModelChange)="setLanguage($event)"
             aria-label="Select website language">
             @for (lang of languages; track lang.code) {
-              <option [value]="lang.code">{{ lang.nativeLabel }} ({{ lang.label }})</option>
+              <option [value]="lang.code">{{ lang.code.toUpperCase() }} ({{ lang.nativeLabel }})</option>
             }
           </select>
         </div>
 
-        <!-- Theme Toggle Switch -->
+        <!-- Theme Toggle Switch (Compact Icon Button) -->
         <button
           type="button"
           class="theme-toggle-btn"
           (click)="toggleTheme()"
           [title]="isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
           aria-label="Toggle light or dark theme">
-          <span *ngIf="isDarkMode()" class="toggle-icon">☀️ Light</span>
-          <span *ngIf="!isDarkMode()" class="toggle-icon">🌙 Dark</span>
+          <span class="theme-icon">{{ isDarkMode() ? '☀️' : '🌙' }}</span>
         </button>
 
-        <!-- Showroom Login Pill Button -->
-        <a routerLink="/login" class="btn-showroom-login">Showroom Login</a>
+        <!-- Showroom Login (Sleek Key Icon Pill) -->
+        <a routerLink="/login" class="btn-showroom-login" title="Showroom Portal Login">
+          <span class="login-key-icon">🔑</span>
+          <span class="login-text">Login</span>
+        </a>
 
-        <!-- Book a Demo Pill Button -->
-        <button type="button" class="btn-book-demo-pill" (click)="openDemoModal()">
+        <!-- Book a Demo Pill Button (Prominent Hero CTA) -->
+        <button type="button" class="btn-book-demo-pill desktop-only" (click)="openDemoModal()">
           Book a Demo <span class="arrow-right">→</span>
+        </button>
+
+        <!-- Mobile / Tablet Hamburger Toggle Button -->
+        <button
+          type="button"
+          class="btn-nav-hamburger"
+          (click)="toggleMobileNav()"
+          aria-label="Toggle navigation menu">
+          <span>☰</span>
         </button>
       </div>
     </div>
   </header>
+
+  <!-- Mobile Navigation Backdrop & Drawer -->
+  <div *ngIf="isMobileNavOpen()" class="mobile-nav-backdrop" (click)="closeMobileNav()"></div>
+  <aside class="mobile-nav-drawer" [class.open]="isMobileNavOpen()">
+    <div class="mobile-nav-header">
+      <div class="nav-brand">
+        <img
+          [src]="isDarkMode() ? 'assets/images/nexooai_icon.png' : 'assets/images/nexooai_icon_black.png'"
+          alt="NeXooAI Logo"
+          width="36"
+          height="36"
+          class="brand-logo-img"
+        />
+        <div class="brand-text-block">
+          <span class="brand-title">NeXoo<span class="brand-ai">AI</span></span>
+        </div>
+      </div>
+      <button type="button" class="btn-close-mobile-nav" (click)="closeMobileNav()">✕</button>
+    </div>
+
+    <div class="mobile-nav-body">
+      <nav class="mobile-nav-links">
+        <a href="#home" class="mobile-nav-link" (click)="scrollToSection('home', $event)">
+          <span>🏠</span> <span>Home</span>
+        </a>
+        <a href="#features" class="mobile-nav-link" (click)="scrollToSection('features', $event)">
+          <span>✨</span> <span>Features</span>
+        </a>
+        <a href="#how-it-works" class="mobile-nav-link" (click)="scrollToSection('how-it-works', $event)">
+          <span>🔄</span> <span>How It Works</span>
+        </a>
+        <a href="#collections" class="mobile-nav-link" (click)="scrollToSection('collections', $event)">
+          <span>👗</span> <span>Collections</span>
+        </a>
+        <a href="#for-stores" class="mobile-nav-link" (click)="scrollToSection('for-stores', $event)">
+          <span>🏬</span> <span>For Stores</span>
+        </a>
+        <a href="#pricing" class="mobile-nav-link" (click)="scrollToSection('pricing', $event)">
+          <span>💳</span> <span>Pricing</span>
+        </a>
+      </nav>
+
+      <div class="mobile-nav-footer">
+        <!-- Language selector in mobile drawer -->
+        <div class="language-dropdown-wrap mobile-lang-wrap">
+          <span class="lang-globe-icon">🌐</span>
+          <select
+            class="lang-select-box"
+            [ngModel]="currentLang()"
+            (ngModelChange)="setLanguage($event); closeMobileNav()"
+            aria-label="Select website language">
+            @for (lang of languages; track lang.code) {
+              <option [value]="lang.code">{{ lang.nativeLabel }} ({{ lang.label }})</option>
+            }
+          </select>
+        </div>
+
+        <button type="button" class="btn-book-demo-pill mobile-demo-btn" (click)="openDemoModal(); closeMobileNav()">
+          Book a Demo <span class="arrow-right">→</span>
+        </button>
+
+        <a routerLink="/login" class="btn-showroom-login mobile-login-btn" (click)="closeMobileNav()">
+          Showroom Portal Login
+        </a>
+      </div>
+    </div>
+  </aside>
 
   <!-- Hero Section with Synchronized Multi-Garment Dynamic Carousel -->
   <section id="home" class="hero-section">
@@ -74,8 +158,8 @@
 
         <!-- Animated Heading in Selected Language -->
         <h1 class="hero-heading">
-          {{ currentSlide().headlineLine1[currentLang()] }}<br />
-          {{ currentSlide().headlineLine2[currentLang()] }}<br />
+          <span class="heading-line-1">{{ currentSlide().headlineLine1[currentLang()] }}</span> <br class="desktop-break" />
+          <span class="heading-line-2">{{ currentSlide().headlineLine2[currentLang()] }}</span> <br class="desktop-break" />
           <span class="gradient-text-instant">{{ currentSlide().headlineHighlight[currentLang()] }}</span>
         </h1>
 
@@ -666,7 +750,13 @@
         <div class="footer-brand">
           <a routerLink="/" class="nav-brand">
             <div class="logo-brain-icon">
-              <img src="assets/images/nexooai_logo.svg" alt="NeXooAI Logo" width="34" height="34" />
+              <img
+                [src]="isDarkMode() ? 'assets/images/nexooai_icon.png' : 'assets/images/nexooai_icon_black.png'"
+                alt="NeXooAI Logo"
+                width="36"
+                height="36"
+                class="brand-logo-img"
+              />
             </div>
             <div class="brand-text-block">
               <span class="brand-title">NeXoo<span class="brand-ai">AI</span></span>
@@ -685,10 +775,61 @@
         </div>
 
         <div class="footer-social-icons">
-          <a href="https://wa.me/919876543210" target="_blank" rel="noopener noreferrer" class="social-circle" title="WhatsApp Support">WA</a>
-          <a href="#" class="social-circle" title="Instagram">IG</a>
-          <a href="#" class="social-circle" title="LinkedIn">IN</a>
-          <a href="#" class="social-circle" title="YouTube Showcase">YT</a>
+          <!-- WhatsApp Brand Icon & Link -->
+          <a
+            href="https://wa.me/919876543210?text=Hello%20NeXooAI%20Team,%20I%20would%20like%20to%20learn%20more%20about%20your%20showroom%20AI%20kiosk."
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-brand-btn whatsapp-btn"
+            title="Chat on WhatsApp (+91 98765 43210)"
+            aria-label="WhatsApp Support">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path d="M12.04 2C6.58 2 2.13 6.45 2.13 11.91C2.13 13.66 2.59 15.36 3.45 16.86L2.05 22L7.3 20.62C8.75 21.41 10.38 21.83 12.04 21.83C17.5 21.83 21.95 17.38 21.95 11.92C21.95 9.27 20.92 6.78 19.05 4.9C17.18 3.03 14.69 2 12.04 2ZM12.05 20.15C10.56 20.15 9.11 19.76 7.85 19.01L7.55 18.83L4.43 19.65L5.26 16.61L5.06 16.29C4.24 14.99 3.81 13.47 3.81 11.91C3.81 7.37 7.5 3.68 12.05 3.68C14.25 3.68 16.31 4.54 17.87 6.1C19.42 7.66 20.28 9.72 20.27 11.92C20.28 16.46 16.59 20.15 12.05 20.15ZM16.56 14.37C16.31 14.25 15.1 13.65 14.88 13.57C14.65 13.49 14.49 13.45 14.32 13.69C14.16 13.94 13.69 14.5 13.54 14.66C13.4 14.83 13.25 14.85 13 14.73C12.75 14.6 11.96 14.34 11.02 13.51C10.29 12.86 9.8 12.06 9.66 11.81C9.51 11.57 9.64 11.43 9.77 11.31C9.88 11.2 10.02 11.02 10.15 10.87C10.27 10.72 10.31 10.62 10.39 10.45C10.47 10.29 10.43 10.14 10.37 10.02C10.31 9.9 9.82 8.69 9.61 8.2C9.41 7.71 9.21 7.78 9.06 7.77C8.92 7.77 8.76 7.76 8.59 7.76C8.43 7.76 8.16 7.82 7.93 8.07C7.71 8.32 7.07 8.92 7.07 10.14C7.07 11.36 7.96 12.53 8.08 12.7C8.21 12.86 9.83 15.36 12.3 16.43C12.89 16.68 13.35 16.84 13.71 16.95C14.3 17.14 14.84 17.11 15.26 17.05C15.73 16.98 16.71 16.46 16.92 15.87C17.12 15.28 17.12 14.78 17.06 14.68C17 14.58 16.82 14.5 16.56 14.37Z" />
+            </svg>
+            <span>WhatsApp</span>
+          </a>
+
+          <!-- Instagram Brand Icon & Link -->
+          <a
+            href="https://instagram.com/nexooai"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-brand-btn instagram-btn"
+            title="Follow NeXooAi on Instagram"
+            aria-label="Instagram">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069ZM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0ZM12 5.838a6.162 6.162 0 1 0 0 12.324 6.162 6.162 0 0 0 0-12.324ZM12 16a4 4 0 1 1 0-8 4 4 0 0 1 0 8ZM18.406 4.413a1.44 1.44 0 1 0 0 2.88 1.44 1.44 0 0 0 0-2.88Z" />
+            </svg>
+            <span>Instagram</span>
+          </a>
+
+          <!-- LinkedIn Brand Icon & Link -->
+          <a
+            href="https://linkedin.com/company/nexooai"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-brand-btn linkedin-btn"
+            title="Follow NeXooAi on LinkedIn"
+            aria-label="LinkedIn">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z" />
+            </svg>
+            <span>LinkedIn</span>
+          </a>
+
+          <!-- YouTube Brand Icon & Link -->
+          <a
+            href="https://youtube.com/@nexooai"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="social-brand-btn youtube-btn"
+            title="Subscribe to NeXooAi Showcase on YouTube"
+            aria-label="YouTube">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+              <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+            </svg>
+            <span>YouTube</span>
+          </a>
         </div>
       </div>
 

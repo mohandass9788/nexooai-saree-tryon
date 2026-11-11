@@ -7,10 +7,10 @@ import logging
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status, Depends
-from fastapi.responses import Response
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, status, Depends, Request
+from fastapi.responses import Response, HTMLResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_, func
+from sqlalchemy import select, and_, or_, func
 
 from backend.app.core.config import settings
 from backend.app.core.system_settings import get_setting
@@ -27,7 +27,11 @@ from backend.app.db.models import (
 )
 from backend.app.schemas.tryon import TryOnJobResponse
 from backend.app.services.tryon.factory import get_tryon_engine
-from backend.app.services.tryon.gemini_guard import gemini_pose_guard, PoseValidationResult
+from backend.app.services.tryon.gemini_guard import (
+    gemini_pose_guard,
+    PoseValidationResult,
+    GarmentValidationResult,
+)
 from backend.app.services.tokens.token_service import token_service
 from backend.app.services.storage.local_storage import storage_service
 from backend.app.api.deps import require_staff, AuthenticatedUser
@@ -61,6 +65,28 @@ async def validate_customer_pose(
         raise HTTPException(status_code=400, detail="Empty image uploaded.")
 
     result = await gemini_pose_guard.validate_pose(image_bytes)
+    return result
+
+
+@router.post("/validate-garment", response_model=GarmentValidationResult, summary="Pre-validate customer garment photo")
+async def validate_customer_garment(
+    garment_image: UploadFile = File(..., description="Garment photo to evaluate"),
+):
+    """
+    Evaluates whether an uploaded/captured image contains a genuine clothing item, saree, or fabric
+    BEFORE proceeding to AI virtual try-on, rejecting walls, dark voids, and non-garment photos.
+    """
+    if garment_image.content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"Unsupported format '{garment_image.content_type}'. Allowed: JPEG, PNG, WEBP.",
+        )
+
+    image_bytes = await garment_image.read()
+    if len(image_bytes) == 0:
+        raise HTTPException(status_code=400, detail="Empty image uploaded.")
+
+    result = await gemini_pose_guard.validate_garment(image_bytes)
     return result
 
 
@@ -111,9 +137,7 @@ async def create_tryon_job(
     if not active_shop_id and kiosk_id:
         try:
             res_k = await db.execute(
-                select(BranchModel.shop_id)
-                .join(KioskModel, KioskModel.branch_id == BranchModel.id)
-                .where(KioskModel.kiosk_code == kiosk_id)
+                select(KioskModel.shop_id).where((KioskModel.kiosk_code == kiosk_id) | (KioskModel.id == kiosk_id))
             )
             found_sid = res_k.scalar_one_or_none()
             if found_sid:
@@ -121,8 +145,34 @@ async def create_tryon_job(
         except Exception:
             pass
 
-    if not active_shop_id:
-        active_shop_id = "shop_default"
+    # Resolve valid Kiosk ID (Foreign Key safe) and update live ping
+    db_kiosk_id = None
+    if kiosk_id:
+        try:
+            k_update = await db.execute(
+                select(KioskModel).where((KioskModel.kiosk_code == kiosk_id) | (KioskModel.id == kiosk_id))
+            )
+            live_kiosk = k_update.scalars().first()
+            if live_kiosk:
+                db_kiosk_id = live_kiosk.id
+                live_kiosk.last_ping_at = datetime.utcnow()
+                live_kiosk.status = "online"
+                if not active_shop_id and live_kiosk.shop_id:
+                    active_shop_id = live_kiosk.shop_id
+                await db.commit()
+        except Exception:
+            await db.rollback()
+
+    if not active_shop_id or active_shop_id == "shop_default":
+        try:
+            any_sh = await db.execute(select(ShopModel).limit(1))
+            first_sh = any_sh.scalars().first()
+            if first_sh:
+                active_shop_id = first_sh.id
+            else:
+                active_shop_id = "shop_default"
+        except Exception:
+            active_shop_id = "shop_default"
 
     # Enforce Tenant Subscription Status & Monthly Try-On Quota (Phases S3-S5)
     try:
@@ -170,7 +220,7 @@ async def create_tryon_job(
             db.add(
                 TryOnSessionModel(
                     id=active_session_id,
-                    kiosk_id=kiosk_id,
+                    kiosk_id=db_kiosk_id,
                     language=language,
                     consent_accepted=True,
                     started_at=datetime.utcnow(),
@@ -179,6 +229,7 @@ async def create_tryon_job(
         await db.flush()
     except Exception as e:
         logger.warning(f"Could not record consent audit: {e}")
+        await db.rollback()
 
     # 4. Resolve Product/Garment Image (Custom Upload vs Catalogue Saree)
     saree_image_bytes = b""
@@ -188,7 +239,6 @@ async def create_tryon_job(
     # Always attempt metadata lookup if saree_id is provided
     if saree_id and saree_id != "custom_product":
         try:
-            from sqlalchemy import or_, func
             stmt = select(ProductModel).where(
                 or_(
                     ProductModel.id == saree_id,
@@ -237,7 +287,6 @@ async def create_tryon_job(
             )
 
         try:
-            from sqlalchemy import or_, func
             stmt = select(ProductModel).where(
                 or_(
                     ProductModel.id == saree_id,
@@ -312,7 +361,12 @@ async def create_tryon_job(
             logger.warning(f"Cost cap check error: {e}")
 
     # 5. Dispatch to Pluggable AI Adapter
-    engine = get_tryon_engine()
+    engine = get_tryon_engine(
+        shop_id=active_shop_id,
+        plan_tier=getattr(shop_record, "plan_tier", None),
+        ai_provider=getattr(shop_record, "ai_provider", None),
+        custom_api_key=getattr(shop_record, "ai_api_key", None),
+    )
     engine_result = await engine.process_tryon(
         person_image_bytes=person_image_bytes,
         saree_image_bytes=saree_image_bytes,
@@ -500,36 +554,42 @@ async def get_job_result(job_id: str):
     return Response(content=media_bytes, media_type="image/jpeg")
 
 
-@router.get("/download/{token}", summary="Download Result via Secure QR Token")
-async def download_by_token(token: str, db: AsyncSession = Depends(get_db)):
-    # 1. First validate via in-memory/crypto token service
-    token_meta = token_service.validate_and_consume_token(token)
+@router.get("/download/{token}/file", summary="Raw File Download via Token")
+async def download_file_by_token(token: str, db: AsyncSession = Depends(get_db)):
+    # Validate token
+    res = await db.execute(select(DownloadTokenModel).where(DownloadTokenModel.raw_token == token))
+    db_token = res.scalar_one_or_none()
+    job_id = db_token.job_id if db_token else None
+    if not job_id:
+        token_meta = token_service.validate_and_consume_token(token)
+        if token_meta:
+            job_id = token_meta.job_id
 
-    # 2. Check and sync with database if token_service gave hit or if inspecting DB
-    job_id = None
-    if token_meta:
-        job_id = token_meta.job_id
-        try:
-            res = await db.execute(select(DownloadTokenModel).where(DownloadTokenModel.raw_token == token))
-            db_token = res.scalar_one_or_none()
-            if db_token:
-                db_token.download_count += 1
-                await db.commit()
-        except Exception:
-            pass
-    else:
-        # Fallback query from DB
-        try:
-            res = await db.execute(select(DownloadTokenModel).where(DownloadTokenModel.raw_token == token))
-            db_token = res.scalar_one_or_none()
-            if db_token:
-                now = datetime.utcnow()
-                if db_token.expires_at > now and db_token.download_count < db_token.max_downloads:
-                    db_token.download_count += 1
-                    job_id = db_token.job_id
-                    await db.commit()
-        except Exception:
-            pass
+    if not job_id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Download token is invalid or expired.")
+
+    media_bytes = await storage_service.get_media(job_id)
+    if not media_bytes:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Requested try-on image not found.")
+
+    return Response(
+        content=media_bytes,
+        media_type="image/jpeg",
+        headers={"Content-Disposition": f'attachment; filename="showroom_saree_tryon_{token[:6]}.jpg"'},
+    )
+
+
+@router.get("/download/{token}", summary="Download Result via Secure QR Token (Mobile Branded Landing Page)")
+async def download_by_token(token: str, request: Request, raw: Optional[int] = None, db: AsyncSession = Depends(get_db)):
+    # 1. Resolve token & job_id
+    res = await db.execute(select(DownloadTokenModel).where(DownloadTokenModel.raw_token == token))
+    db_token = res.scalar_one_or_none()
+    job_id = db_token.job_id if db_token else None
+
+    if not job_id:
+        token_meta = token_service.validate_and_consume_token(token)
+        if token_meta:
+            job_id = token_meta.job_id
 
     if not job_id:
         raise HTTPException(
@@ -537,6 +597,7 @@ async def download_by_token(token: str, db: AsyncSession = Depends(get_db)):
             detail="Download token is invalid, expired, or maximum download attempts reached.",
         )
 
+    # 2. Check media existence
     media_bytes = await storage_service.get_media(job_id)
     if not media_bytes:
         raise HTTPException(
@@ -544,11 +605,307 @@ async def download_by_token(token: str, db: AsyncSession = Depends(get_db)):
             detail="Requested try-on image not found or retention period has expired.",
         )
 
-    return Response(
-        content=media_bytes,
-        media_type="image/jpeg",
-        headers={"Content-Disposition": 'attachment; filename="nexooai_saree_preview.jpg"'},
-    )
+    # If raw requested or image mime requested, return raw attachment
+    accept_hdr = request.headers.get("accept", "").lower()
+    if raw == 1 or accept_hdr.startswith("image/"):
+        return Response(
+            content=media_bytes,
+            media_type="image/jpeg",
+            headers={"Content-Disposition": f'attachment; filename="showroom_saree_{token[:6]}.jpg"'},
+        )
+
+    # 3. Lookup Job, Shop & Product metadata to build the branded mobile landing page
+    job_res = await db.execute(select(TryOnJobModel).where(TryOnJobModel.id == job_id))
+    job = job_res.scalar_one_or_none()
+
+    shop_name = "Showroom Boutique"
+    shop_city = "Tamil Nadu"
+    saree_name = "Royal Pure Silk Saree"
+    saree_category = "Bridal Silk"
+    saree_sku = "CUSTOM-01"
+    saree_price_str = "₹24,500"
+
+    if job:
+        if job.shop_id:
+            s_res = await db.execute(select(ShopModel).where(ShopModel.id == job.shop_id))
+            sh = s_res.scalar_one_or_none()
+            if sh:
+                shop_name = sh.name or shop_name
+                shop_city = sh.city or shop_city
+
+        if job.product_id:
+            p_res = await db.execute(select(ProductModel).where(ProductModel.id == job.product_id))
+            pr = p_res.scalar_one_or_none()
+            if pr:
+                saree_name = pr.name_ta or pr.name_en or saree_name
+                saree_category = pr.category or saree_category
+                saree_sku = pr.sku or saree_sku
+                if pr.price:
+                    saree_price_str = f"₹{pr.price:,.0f}"
+
+    file_download_url = f"/api/v1/tryon/download/{token}/file"
+
+    html_content = f"""<!DOCTYPE html>
+<html lang="ta">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>{shop_name} - Virtual Saree Try-On</title>
+  <style>
+    * {{ box-sizing: border-box; margin: 0; padding: 0; }}
+    body {{
+      background: #0d0612 linear-gradient(180deg, #190a24 0%, #08020b 100%);
+      color: #f8fafc;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 16px 14px 34px;
+    }}
+    .mobile-wrap {{
+      width: 100%;
+      max-width: 480px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }}
+    .header-card {{
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      border-radius: 16px;
+      padding: 12px 16px;
+      backdrop-filter: blur(14px);
+    }}
+    .brand-left {{
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }}
+    .brand-crest {{
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1.5px solid #ffd700;
+      background: rgba(212, 175, 55, 0.15);
+      color: #ffd700;
+      font-size: 1.3rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }}
+    .shop-name {{
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.3px;
+    }}
+    .shop-loc {{
+      font-size: 0.78rem;
+      color: #ffd700;
+      margin-top: 2px;
+    }}
+    .photo-card {{
+      position: relative;
+      border-radius: 20px;
+      overflow: hidden;
+      border: 2px solid rgba(212, 175, 55, 0.6);
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.8), 0 0 20px rgba(212, 175, 55, 0.25);
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }}
+    .portrait-img {{
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: cover;
+    }}
+    .watermark-pill {{
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      background: rgba(0, 0, 0, 0.65);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(212, 175, 55, 0.5);
+      border-radius: 9999px;
+      padding: 5px 12px;
+      font-size: 0.75rem;
+      color: #ffd700;
+      font-family: Georgia, serif;
+      font-style: italic;
+    }}
+    .garment-card {{
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 16px;
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }}
+    .g-title {{
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+    }}
+    .g-sku {{
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-top: 2px;
+    }}
+    .g-price {{
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #34d399;
+      text-align: right;
+    }}
+    .g-price-sub {{
+      font-size: 0.7rem;
+      color: #cbd5e1;
+    }}
+    .actions-stack {{
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }}
+    .btn-download-gold {{
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: linear-gradient(135deg, #d4af37 0%, #aa7c11 100%);
+      color: #0f0714;
+      font-size: 1.05rem;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 14px;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+      transition: transform 0.15s;
+    }}
+    .btn-download-gold:active {{
+      transform: scale(0.98);
+    }}
+    .btn-whatsapp-green {{
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      background: #25D366;
+      color: #ffffff;
+      font-size: 1rem;
+      font-weight: 700;
+      text-decoration: none;
+      padding: 14px;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(37, 211, 102, 0.35);
+      cursor: pointer;
+      border: none;
+    }}
+    .btn-share-native {{
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #f1f5f9;
+      font-size: 0.92rem;
+      font-weight: 600;
+      padding: 12px;
+      border-radius: 12px;
+      cursor: pointer;
+    }}
+    .footer-note {{
+      text-align: center;
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-top: 10px;
+      line-height: 1.5;
+    }}
+  </style>
+</head>
+<body>
+  <div class="mobile-wrap">
+    <div class="header-card">
+      <div class="brand-left">
+        <div class="brand-crest">✦</div>
+        <div>
+          <h2 class="shop-name">{shop_name}</h2>
+          <p class="shop-loc">📍 {shop_city} • Virtual Saree Try-On</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="photo-card">
+      <img src="{file_download_url}" alt="Virtual Saree Try-On" class="portrait-img">
+      <div class="watermark-pill">✦ {shop_name}</div>
+    </div>
+
+    <div class="garment-card">
+      <div>
+        <h3 class="g-title">{saree_name}</h3>
+        <p class="g-sku">{saree_category} • {saree_sku}</p>
+      </div>
+      <div>
+        <div class="g-price">{saree_price_str}</div>
+        <div class="g-price-sub">Showroom Price</div>
+      </div>
+    </div>
+
+    <div class="actions-stack">
+      <a href="{file_download_url}" download="{shop_name}_drape.jpg" class="btn-download-gold">
+        <span>💾</span>
+        <span>Download HD Photo to Gallery</span>
+      </a>
+
+      <button type="button" class="btn-whatsapp-green" onclick="shareWhatsApp()">
+        <span>💬</span>
+        <span>Share on WhatsApp</span>
+      </button>
+
+      <button type="button" class="btn-share-native" onclick="shareNative()">
+        <span>📲</span>
+        <span>Share Look (Instagram / AirDrop)</span>
+      </button>
+    </div>
+
+    <p class="footer-note">
+      Thank you for shopping at <strong>{shop_name}</strong>!<br>
+      Created on NeXooAi 55" Virtual Mirror Kiosk.
+    </p>
+  </div>
+
+  <script>
+    const shareTitle = "{shop_name} - Virtual Saree Try-On";
+    const shareText = "✨ Look at my virtual saree drape from {shop_name}! {saree_name} ({saree_price_str}) 🥻";
+    const shareUrl = window.location.href;
+
+    function shareWhatsApp() {{
+      const waUrl = "https://api.whatsapp.com/send?text=" + encodeURIComponent(shareText + "\n" + shareUrl);
+      window.open(waUrl, "_blank");
+    }}
+
+    function shareNative() {{
+      if (navigator.share) {{
+        navigator.share({{
+          title: shareTitle,
+          text: shareText,
+          url: shareUrl
+        }}).catch(() => {{}});
+      }} else {{
+        shareWhatsApp();
+      }}
+    }}
+  </script>
+</body>
+</html>"""
+    return HTMLResponse(content=html_content, status_code=200)
 
 
 class LookbookFeedItem(BaseModel):
@@ -559,6 +916,8 @@ class LookbookFeedItem(BaseModel):
     category: str
     price: int
     result_image_url: str
+    download_token: Optional[str] = None
+    qr_download_url: Optional[str] = None
 
 
 @router.get("/today-feed", response_model=List[LookbookFeedItem], summary="Today's Lookbook Showcase Feed")
@@ -593,6 +952,9 @@ async def get_today_lookbook_feed(db: AsyncSession = Depends(get_db)):
             cat = prod.category if prod else "Bridal Silk"
             price = prod.price if prod else 18500.0
 
+            public_base = (getattr(settings, "PUBLIC_BASE_URL", None) or "https://tryon.nexooai.in").rstrip("/")
+            tok = getattr(j, "download_token", None)
+            qr_link = f"{public_base}/api/v1/tryon/download/{tok}" if tok else f"{public_base}/api/v1/tryon/jobs/{j.id}/result"
             feed_items.append(
                 LookbookFeedItem(
                     job_id=j.id,
@@ -600,8 +962,10 @@ async def get_today_lookbook_feed(db: AsyncSession = Depends(get_db)):
                     saree_name_en=name_en,
                     saree_name_ta=name_ta,
                     category=cat,
-                    price=price,
+                    price=int(price),
                     result_image_url=f"/api/v1/tryon/jobs/{j.id}/result",
+                    download_token=tok,
+                    qr_download_url=qr_link,
                 )
             )
     except Exception as e:

@@ -1,101 +1,98 @@
 """
 Watermark & Boutique Branding Compositor for Virtual Try-On Portraits.
-Adds high-end luxury branding, showroom identity, and subtle gold accents to customer portraits.
+Produces clean, luxury showroom signatures without obscuring customer attire or facial features.
+Watermark is disabled by default to guarantee 100% clean, unobstructed customer portraits.
+When enabled, it is placed strictly in the bottom corner, never touching the face or forehead.
 """
 
 import io
 import logging
-from datetime import datetime
 from PIL import Image, ImageDraw, ImageFont
 from backend.app.core.system_settings import get_setting
 
 logger = logging.getLogger("watermark_service")
 
 
-def apply_showroom_watermark(image_bytes: bytes) -> bytes:
+def apply_showroom_watermark(image_bytes: bytes, store_name: str | None = None) -> bytes:
     """
-    Applies luxury showroom branding banner to the bottom of the try-on portrait.
+    Applies an optional, non-destructive luxury boutique signature to the try-on portrait.
     Returns JPEG encoded image bytes.
+    If watermark_enabled is false (or position is 'none'), returns the clean image untouched.
     """
     try:
-        enabled = str(get_setting("watermark_enabled", "true")).lower() == "true"
+        # 1. Disabled by default
+        enabled = str(get_setting("watermark_enabled", "false")).strip().lower() in ("true", "1", "yes")
         if not enabled:
             return image_bytes
 
-        store_name = str(get_setting("custom_store_name", "NeXooAi Luxury Silks")).strip()
-        watermark_text = str(get_setting("watermark_text", store_name)).strip() or store_name
-        subtext = str(get_setting("watermark_subtext", "Exclusively Styled in Virtual 3D Drape")).strip()
+        position = str(get_setting("watermark_position", "bottom_right")).strip().lower()
+        if position == "none" or position == "off":
+            return image_bytes
+
+        active_store = store_name or str(get_setting("custom_store_name", "")).strip() or "NeXooAi Luxury Silks"
 
         img = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
         width, height = img.size
 
-        # Create overlay canvas with transparency
+        # Create transparent overlay
         overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
         draw = ImageDraw.Draw(overlay)
 
-        # Luxury bottom gradient banner (Height ~ 12% of total height)
-        banner_height = int(height * 0.11)
-        banner_top = height - banner_height
-
-        # Render subtle gradient bar from transparent to obsidian black
-        for y in range(banner_top, height):
-            progress = (y - banner_top) / float(banner_height)
-            alpha = int(220 * progress)  # smooth dark gradient
-            draw.line([(0, y), (width, y)], fill=(12, 10, 16, alpha))
-
-        # Thin luxury gold separator line at top of banner
-        gold_color = (212, 175, 55, 230)  # Metallic Gold
-        draw.line([(0, banner_top), (width, banner_top)], fill=gold_color, width=3)
-
-        # Accentuate with a center gold diamond crest ornament
-        cx = width // 2
-        cy = banner_top
-        d_size = 6
-        draw.polygon(
-            [(cx, cy - d_size), (cx + d_size, cy), (cx, cy + d_size), (cx - d_size, cy)],
-            fill=gold_color,
-        )
-
-        # Try loading default font or scalable font
+        # Subtle luxury signature font - keep small and elegant
+        font_size = max(11, int(min(width, height) * 0.016))
         try:
-            # Attempt to use a larger font if available
-            font_title = ImageFont.truetype("arial.ttf", size=max(20, int(width * 0.032)))
-            font_sub = ImageFont.truetype("arial.ttf", size=max(13, int(width * 0.020)))
+            font = ImageFont.truetype("arial.ttf", size=font_size)
         except Exception:
-            font_title = ImageFont.load_default()
-            font_sub = ImageFont.load_default()
+            font = ImageFont.load_default()
 
-        # Center texts
-        title_y = banner_top + int(banner_height * 0.22)
-        sub_y = title_y + max(26, int(width * 0.040))
+        label = f"✦ {active_store.upper()} ✦"
 
-        # Brand title in Warm Cream / Pale Gold
-        draw.text(
-            (cx, title_y),
-            watermark_text.upper(),
-            font=font_title,
-            fill=(250, 240, 215, 255),
-            anchor="mm",
+        # Calculate text bounding box
+        bbox = draw.textbbox((0, 0), label, font=font)
+        text_w = bbox[2] - bbox[0]
+        text_h = bbox[3] - bbox[1]
+
+        pad_x = 12
+        pad_y = 6
+        pill_w = text_w + pad_x * 2
+        pill_h = text_h + pad_y * 2
+
+        # NEVER place at top (where face/eyes are)!
+        # Bottom placement only:
+        if position == "bottom_left":
+            x0 = 20
+            y0 = max(10, height - pill_h - 20)
+        else:
+            # Default for bottom_right, bottom_banner, or any other setting:
+            # Placed unobtrusively at the lower-right margin
+            x0 = max(10, width - pill_w - 20)
+            y0 = max(10, height - pill_h - 20)
+
+        x1 = x0 + pill_w
+        y1 = y0 + pill_h
+
+        # Translucent glassmorphic pill background
+        draw.rounded_rectangle(
+            [(x0, y0), (x1, y1)],
+            radius=pill_h // 2,
+            fill=(14, 10, 18, 130),
+            outline=(212, 175, 55, 160),
+            width=1,
         )
 
-        # Subtext & Date in Soft White
-        today_str = datetime.now().strftime("%d %b %Y")
-        full_subtext = f"✨ {subtext} • {today_str} ✨"
+        # Refined warm champagne gold text
         draw.text(
-            (cx, sub_y),
-            full_subtext,
-            font=font_sub,
-            fill=(205, 195, 175, 220),
-            anchor="mm",
+            (x0 + pad_x, y0 + pad_y),
+            label,
+            font=font,
+            fill=(250, 240, 220, 220),
         )
 
-        # Composite the overlay onto the original image
         final_img = Image.alpha_composite(img, overlay).convert("RGB")
-
         out_io = io.BytesIO()
         final_img.save(out_io, format="JPEG", quality=95, optimize=True)
         return out_io.getvalue()
 
     except Exception as e:
-        logger.warning(f"Watermark rendering failed, returning original image: {e}")
+        logger.warning(f"Watermark rendering skipped due to error: {e}")
         return image_bytes

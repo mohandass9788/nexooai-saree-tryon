@@ -9,6 +9,7 @@ import {
   HostListener,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { HttpClient } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 
@@ -71,6 +72,7 @@ export interface DemoLeadRecord {
   styleUrls: ['./public-home.component.css'],
 })
 export class PublicHomeComponent implements OnInit, OnDestroy {
+  private readonly http = inject(HttpClient);
   private ngZone = inject(NgZone);
 
   // Language & Theme State
@@ -82,6 +84,7 @@ export class PublicHomeComponent implements OnInit, OnDestroy {
   // Floating Action Hub State
   showScrollTop = signal<boolean>(false);
   showContactHub = signal<boolean>(false);
+  isScrolled = signal<boolean>(false);
 
   // Modals & Lead Form
   showDemoModal = signal<boolean>(false);
@@ -701,7 +704,9 @@ export class PublicHomeComponent implements OnInit, OnDestroy {
   @HostListener('window:scroll')
   onWindowScroll() {
     if (typeof window !== 'undefined') {
-      this.showScrollTop.set(window.scrollY > 350);
+      const scrollY = window.scrollY || window.pageYOffset || 0;
+      this.showScrollTop.set(scrollY > 350);
+      this.isScrolled.set(scrollY > 15);
     }
   }
 
@@ -830,10 +835,21 @@ export class PublicHomeComponent implements OnInit, OnDestroy {
   // =========================================================================
   // SMOOTH SCROLLING
   // =========================================================================
+  isMobileNavOpen = signal<boolean>(false);
+
+  toggleMobileNav(): void {
+    this.isMobileNavOpen.update((v) => !v);
+  }
+
+  closeMobileNav(): void {
+    this.isMobileNavOpen.set(false);
+  }
+
   scrollToSection(sectionId: string, event?: Event) {
     if (event) {
       event.preventDefault();
     }
+    this.closeMobileNav();
     if (typeof document !== 'undefined') {
       const target = document.getElementById(sectionId);
       if (target) {
@@ -932,6 +948,25 @@ export class PublicHomeComponent implements OnInit, OnDestroy {
     } catch {
       // ignore in test / restricted mode
     }
+
+    const payload = {
+      name: this.demoForm.contactPerson || 'Showroom Owner',
+      email: `${this.demoForm.phone.replace(/[^0-9]/g, '') || 'client'}@showroom.nexooai.in`,
+      phone: this.demoForm.phone,
+      showroom_name: this.demoForm.showroomName,
+      city: this.demoForm.city || 'Chennai',
+      estimated_kiosks: 1,
+      message: `Enterprise showroom demo requested from public showcase portal. City: ${this.demoForm.city || 'Chennai'}`
+    };
+
+    this.http.post<any>('/api/v1/public/contact-sales', payload).subscribe({
+      next: (res) => {
+        if (res?.inquiry_id) {
+          this.confirmedLeadId.set(res.inquiry_id);
+        }
+      },
+      error: () => {}
+    });
 
     this.demoSubmitted.set(true);
     setTimeout(() => {

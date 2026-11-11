@@ -298,7 +298,7 @@ describe('NeXooAi Saree Kiosk App', () => {
     const app = fixture.componentInstance;
 
     kioskService.setStep('RESULT');
-    expect(app.resultViewMode()).toBe('slider');
+    expect(app.resultViewMode()).toBe('result');
 
     app.setResultViewMode('result');
     expect(app.resultViewMode()).toBe('result');

@@ -90,8 +90,42 @@ export class KioskService implements OnDestroy {
   // Showroom Staff Kiosk Device Gate (Protects URL from public access)
   readonly isKioskUnlocked = signal<boolean>(this.checkStaffSession());
 
+  // Paired Showroom Terminal Identity (Hardware binding)
+  readonly pairedDeviceId = signal<string | null>(this.getStoredPairedDevice());
+  readonly pairedStoreId = signal<string | null>(this.getStoredPairedStore());
+  readonly pairedDeviceName = signal<string | null>(this.getStoredPairedDeviceName());
+
+  private getStoredPairedDevice(): string | null {
+    try {
+      return localStorage.getItem('nexooai_paired_kiosk_id');
+    } catch {
+      return null;
+    }
+  }
+
+  private getStoredPairedStore(): string | null {
+    try {
+      return localStorage.getItem('nexooai_paired_store_id') || 'shop_default';
+    } catch {
+      return 'shop_default';
+    }
+  }
+
+  private getStoredPairedDeviceName(): string | null {
+    try {
+      return localStorage.getItem('nexooai_paired_kiosk_name');
+    } catch {
+      return null;
+    }
+  }
+
   private checkStaffSession(): boolean {
     try {
+      // If hardware device is already paired, treat kiosk as hardware-authorized
+      const paired = localStorage.getItem('nexooai_paired_kiosk_id');
+      if (paired) {
+        return true;
+      }
       const raw = localStorage.getItem('nexooai_kiosk_staff_session');
       if (raw) {
         const parsed = JSON.parse(raw);
@@ -101,6 +135,31 @@ export class KioskService implements OnDestroy {
       }
     } catch {}
     return false;
+  }
+
+  pairDevice(terminalId: string, storeId: string = 'shop_default', deviceName?: string, token?: string): void {
+    try {
+      localStorage.setItem('nexooai_paired_kiosk_id', terminalId);
+      localStorage.setItem('nexooai_paired_store_id', storeId);
+      if (deviceName) {
+        localStorage.setItem('nexooai_paired_kiosk_name', deviceName);
+      }
+    } catch {}
+    this.pairedDeviceId.set(terminalId);
+    this.pairedStoreId.set(storeId);
+    if (deviceName) this.pairedDeviceName.set(deviceName);
+    this.unlockKiosk(token || 'PAIRED_DEVICE_AUTH', 86400 * 365); // 1-year persistent pairing for 55" totem
+  }
+
+  unpairDevice(): void {
+    try {
+      localStorage.removeItem('nexooai_paired_kiosk_id');
+      localStorage.removeItem('nexooai_paired_store_id');
+      localStorage.removeItem('nexooai_paired_kiosk_name');
+    } catch {}
+    this.pairedDeviceId.set(null);
+    this.pairedDeviceName.set(null);
+    this.lockKiosk();
   }
 
   unlockKiosk(token: string, expiresInSeconds: number = 86400): void {
@@ -123,19 +182,59 @@ export class KioskService implements OnDestroy {
   readonly isAttractMode = signal<boolean>(false);
   readonly isAttractSuspended = signal<boolean>(false);
   readonly attractIdleSeconds = signal<number>(0);
-  readonly attractTimeoutSeconds = signal<number>(120);
+  readonly attractTimeoutSeconds = signal<number>(this.getStoredAttractTimeout());
   readonly isAttractEnabled = signal<boolean>(true);
-  readonly attractModeType = signal<'both' | 'video' | 'feed'>('both');
+  readonly attractModeType = signal<'both' | 'video' | 'feed'>(this.getStoredAttractModeType());
   readonly attractDisplayMode = signal<'video' | 'feed'>('video');
-  readonly attractVideoUrls = signal<string[]>(['https://www.youtube.com/watch?v=scL_y2_p8c8']);
+  readonly attractVideoUrls = signal<string[]>(this.getStoredAttractVideoUrls());
   readonly activeVideoIndex = signal<number>(0);
   readonly attractVideoUrl = computed(() => {
     const list = this.attractVideoUrls();
     if (!list || list.length === 0) return 'https://www.youtube.com/watch?v=scL_y2_p8c8';
     return list[this.activeVideoIndex() % list.length];
   });
-  readonly attractTitle = signal<string>('NeXooAi Luxury Saree Try-On');
-  readonly attractSubtitle = signal<string>('தொட்டுத் தொடங்குங்கள் — விரல் தொட்டதும் அழகிய பட்டுப் புடவை உங்களுக்கான தோற்றத்தில்!');
+  readonly attractTitle = signal<string>(this.getStoredAttractTitle());
+  readonly attractSubtitle = signal<string>(this.getStoredAttractSubtitle());
+
+  private getStoredAttractTimeout(): number {
+    try {
+      const t = localStorage.getItem('nexooai_attract_timeout');
+      if (t) return parseInt(t, 10);
+    } catch {}
+    return 120;
+  }
+
+  private getStoredAttractTitle(): string {
+    try {
+      return localStorage.getItem('nexooai_attract_title') || 'NeXooAi Luxury Saree Try-On';
+    } catch {
+      return 'NeXooAi Luxury Saree Try-On';
+    }
+  }
+
+  private getStoredAttractSubtitle(): string {
+    try {
+      return localStorage.getItem('nexooai_attract_subtitle') || 'தொட்டுத் தொடங்குங்கள் — விரல் தொட்டதும் அழகிய பட்டுப் புடவை உங்களுக்கான தோற்றத்தில்!';
+    } catch {
+      return 'தொட்டுத் தொடங்குங்கள் — விரல் தொட்டதும் அழகிய பட்டுப் புடவை உங்களுக்கான தோற்றத்தில்!';
+    }
+  }
+
+  private getStoredAttractVideoUrls(): string[] {
+    try {
+      const v = localStorage.getItem('nexooai_attract_video_url');
+      if (v) return [v];
+    } catch {}
+    return ['https://www.youtube.com/watch?v=scL_y2_p8c8'];
+  }
+
+  private getStoredAttractModeType(): 'both' | 'video' | 'feed' {
+    try {
+      const t = localStorage.getItem('nexooai_attract_type');
+      if (t === 'video' || t === 'feed' || t === 'both') return t;
+    } catch {}
+    return 'both';
+  }
 
   recordActivity(): void {
     this.idleSecondsRemaining.set(90);
@@ -188,11 +287,35 @@ export class KioskService implements OnDestroy {
         this.attractDisplayMode.set('video');
       }
     }
-    if (opts.title !== undefined) this.attractTitle.set(opts.title);
-    if (opts.subtitle !== undefined) this.attractSubtitle.set(opts.subtitle);
+    if (opts.title !== undefined) {
+      this.attractTitle.set(opts.title);
+      try { localStorage.setItem('nexooai_attract_title', opts.title); } catch {}
+    }
+    if (opts.subtitle !== undefined) {
+      this.attractSubtitle.set(opts.subtitle);
+      try { localStorage.setItem('nexooai_attract_subtitle', opts.subtitle); } catch {}
+    }
+    if (opts.videoUrl !== undefined && opts.videoUrl.trim()) {
+      try { localStorage.setItem('nexooai_attract_video_url', opts.videoUrl.trim()); } catch {}
+    }
+    if (opts.attractModeType) {
+      try { localStorage.setItem('nexooai_attract_type', opts.attractModeType); } catch {}
+    }
+    if (opts.timeoutSeconds) {
+      try { localStorage.setItem('nexooai_attract_timeout', opts.timeoutSeconds.toString()); } catch {}
+    }
   }
 
   resetSession(): void {
+    // Revoke object URLs to ensure zero memory bloat during 12+ hour kiosk showroom shifts
+    const prevUserUrl = this.customerPhotoDataUrl();
+    if (prevUserUrl && typeof window !== 'undefined' && prevUserUrl.startsWith('blob:')) {
+      try { URL.revokeObjectURL(prevUserUrl); } catch {}
+    }
+    const prevGarmentUrl = this.customGarmentDataUrl();
+    if (prevGarmentUrl && typeof window !== 'undefined' && prevGarmentUrl.startsWith('blob:')) {
+      try { URL.revokeObjectURL(prevGarmentUrl); } catch {}
+    }
     this.currentStep.set('WELCOME');
     this.consentAccepted.set(false);
     this.customerPhotoDataUrl.set(null);

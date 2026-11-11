@@ -111,17 +111,19 @@
   background: rgba(212, 175, 55, 0.12);
   border: 1px solid var(--border-gold-bright, rgba(212, 175, 55, 0.4));
   color: var(--color-gold-light, #fbeea8);
-  padding: 10px 18px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  font-size: 0.92rem;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.15rem !important;
   text-decoration: none;
   transition: all 0.2s ease;
-  white-space: nowrap;
   cursor: pointer;
+  flex-shrink: 0 !important;
 }
 
 .btn-kiosk-home:hover {
@@ -145,16 +147,18 @@
   background: rgba(212, 175, 55, 0.12);
   border: 1px solid var(--border-gold-bright);
   color: var(--color-gold-light);
-  padding: 10px 18px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  font-size: 0.92rem;
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.15rem !important;
   transition: all 0.2s ease;
-  white-space: nowrap;
   cursor: pointer;
+  flex-shrink: 0 !important;
 }
 
 .btn-theme-toggle:hover {
@@ -184,16 +188,33 @@
   background: rgba(212, 175, 55, 0.12);
   border: 1px solid var(--border-gold-bright);
   color: var(--color-gold-light);
-  padding: 10px 18px;
-  border-radius: 999px;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  font-weight: 600;
-  font-size: 0.95rem;
+  height: 40px !important;
+  padding: 0 12px !important;
+  border-radius: 999px !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 5px !important;
+  font-size: 0.86rem !important;
+  font-weight: 700 !important;
   transition: all 0.2s ease;
-  white-space: nowrap;
   cursor: pointer;
+  flex-shrink: 0 !important;
+}
+
+.btn-reach-toggle,
+.btn-lock-device,
+.btn-admin-toggle {
+  width: 40px !important;
+  height: 40px !important;
+  min-width: 40px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  font-size: 1.15rem !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
 }
 
 .btn-lang-toggle:hover {
@@ -2593,6 +2614,297 @@
   transform: translateY(-1px);
 }
 
+/* ==============================================================================
+   AI PHOTO QUALITY GUARD & POSE VALIDATION SECURITY (TOKEN PROTECTION)
+   ============================================================================== */
+.snapshot-review-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+}
+
+.snapshot-review-wrapper.snapshot-invalid {
+  box-shadow: 0 0 0 3px #ff4757, 0 0 32px rgba(255, 71, 87, 0.5) !important;
+}
+
+.snapshot-review-wrapper.snapshot-valid {
+  box-shadow: 0 0 0 3px #2ecc71, 0 0 30px rgba(46, 204, 113, 0.45) !important;
+}
+
+/* AI Analyzing Scanner Overlay */
+.pose-validating-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 6, 18, 0.55);
+  backdrop-filter: blur(4px);
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.scanner-sweep-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent 0%, #00e676 50%, transparent 100%);
+  box-shadow: 0 0 16px #00e676;
+  animation: sweepScan 1.6s infinite ease-in-out;
+}
+
+@keyframes sweepScan {
+  0% { top: 15%; opacity: 0; }
+  50% { opacity: 1; }
+  100% { top: 85%; opacity: 0; }
+}
+
+.analyzing-status-pill {
+  background: rgba(20, 8, 25, 0.95);
+  border: 1.5px solid #d4af37;
+  padding: 10px 22px;
+  border-radius: 999px;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.92rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+}
+
+/* Luxury Quality Issue Warning Panel (Blocks Proceeding & Lists Problems) */
+.pose-issue-panel {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  max-width: 480px;
+  margin: 0 auto;
+  z-index: 30;
+  background: rgba(28, 8, 16, 0.96) !important;
+  border: 1.5px solid rgba(255, 71, 87, 0.75) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 25px rgba(255, 71, 87, 0.35) !important;
+  border-radius: 18px !important;
+  padding: 16px 18px !important;
+  backdrop-filter: blur(16px) !important;
+  animation: fadeInDown 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box !important;
+}
+
+@keyframes fadeInDown {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.issue-header-badge {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #ff6b81;
+  margin-bottom: 12px;
+}
+
+.issue-badge-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-dismiss-pose-issue {
+  background: rgba(255, 71, 87, 0.2);
+  border: 1px solid rgba(255, 71, 87, 0.5);
+  color: #ffb8b8;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.btn-dismiss-pose-issue:hover {
+  background: rgba(255, 71, 87, 0.45);
+  color: #ffffff;
+  transform: scale(1.08);
+}
+
+.btn-dismiss-pose-issue:active {
+  transform: scale(0.95);
+}
+
+.pose-minimized-chip {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border-radius: 30px;
+  background: rgba(28, 8, 16, 0.94);
+  border: 1.5px solid rgba(255, 71, 87, 0.75);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.55), 0 0 14px rgba(255, 71, 87, 0.35);
+  color: #ffb8b8;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  animation: fadeInDown 0.25s ease;
+  transition: all 0.2s ease;
+}
+
+.pose-minimized-chip:hover {
+  background: rgba(45, 12, 24, 0.98);
+  border-color: #ff4757;
+  transform: translateY(-2px);
+}
+
+.pose-minimized-chip .chip-icon {
+  font-size: 1.1rem;
+}
+
+.pose-minimized-chip .chip-text {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.pose-minimized-chip .chip-score {
+  font-size: 0.8rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(255, 71, 87, 0.28);
+  color: #ff4757;
+}
+
+.issue-header-badge .badge-icon {
+  font-size: 1.25rem;
+}
+
+.issue-score-meter-box {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+}
+
+.meter-info-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.82rem;
+  color: #e2d7c5;
+  margin-bottom: 6px;
+}
+
+.score-percent.danger {
+  color: #ff4757;
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.meter-progress-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.meter-fill.danger {
+  height: 100%;
+  background: linear-gradient(90deg, #ff4757, #ffa502);
+  border-radius: 4px;
+  transition: width 0.5s ease;
+}
+
+.meter-hint {
+  font-size: 0.7rem;
+  color: #a89fae;
+  display: block;
+}
+
+.guidance-main-msg {
+  font-size: 0.86rem;
+  line-height: 1.4;
+  color: #ffffff;
+  background: rgba(255, 71, 87, 0.18);
+  border-left: 3.5px solid #ff4757;
+  padding: 10px 12px;
+  border-radius: 8px;
+  margin: 0 0 12px 0;
+  font-weight: 700;
+}
+
+.issue-checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.issue-checklist li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #ded1e6;
+  line-height: 1.3;
+}
+
+.check-icon.danger {
+  color: #ff4757;
+  font-weight: 800;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.check-icon.safe {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+/* Grand Retake Button - Highly Prominent Primary Trigger */
+.btn-retake-grand-primary {
+  background: linear-gradient(135deg, #ff4757 0%, #ff6b81 45%, #ffa502 100%) !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 1.05rem !important;
+  padding: 14px 28px !important;
+  border-radius: 999px !important;
+  box-shadow: 0 8px 26px rgba(255, 71, 87, 0.55), 0 0 20px rgba(255, 165, 2, 0.45) !important;
+  animation: pulseRetakeBtn 1.8s infinite alternate !important;
+  border: 1.5px solid #ff8591 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  cursor: pointer !important;
+}
+
+@keyframes pulseRetakeBtn {
+  0% { transform: scale(1); box-shadow: 0 8px 24px rgba(255, 71, 87, 0.45); }
+  100% { transform: scale(1.03); box-shadow: 0 12px 34px rgba(255, 71, 87, 0.7), 0 0 28px rgba(255, 165, 2, 0.55); }
+}
+
 .pose-feedback-toast {
   position: absolute;
   bottom: 20px;
@@ -2863,8 +3175,9 @@
    ============================================================================== */
 .kiosk-totem-container {
   width: 100%;
-  max-width: 820px;
+  max-width: 1680px;
   min-height: 100%;
+  height: 100%;
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -3383,17 +3696,92 @@
   .btn-admin-toggle,
   .btn-lock-device,
   .btn-reset-session,
-  .idle-timer-badge {
+  .idle-timer-badge,
+  .btn-kiosk-home,
+  .lang-selector-wrapper {
     display: none !important;
   }
 
-  /* Compact Language toggle in header */
-  .btn-lang-toggle {
-    padding: 6px 10px !important;
-    gap: 4px !important;
+  .arch-side-captions {
+    display: none !important;
   }
-  .btn-lang-toggle .lang-label,
-  .btn-lang-toggle .lang-icon {
+
+  .welcome-master-grid {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  .welcome-arch-showcase {
+    flex-direction: column !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  .arch-gold-frame {
+    max-width: 260px !important;
+    height: 320px !important;
+    margin: 0 auto !important;
+  }
+
+  .welcome-main-content {
+    width: 100% !important;
+    text-align: center !important;
+  }
+
+  .welcome-hero-headline {
+    font-size: clamp(1.5rem, 5.5vw, 2rem) !important;
+    line-height: 1.2 !important;
+    margin-bottom: 8px !important;
+  }
+
+  .welcome-hero-subtext {
+    font-size: 0.9rem !important;
+    line-height: 1.4 !important;
+    margin-bottom: 16px !important;
+  }
+
+  .welcome-features-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 8px !important;
+    width: 100% !important;
+    margin-bottom: 18px !important;
+  }
+
+  .welcome-feat-card {
+    padding: 12px 6px !important;
+    min-height: auto !important;
+    border-radius: 12px !important;
+  }
+
+  .feat-card-icon-wrap {
+    width: 38px !important;
+    height: 38px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .feat-card-icon-wrap svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  .feat-card-title {
+    font-size: 0.78rem !important;
+    line-height: 1.2 !important;
+    margin-bottom: 4px !important;
+  }
+
+  .feat-card-desc {
+    font-size: 0.68rem !important;
+    line-height: 1.3 !important;
+  }
+
+  .btn-begin-trial-grand {
+    width: 100% !important;
+    padding: 14px 20px !important;
+    font-size: 1.05rem !important;
+  }
+
+  .welcome-bottom-workflow-strip {
     display: none !important;
   }
 
@@ -3490,9 +3878,10 @@
     align-self: flex-start !important;
   }
   .split-slider-container {
-    height: 56vh !important;
-    min-height: 360px !important;
-    max-height: 500px !important;
+    height: calc(100vh - 160px) !important;
+    min-height: 520px !important;
+    max-height: none !important;
+    width: 100% !important;
   }
   .result-footer-navigation {
     flex-direction: column !important;
@@ -3873,7 +4262,10 @@
 .screen-combine {
   display: flex;
   justify-content: center;
+  align-items: center;
   width: 100%;
+  min-height: calc(100vh - 80px);
+  padding: 12px 0;
   animation: fadeIn 0.3s ease-out;
 }
 
@@ -3881,15 +4273,30 @@
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 900px;
-  padding: 32px 36px;
-  border-radius: 28px;
-  background: rgba(23, 9, 20, 0.78);
-  border: 1px solid var(--border-gold-subtle);
+  max-width: min(1280px, 96vw);
+  padding: clamp(24px, 3vw, 42px);
+  border-radius: 32px;
+  background: rgba(23, 9, 20, 0.92);
+  border: 1.5px solid var(--border-gold-subtle);
+  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.65), 0 0 50px rgba(212, 175, 55, 0.15);
+  backdrop-filter: blur(20px);
+}
+
+.combine-step-pill {
+  display: inline-block;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: #ffd700;
+  background: rgba(212, 175, 55, 0.18);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 8px;
 }
 
 .combine-headline {
-  font-size: 1.8rem;
+  font-size: clamp(1.4rem, 2.2vw, 2.1rem);
   font-family: var(--font-display);
   color: var(--color-gold-light);
   margin-bottom: 4px;
@@ -3897,56 +4304,82 @@
 
 .combine-subheadline {
   color: var(--color-text-secondary);
-  font-size: 0.95rem;
+  font-size: clamp(0.85rem, 1.1vw, 1.05rem);
 }
 
 .combine-dual-grid {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
-  gap: 20px;
-  margin: 32px 0;
+  gap: clamp(16px, 2.5vw, 32px);
+  margin: clamp(18px, 2.5vh, 32px) 0;
 }
 
 .combine-panel {
   display: flex;
   flex-direction: column;
-  padding: 20px;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid var(--border-gold-subtle);
+  justify-content: space-between;
+  padding: clamp(14px, 1.8vw, 24px);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1.5px solid rgba(212, 175, 55, 0.25);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   transition: all 0.3s ease;
 }
 
 .combine-panel:hover {
-  border-color: var(--color-gold);
+  border-color: rgba(212, 175, 55, 0.65);
+  box-shadow: 0 16px 40px rgba(212, 175, 55, 0.18);
 }
 
 .combine-panel-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.combine-panel-header .header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .combine-panel-header .panel-icon {
-  font-size: 1.2rem;
+  font-size: 1.3rem;
 }
 
 .combine-panel-header .panel-label {
-  font-size: 1.05rem;
-  font-weight: 600;
+  font-size: clamp(0.95rem, 1.2vw, 1.15rem);
+  font-weight: 700;
   color: var(--color-gold-light);
+}
+
+.panel-verified-tag {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  padding: 3px 10px;
+  border-radius: 12px;
+}
+
+.panel-verified-tag.saree-cat-tag {
+  color: #ffd700;
+  background: rgba(212, 175, 55, 0.15);
+  border-color: rgba(212, 175, 55, 0.3);
 }
 
 .combine-image-frame {
   position: relative;
   width: 100%;
-  height: 380px;
-  border-radius: 14px;
+  height: clamp(480px, 62vh, 820px);
+  border-radius: 22px;
   overflow: hidden;
   background: radial-gradient(circle at center, #1b0a1e 0%, #060207 100%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1.5px solid rgba(212, 175, 55, 0.35);
+  box-shadow: inset 0 0 30px rgba(0, 0, 0, 0.6), 0 14px 34px rgba(0, 0, 0, 0.4);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3957,13 +4390,18 @@
   height: 100%;
   max-width: 100%;
   max-height: 100%;
-  object-fit: contain !important;
-  object-position: center center;
-  background: radial-gradient(circle at center, #1b0a1e 0%, #060207 100%);
+  object-fit: cover !important;
+  object-position: top center;
+  transition: transform 0.4s ease;
+}
+
+.combine-panel:hover .combine-img {
+  transform: scale(1.02);
 }
 
 .product-panel .combine-img {
-  object-fit: contain !important;
+  object-fit: cover !important;
+  object-position: center 25%;
 }
 
 .product-overlay-meta {
@@ -3971,79 +4409,136 @@
   bottom: 0;
   left: 0;
   right: 0;
-  padding: 12px 14px;
-  background: linear-gradient(180deg, transparent 0%, rgba(10, 4, 10, 0.9) 100%);
+  padding: 14px 18px;
+  background: linear-gradient(180deg, transparent 0%, rgba(10, 4, 10, 0.82) 30%, rgba(10, 4, 10, 0.96) 100%);
   display: flex;
-  justify-content: space-between;
+  flex-direction: column;
+  gap: 6px;
+  backdrop-filter: blur(8px);
+}
+
+.product-overlay-meta .meta-top-row {
+  display: flex;
   align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .product-overlay-meta .meta-sku {
   font-size: 0.8rem;
-  font-weight: 700;
-  color: var(--color-gold);
-  background: rgba(0, 0, 0, 0.6);
-  padding: 2px 8px;
-  border-radius: 4px;
+  font-weight: 800;
+  color: #ffd700;
+  background: rgba(0, 0, 0, 0.7);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  padding: 3px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.05em;
+}
+
+.product-overlay-meta .meta-price {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #fff;
+  background: rgba(212, 175, 55, 0.35);
+  padding: 3px 10px;
+  border-radius: 6px;
+}
+
+.product-overlay-meta .meta-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 12px;
 }
 
 .product-overlay-meta .meta-title {
-  font-size: 0.88rem;
-  color: #fff;
+  font-size: clamp(0.9rem, 1.1vw, 1.1rem);
+  font-weight: 700;
+  color: #ffffff;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 180px;
+  flex: 1;
+}
+
+.product-overlay-meta .meta-fabric-chip {
+  font-size: 0.75rem;
+  color: #e5d4ea;
+  white-space: nowrap;
 }
 
 .combine-panel-footer {
-  margin-top: 16px;
+  margin-top: 14px;
   display: flex;
   justify-content: center;
 }
 
 .btn-replace-image {
   width: 100%;
-  font-size: 0.9rem;
-}
-
-.combine-plus-badge {
-  width: 52px;
-  height: 52px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, rgba(212, 175, 55, 0.3) 0%, rgba(138, 28, 59, 0.4) 100%);
-  border: 2px solid var(--color-gold);
+  min-height: 48px;
+  font-size: clamp(0.88rem, 1vw, 1.02rem);
+  font-weight: 600;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
-  font-size: 1.8rem;
-  font-weight: 300;
-  box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+  gap: 8px;
+}
+
+.combine-plus-badge {
+  width: clamp(56px, 5vw, 76px);
+  height: clamp(56px, 5vw, 76px);
+  border-radius: 50%;
+  background: linear-gradient(135deg, #d4af37 0%, #aa7c11 50%, #8a1c3b 100%);
+  border: 3px solid #ffffff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 0 32px rgba(212, 175, 55, 0.65), 0 8px 24px rgba(0, 0, 0, 0.4);
+  animation: pulseGoldGlow 2.5s infinite;
+  z-index: 5;
+  flex-shrink: 0;
+}
+
+.combine-plus-badge .plus-icon {
+  font-size: clamp(1.2rem, 1.8vw, 1.7rem);
+  line-height: 1;
+}
+
+.combine-plus-badge .plus-label {
+  font-size: 0.55rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #ffd700;
+  margin-top: 2px;
 }
 
 .combine-cta-bar {
   display: flex;
   justify-content: center;
-  margin-top: 8px;
+  margin-top: 14px;
 }
 
 .btn-generate-tryon {
-  padding: 18px 48px;
-  font-size: 1.25rem;
-  font-weight: 700;
+  padding: clamp(16px, 2.2vh, 22px) clamp(36px, 4vw, 64px);
+  min-height: clamp(58px, 6.5vh, 74px);
+  font-size: clamp(1.15rem, 1.5vw, 1.45rem);
+  font-weight: 800;
   border-radius: 999px;
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 8px 30px rgba(212, 175, 55, 0.5);
+  box-shadow: 0 8px 32px rgba(212, 175, 55, 0.6);
   animation: pulseGoldGlow 2.5s infinite;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .btn-generate-tryon:hover {
-  transform: translateY(-2px) scale(1.02);
-  box-shadow: 0 12px 35px rgba(212, 175, 55, 0.7);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 14px 40px rgba(212, 175, 55, 0.8);
 }
 
 .sparkle-anim {
@@ -4063,6 +4558,50 @@
 @keyframes spinSlow {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* Totem Pairing Status on Lock Screen */
+.totem-pairing-status-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  margin: 10px auto 16px auto;
+  font-size: 0.88rem;
+  color: #e5d4ea;
+  max-width: 90%;
+}
+
+.totem-pairing-status-pill strong {
+  color: #ffd700;
+}
+
+.btn-demo-kiosk-bypass {
+  margin-top: 10px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  color: #ffd700;
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.2s ease;
+}
+
+.btn-demo-kiosk-bypass:hover {
+  background: rgba(212, 175, 55, 0.22);
+  border-color: #ffd700;
+  transform: translateY(-1px);
 }
 
 @media (max-width: 768px) {
@@ -5309,178 +5848,265 @@
   backdrop-filter: blur(14px);
 }
 
+/* ==============================================================================
+   PHOTO CROPPING & FRAMING MODAL - HIGH CONTRAST (LIGHT & DARK THEMES)
+   ============================================================================== */
 .crop-modal-dialog {
-  width: 95%;
-  max-width: 520px;
-  max-height: 94vh;
-  padding: 24px;
-  border-radius: 24px;
-  border: 1px solid rgba(218, 165, 32, 0.4);
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
+  width: 95% !important;
+  max-width: 520px !important;
+  max-height: 94vh !important;
+  padding: 24px !important;
+  border-radius: 24px !important;
+  background: #190918 !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.45) !important;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.8), 0 0 24px rgba(212, 175, 55, 0.25) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  box-sizing: border-box !important;
 }
 
 .crop-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: flex-start !important;
+  gap: 12px !important;
+}
+
+.crop-title-wrap {
+  flex: 1 !important;
 }
 
 .crop-title {
-  font-size: 1.3rem;
-  color: #fff;
-  margin: 0 0 4px 0;
+  font-family: 'Cinzel', serif !important;
+  font-size: 1.3rem !important;
+  font-weight: 700 !important;
+  color: #ffd700 !important;
+  margin: 0 0 4px 0 !important;
+  line-height: 1.2 !important;
 }
 
 .crop-subtitle {
-  font-size: 0.85rem;
-  color: rgba(255, 255, 255, 0.7);
-  margin: 0;
+  font-size: 0.84rem !important;
+  color: #e2d7c5 !important;
+  margin: 0 !important;
+  line-height: 1.35 !important;
 }
 
 .crop-stage-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: #000;
-  border-radius: 16px;
-  padding: 12px;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  background: #080309 !important;
+  border: 1px solid rgba(212, 175, 55, 0.25) !important;
+  border-radius: 16px !important;
+  padding: 14px !important;
 }
 
 .crop-viewport {
-  position: relative;
-  width: 270px;
-  height: 480px; /* 9:16 portrait */
-  overflow: hidden;
-  border-radius: 12px;
-  border: 2px solid var(--color-gold);
-  box-shadow: 0 0 24px rgba(218, 165, 32, 0.35);
-  cursor: grab;
-  touch-action: none;
-  background: #0f0c12;
+  position: relative !important;
+  width: 270px !important;
+  height: 480px !important; /* 9:16 portrait */
+  overflow: hidden !important;
+  border-radius: 14px !important;
+  border: 2px solid #d4af37 !important;
+  box-shadow: 0 0 30px rgba(212, 175, 55, 0.4) !important;
+  cursor: grab !important;
+  touch-action: none !important;
+  background: #0d0611 !important;
 }
 
 .crop-viewport:active {
-  cursor: grabbing;
+  cursor: grabbing !important;
 }
 
 .crop-image-transform {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform-origin: center center;
-  transition: transform 0.05s linear;
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transform-origin: center center !important;
+  transition: transform 0.05s linear !important;
 }
 
 .crop-source-img {
-  max-width: 100%;
-  max-height: 100%;
-  user-select: none;
-  pointer-events: none;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  user-select: none !important;
+  pointer-events: none !important;
 }
 
 .crop-guide-overlay {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
+  position: absolute !important;
+  inset: 0 !important;
+  pointer-events: none !important;
 }
 
 .crop-guide-overlay .grid-line {
-  position: absolute;
-  background: rgba(218, 165, 32, 0.35);
+  position: absolute !important;
+  background: rgba(212, 175, 55, 0.4) !important;
 }
 
 .grid-line.horizontal {
-  width: 100%;
-  height: 1px;
+  width: 100% !important;
+  height: 1px !important;
 }
 
-.grid-line.h1 { top: 33.33%; }
-.grid-line.h2 { top: 66.66%; }
+.grid-line.h1 { top: 33.33% !important; }
+.grid-line.h2 { top: 66.66% !important; }
 
 .grid-line.vertical {
-  width: 1px;
-  height: 100%;
+  width: 1px !important;
+  height: 100% !important;
 }
 
-.grid-line.v1 { left: 33.33%; }
-.grid-line.v2 { left: 66.66%; }
+.grid-line.v1 { left: 33.33% !important; }
+.grid-line.v2 { left: 66.66% !important; }
 
 .crop-center-cross {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  color: rgba(218, 165, 32, 0.6);
-  font-size: 1.2rem;
-  font-weight: 300;
+  position: absolute !important;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  color: rgba(212, 175, 55, 0.75) !important;
+  font-size: 1.3rem !important;
+  font-weight: 300 !important;
 }
 
 .crop-toolbar {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
 }
 
 .crop-zoom-controls {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  justify-content: center;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  justify-content: center !important;
+  flex-wrap: wrap !important;
 }
 
 .btn-crop-tool {
-  padding: 6px 14px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-  border-radius: 999px;
-  font-size: 0.85rem;
-  cursor: pointer;
-  transition: all 0.2s ease;
+  padding: 8px 14px !important;
+  background: rgba(212, 175, 55, 0.16) !important;
+  border: 1px solid rgba(212, 175, 55, 0.45) !important;
+  color: #fbeea8 !important;
+  border-radius: 999px !important;
+  font-size: 0.84rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  transition: all 0.2s ease !important;
 }
 
 .btn-crop-tool:hover {
-  background: rgba(218, 165, 32, 0.2);
-  border-color: var(--color-gold);
+  background: rgba(212, 175, 55, 0.3) !important;
+  color: #ffffff !important;
+  transform: translateY(-1px) !important;
+}
+
+.btn-rotate-tool {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(138, 15, 43, 0.25) 100%) !important;
+  border-color: #ffd700 !important;
+  color: #fff !important;
 }
 
 .crop-zoom-slider {
-  flex: 1;
-  max-width: 180px;
-  accent-color: var(--color-gold);
+  flex: 1 !important;
+  max-width: 160px !important;
+  accent-color: var(--color-gold) !important;
 }
 
 .crop-zoom-readout {
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--color-gold);
-  min-width: 36px;
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  color: #ffd700 !important;
+  min-width: 36px !important;
 }
 
 .crop-hint-text {
-  font-size: 0.75rem;
-  color: rgba(255, 255, 255, 0.55);
-  text-align: center;
-  margin: 0;
+  font-size: 0.78rem !important;
+  color: #ded1e6 !important;
+  text-align: center !important;
+  margin: 0 !important;
+  line-height: 1.35 !important;
 }
 
 .crop-actions-bar {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
+  display: flex !important;
+  justify-content: flex-end !important;
+  gap: 12px !important;
 }
 
-.btn-crop-action {
-  border-color: var(--color-gold);
-  color: var(--color-gold);
+/* Light Theme Crop Modal - Guaranteed Dark/Purple Text on Bright Background */
+.kiosk-app-wrapper.light-theme .crop-modal-dialog {
+  background: #ffffff !important;
+  border: 1.5px solid #d4af37 !important;
+  box-shadow: 0 20px 50px rgba(70, 40, 55, 0.22), 0 0 20px rgba(212, 175, 55, 0.25) !important;
 }
 
-.btn-crop-action:hover {
-  background: rgba(218, 165, 32, 0.15);
+.kiosk-app-wrapper.light-theme .crop-title {
+  color: #240c16 !important;
+}
+
+.kiosk-app-wrapper.light-theme .crop-subtitle {
+  color: #5c4c57 !important;
+}
+
+.kiosk-app-wrapper.light-theme .crop-stage-container {
+  background: #f7f3ec !important;
+  border-color: #e5d7c3 !important;
+}
+
+.kiosk-app-wrapper.light-theme .crop-viewport {
+  background: #ede6dc !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-modal-close {
+  background: #f5eedf !important;
+  border: 1px solid #ebd9bf !important;
+  color: #240c16 !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-crop-tool {
+  background: #fdf3d8 !important;
+  border: 1px solid #eed69d !important;
+  color: #5c4314 !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-crop-tool:hover {
+  background: #f5deaa !important;
+  color: #3b2a0c !important;
+}
+
+.kiosk-app-wrapper.light-theme .crop-zoom-readout {
+  color: #8c600b !important;
+}
+
+.kiosk-app-wrapper.light-theme .crop-hint-text {
+  color: #5d4b58 !important;
+}
+
+.btn-review-upload {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: #ffffff !important;
+}
+
+.btn-review-upload:hover {
+  background: rgba(212, 175, 55, 0.22) !important;
+  border-color: #ffd700 !important;
+  color: #ffd700 !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-review-upload {
+  background: #ffffff !important;
+  border: 1px solid #d4c8e0 !important;
+  color: #240c16 !important;
 }
 
 /* ========================================================================= */
@@ -6799,20 +7425,26 @@
 
   /* 6. Combine & Confirm Screen in Portrait */
   .combine-master-card {
-    max-width: 920px;
+    max-width: 1040px;
     width: 100%;
-    padding: 32px 24px;
+    padding: 32px 28px;
     border-radius: 28px;
   }
 
+  .combine-dual-grid,
   .combine-grid {
     grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin-bottom: 24px;
+    gap: 24px;
+    margin: 24px 0;
   }
 
   .combine-panel {
-    height: 380px;
+    height: auto;
+    min-height: 520px;
+  }
+
+  .combine-image-frame {
+    height: clamp(440px, 46vh, 620px);
   }
 
   .btn-generate-tryon {
@@ -11717,9 +12349,9 @@
   }
 
   .kiosk-main {
-    padding: 14px 28px !important;
-    height: calc(100vh - 80px) !important;
-    max-height: calc(100vh - 80px) !important;
+    padding: 10px 24px !important;
+    height: calc(100vh - 72px) !important;
+    max-height: calc(100vh - 72px) !important;
     overflow: hidden !important;
     display: flex !important;
     flex-direction: column !important;
@@ -11727,7 +12359,7 @@
   }
 
   .kiosk-totem-container {
-    max-width: 1640px !important;
+    max-width: 1680px !important;
     width: 100% !important;
     height: 100% !important;
     max-height: 100% !important;
@@ -11737,10 +12369,10 @@
     overflow: hidden !important;
   }
 
-  /* Dual-Panel Result Screen */
+  /* DUAL-COLUMN LUXURY STUDIO LAYOUT (15" LAPTOPS, DESKTOPS, WIDESCREEN) */
   .screen-result,
   .screen-result-immersive {
-    max-width: 1580px !important;
+    max-width: 1640px !important;
     width: 100% !important;
     height: 100% !important;
     max-height: 100% !important;
@@ -11750,83 +12382,118 @@
   }
 
   .result-hero-mirror-stage {
-    display: grid !important;
-    grid-template-columns: minmax(460px, 1fr) 390px !important;
-    grid-template-rows: auto 1fr !important;
-    grid-template-areas:
-      "topbar topbar"
-      "mirror controls" !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: stretch !important;
     height: 100% !important;
-    max-height: calc(100vh - 110px) !important;
+    max-height: calc(100vh - 90px) !important;
     border-radius: 22px !important;
     overflow: hidden !important;
     border: 1.5px solid rgba(212, 175, 55, 0.45) !important;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6) !important;
-    background: rgba(14, 5, 16, 0.9) !important;
+    background: rgba(14, 5, 16, 0.95) !important;
+    position: relative !important;
+  }
+
+  .kiosk-app-wrapper.light-theme .result-hero-mirror-stage {
+    background: #ffffff !important;
+    border: 1.5px solid rgba(184, 134, 11, 0.4) !important;
+    box-shadow: 0 20px 50px rgba(70, 40, 55, 0.12) !important;
+  }
+
+  /* Left Column: The Pure Photo Canvas Stage */
+  .result-stage-main-canvas {
+    flex: 1 1 0% !important;
+    min-width: 0 !important;
+    height: 100% !important;
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background: radial-gradient(circle at center, #150718 0%, #060208 100%) !important;
+    overflow: hidden !important;
+  }
+
+  .kiosk-app-wrapper.light-theme .result-stage-main-canvas {
+    background: radial-gradient(circle at center, #faf6f0 0%, #f3ede2 100%) !important;
   }
 
   .result-mirror-top-bar {
-    grid-area: topbar !important;
-    position: static !important;
-    padding: 12px 24px !important;
-    border-bottom: 1.5px solid rgba(212, 175, 55, 0.3) !important;
-    background: rgba(20, 8, 22, 0.95) !important;
-    z-index: 10 !important;
+    position: absolute !important;
+    top: 12px !important;
+    left: 16px !important;
+    right: 16px !important;
+    padding: 8px 16px !important;
+    border-radius: 9999px !important;
+    border: 1px solid rgba(212, 175, 55, 0.3) !important;
+    background: rgba(20, 8, 22, 0.8) !important;
+    backdrop-filter: blur(16px) !important;
+    z-index: 15 !important;
   }
 
-  /* Left Panel: The Pure Visual Mirror Canvas */
+  .kiosk-app-wrapper.light-theme .result-mirror-top-bar {
+    background: rgba(255, 255, 255, 0.88) !important;
+    border: 1px solid rgba(184, 134, 11, 0.3) !important;
+  }
+
   .result-pure-canvas-viewport {
-    grid-area: mirror !important;
+    flex: 1 !important;
+    width: 100% !important;
     height: 100% !important;
-    max-height: 100% !important;
     min-height: 0 !important;
-    background: #040105 !important;
-    border-right: 1.5px solid rgba(212, 175, 55, 0.3) !important;
     display: flex !important;
     align-items: center !important;
     justify-content: center !important;
     position: relative !important;
     overflow: hidden !important;
-  }
-
-  .result-pure-canvas-viewport .split-slider-stage,
-  .result-pure-canvas-viewport .split-slider-container,
-  .result-pure-canvas-viewport .photo-frame {
-    width: 100% !important;
-    height: 100% !important;
-    max-height: 100% !important;
+    background: transparent !important;
+    padding-top: 55px !important;
+    padding-bottom: 20px !important;
+    box-sizing: border-box !important;
   }
 
   .result-pure-canvas-viewport img {
     height: 100% !important;
-    max-height: calc(100vh - 180px) !important;
+    max-height: calc(100vh - 175px) !important;
     width: 100% !important;
     object-fit: contain !important;
+    object-position: center center !important;
   }
 
-  /* Right Panel: Side Action Controls & Garment Hub */
-  .result-floating-dock {
-    grid-area: controls !important;
-    position: static !important;
+  /* In Landscape, hide floating triggers inside canvas since console has them */
+  .result-stage-main-canvas .result-floating-qr-card,
+  .result-stage-main-canvas .result-action-wave-wrapper {
+    display: none !important;
+  }
+
+  .result-stage-main-canvas .result-floating-mini-inputs {
+    position: absolute !important;
+    bottom: 20px !important;
+    left: 20px !important;
+    z-index: 20 !important;
+  }
+
+  /* Right Column: Dedicated Showroom Console */
+  .result-stage-side-console {
+    flex: 0 0 clamp(350px, 28vw, 420px) !important;
+    width: clamp(350px, 28vw, 420px) !important;
+    height: 100% !important;
+    border-left: 1.5px solid rgba(212, 175, 55, 0.35) !important;
+    background: rgba(20, 9, 24, 0.96) !important;
+    backdrop-filter: blur(28px) !important;
+    padding: 18px 20px !important;
     display: flex !important;
     flex-direction: column !important;
-    justify-content: center !important;
-    align-items: stretch !important;
-    padding: 24px 20px !important;
-    background: rgba(18, 7, 19, 0.92) !important;
-    backdrop-filter: blur(16px) !important;
+    justify-content: space-between !important;
     gap: 12px !important;
-    border-top: none !important;
+    box-sizing: border-box !important;
     overflow-y: auto !important;
+    z-index: 25 !important;
   }
 
-  .btn-result-action-pill {
-    width: 100% !important;
-    justify-content: flex-start !important;
-    padding: 13px 18px !important;
-    font-size: 0.93rem !important;
-    border-radius: 14px !important;
-    gap: 12px !important;
+  .kiosk-app-wrapper.light-theme .result-stage-side-console {
+    background: #ffffff !important;
+    border-left: 1.5px solid rgba(184, 134, 11, 0.25) !important;
+    box-shadow: -10px 0 35px rgba(70, 40, 55, 0.08) !important;
   }
 
   /* Dual-Panel Camera Screen */
@@ -11834,7 +12501,7 @@
     max-width: 1580px !important;
     width: 100% !important;
     height: 100% !important;
-    max-height: calc(100vh - 110px) !important;
+    max-height: calc(100vh - 90px) !important;
     padding: 0 !important;
   }
 
@@ -11842,7 +12509,7 @@
     max-width: 100% !important;
     width: 100% !important;
     height: 100% !important;
-    max-height: calc(100vh - 110px) !important;
+    max-height: calc(100vh - 90px) !important;
     display: grid !important;
     grid-template-columns: minmax(460px, 1fr) 390px !important;
     grid-template-areas: "camera controls" !important;
@@ -11870,14 +12537,6 @@
     object-fit: contain !important;
   }
 
-  .camera-floating-top-bar {
-    position: absolute !important;
-    top: 14px !important;
-    left: 14px !important;
-    width: calc(100% - 28px) !important;
-    z-index: 20 !important;
-  }
-
   .camera-floating-dock {
     grid-area: controls !important;
     position: static !important;
@@ -11885,40 +12544,11 @@
     flex-direction: column !important;
     justify-content: center !important;
     align-items: center !important;
-    gap: 20px !important;
-    padding: 28px 24px !important;
+    gap: 16px !important;
+    padding: 24px 20px !important;
     background: rgba(16, 6, 18, 0.95) !important;
     height: 100% !important;
     box-sizing: border-box !important;
-  }
-
-  .camera-floating-actions-row {
-    flex-direction: column !important;
-    width: 100% !important;
-    gap: 14px !important;
-  }
-
-  .btn-floating-action-side {
-    width: 100% !important;
-    justify-content: center !important;
-    min-height: 52px !important;
-    border-radius: 14px !important;
-  }
-
-  .btn-floating-shutter-gold {
-    width: 100% !important;
-    border-radius: 999px !important;
-  }
-
-  .floating-review-actions-wrap {
-    flex-direction: column !important;
-    width: 100% !important;
-    gap: 14px !important;
-  }
-
-  .btn-floating-review-btn {
-    width: 100% !important;
-    justify-content: center !important;
   }
 }
 
@@ -12347,61 +12977,5741 @@
   opacity: 0.7;
 }
 
-/* --- Portrait Mode Adaptation (9:16 Displays / Mobile / Rotated) --- */
-@media (orientation: portrait), (max-aspect-ratio: 1/1) {
+/* ==============================================================================
+   DESKTOP LANDSCAPE KIOSK LAYOUT (Laptops, Desktops, Landscape Totems)
+   ============================================================================== */
+@media (min-width: 901px) and (orientation: landscape) {
+  .kiosk-totem-container {
+    width: 100% !important;
+    max-width: 1680px !important;
+    height: calc(100vh - 72px) !important;
+    max-height: calc(100vh - 72px) !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+  }
+
   .screen-welcome-master {
     height: 100% !important;
-    overflow-y: auto !important;
-    padding: 16px !important;
+    max-height: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    padding: 12px 28px !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
   }
 
   .welcome-master-grid {
-    grid-template-columns: 1fr !important;
-    gap: 20px !important;
+    display: grid !important;
+    grid-template-columns: minmax(360px, 480px) 1fr !important;
+    gap: clamp(24px, 3.5vw, 56px) !important;
+    align-items: center !important;
+    flex: 1 !important;
+    width: 100% !important;
   }
 
   .welcome-arch-showcase {
-    flex-direction: column !important;
+    display: flex !important;
+    flex-direction: row !important;
     align-items: center !important;
+    justify-content: center !important;
+    gap: 20px !important;
+    width: 100% !important;
   }
 
   .arch-side-captions {
-    flex-direction: row !important;
-    justify-content: space-around !important;
-    width: 100% !important;
-    gap: 12px !important;
-    text-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+    width: 125px !important;
+    flex-shrink: 0 !important;
   }
 
   .arch-gold-frame {
-    max-width: 320px !important;
-    height: 380px !important;
-    border-radius: 180px 180px 24px 24px !important;
+    width: clamp(240px, 22vw, 320px) !important;
+    height: clamp(320px, 42vh, 420px) !important;
+    border-radius: 160px 160px 24px 24px !important;
+  }
+
+  .welcome-main-content {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    text-align: left !important;
+    justify-content: center !important;
+  }
+
+  .welcome-features-grid {
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 12px !important;
+    width: 100% !important;
+    max-width: 720px !important;
+  }
+
+  .welcome-bottom-workflow-strip {
+    display: flex !important;
+    width: 100% !important;
+    justify-content: center !important;
+    margin-top: 8px !important;
+  }
+
+  .workflow-strip-card {
+    max-width: 1080px !important;
+    width: 100% !important;
+    padding: 8px 24px !important;
+  }
+}
+
+/* ==============================================================================
+   PORTRAIT MODE ADAPTATION (Small Mobile Phones <= 600px)
+   ============================================================================== */
+/* ==============================================================================
+   NARROW VIEWPORT & MOBILE PORTRAIT OPTIMIZATION (< 600px)
+   ============================================================================== */
+@media (max-width: 600px) {
+  .kiosk-totem-container {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: calc(100vh - 64px) !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .screen-welcome-master {
+    height: auto !important;
+    min-height: calc(100vh - 64px) !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 10px 14px 20px 14px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    box-sizing: border-box !important;
+  }
+
+  .welcome-master-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 12px !important;
+    width: 100% !important;
+    max-width: 520px !important;
+    margin: 0 auto !important;
+  }
+
+  .welcome-arch-showcase {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  .arch-side-captions {
+    display: none !important;
+  }
+
+  .arch-mandala-flourish {
+    opacity: 0.3 !important;
+    transform: scale(0.85) !important;
+  }
+
+  .arch-gold-frame {
+    width: clamp(210px, 44vw, 290px) !important;
+    max-width: 290px !important;
+    height: clamp(260px, 32vh, 370px) !important;
+    border-radius: 150px 150px 18px 18px !important;
+    margin: 0 auto !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2), 0 0 20px rgba(212, 175, 55, 0.3) !important;
+  }
+
+  .welcome-main-content {
+    width: 100% !important;
+    max-width: 500px !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    text-align: center !important;
+    padding: 0 !important;
+  }
+
+  .royal-accent-motif {
+    font-size: 0.8rem !important;
+    margin-bottom: 2px !important;
+  }
+
+  .welcome-eyebrow-text {
+    font-size: 0.72rem !important;
+    letter-spacing: 1.8px !important;
+    margin-bottom: 4px !important;
   }
 
   .welcome-hero-headline {
-    font-size: 2.2rem !important;
+    font-size: clamp(1.4rem, 4.8vw, 1.85rem) !important;
+    line-height: 1.18 !important;
+    margin-bottom: 4px !important;
+  }
+
+  .welcome-title-divider {
+    margin: 4px auto 8px !important;
+  }
+
+  .welcome-hero-subtext {
+    font-size: 0.84rem !important;
+    line-height: 1.35 !important;
+    margin-bottom: 12px !important;
+    max-width: 440px !important;
   }
 
   .welcome-features-grid {
     grid-template-columns: repeat(2, 1fr) !important;
-    gap: 12px !important;
+    gap: 8px !important;
+    width: 100% !important;
+    max-width: 480px !important;
+    margin: 0 auto 12px !important;
+  }
+
+  .welcome-feat-card {
+    min-height: auto !important;
+    padding: 10px 8px !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06) !important;
+  }
+
+  .feat-card-icon-wrap {
+    width: 36px !important;
+    height: 36px !important;
+    margin-bottom: 4px !important;
+  }
+
+  .feat-card-icon-wrap svg {
+    width: 20px !important;
+    height: 20px !important;
+  }
+
+  .feat-card-title {
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    line-height: 1.2 !important;
+    margin-bottom: 2px !important;
+  }
+
+  .feat-card-desc {
+    font-size: 0.72rem !important;
+    line-height: 1.25 !important;
+  }
+
+  .welcome-cta-row {
+    width: 100% !important;
+    max-width: 480px !important;
+    margin: 0 auto 12px !important;
   }
 
   .btn-begin-trial-grand {
     width: 100% !important;
-    padding: 16px 24px !important;
+    min-height: 54px !important;
+    padding: 12px 20px !important;
+    font-size: 1.1rem !important;
+    font-weight: 800 !important;
+    border-radius: 14px !important;
   }
 
-  .workflow-strip-card {
-    flex-wrap: wrap !important;
-    border-radius: 18px !important;
+  .welcome-bottom-workflow-strip {
+    display: flex !important;
+    width: 100% !important;
+    max-width: 480px !important;
+    margin: 4px auto 0 !important;
+  }
+
+  /* Screen Combine Mobile / Narrow Viewport */
+  .screen-combine {
+    padding: 8px 6px !important;
+    min-height: calc(100vh - 64px) !important;
+  }
+
+  .combine-master-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 14px 10px !important;
+    border-radius: 20px !important;
+  }
+
+  .combine-dual-grid {
+    grid-template-columns: 1fr auto 1fr !important;
+    gap: 8px !important;
+    margin: 12px 0 !important;
+  }
+
+  .combine-panel {
+    padding: 10px 8px !important;
+    border-radius: 16px !important;
+  }
+
+  .combine-image-frame {
+    height: clamp(300px, 42vh, 460px) !important;
+    border-radius: 14px !important;
+  }
+
+  .combine-plus-badge {
+    width: 42px !important;
+    height: 42px !important;
+  }
+
+  .combine-plus-badge .plus-icon {
+    font-size: 1.1rem !important;
+  }
+
+  .combine-plus-badge .plus-label {
+    display: none !important;
+  }
+
+  .btn-panel-action {
+    padding: 8px 10px !important;
+    font-size: 0.8rem !important;
+    min-height: 40px !important;
+  }
+
+  .btn-generate-tryon {
+    width: 100% !important;
+    min-height: 56px !important;
+    font-size: 1.15rem !important;
+    padding: 14px 20px !important;
+  }
+}
+
+/* ==============================================================================
+   IMMERSIVE LUXURY RESULT MIRROR STAGE & EQUALIZED DISPLAY
+   ============================================================================== */
+.result-pure-canvas-viewport {
+  width: 100% !important;
+  height: calc(100vh - 150px) !important;
+  min-height: 480px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
+.split-slider-stage {
+  width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.split-slider-container {
+  width: min(760px, 95vw) !important;
+  height: 100% !important;
+  max-height: calc(100vh - 120px) !important;
+  position: relative !important;
+  margin: 0 auto !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  background: radial-gradient(circle at center, #180816 0%, #080208 100%) !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.4) !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.6), 0 0 28px rgba(212, 175, 55, 0.22) !important;
+}
+
+.fill-cover-mode .split-slider-container {
+  width: 100% !important;
+  max-width: min(1180px, 96vw) !important;
+}
+
+@media (min-width: 901px) and (orientation: landscape) {
+  .result-pure-canvas-viewport {
+    height: calc(100vh - 110px) !important;
+  }
+  .split-slider-container {
+    width: min(840px, 90vw) !important;
+    max-height: calc(100vh - 115px) !important;
+  }
+  .fill-cover-mode .split-slider-container {
+    width: 100% !important;
+    max-width: min(1280px, 96vw) !important;
+  }
+  .comparison-frames-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 20px !important;
+    width: 100% !important;
+    max-width: min(1440px, 96vw) !important;
+    height: 100% !important;
+    max-height: calc(100vh - 120px) !important;
+  }
+}
+
+/* Default: Fit Photo Mode (Preserves 100% of Face, Body, and Saree without Cropping) */
+.split-slider-img,
+.comparison-img,
+.photo-frame img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  filter: brightness(1.04) contrast(1.02) saturate(1.05) !important;
+}
+
+/* Fill Screen Mode (When User explicitly toggles Fill Screen) */
+.fill-cover-mode .split-slider-img,
+.fill-cover-mode .comparison-img,
+.fill-cover-mode .photo-frame img {
+  object-fit: cover !important;
+  object-position: center top !important;
+  filter: brightness(1.06) contrast(1.03) saturate(1.08) !important;
+}
+
+.fill-cover-mode .split-slider-reveal .split-slider-img {
+  object-fit: cover !important;
+  object-position: center top !important;
+  filter: brightness(1.07) contrast(1.04) saturate(1.12) !important;
+}
+
+.btn-fill-pill {
+  background: rgba(212, 175, 55, 0.22) !important;
+  border-color: rgba(212, 175, 55, 0.6) !important;
+  color: #ffd700 !important;
+  font-weight: 700 !important;
+}
+
+/* ==============================================================================
+   LARGE PORTRAIT TOTEMS & 55" SMART MIRRORS (1080x1920 Hardware Totems, Tablets)
+   ============================================================================== */
+/* ==============================================================================
+   SHOWROOM 55" TOTEM & PORTRAIT MASTER DISPLAY (600px - 1080px & ALL PORTRAIT)
+   ============================================================================== */
+@media (orientation: portrait), (max-aspect-ratio: 1/1) {
+  .kiosk-totem-container {
+    max-width: 1080px !important;
+    width: 100% !important;
+    height: calc(100vh - 72px) !important;
+    max-height: calc(100vh - 72px) !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+
+  .screen-welcome-master {
+    max-width: 1040px !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: calc(100vh - 72px) !important;
+    margin: 0 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: flex-start !important;
+    align-items: center !important;
+    gap: clamp(14px, 2vh, 26px) !important;
+    padding: clamp(12px, 1.8vh, 24px) clamp(14px, 2.4vw, 32px) !important;
+    box-sizing: border-box !important;
+  }
+
+  .welcome-master-grid {
+    max-width: 820px !important;
+    width: 100% !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: clamp(12px, 1.8vh, 22px) !important;
+    margin: 0 auto !important;
+  }
+
+  .welcome-arch-showcase {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    margin: 0 auto !important;
+  }
+
+  .arch-gold-frame {
+    width: clamp(230px, 34vw, 380px) !important;
+    max-width: 380px !important;
+    height: clamp(290px, 34vh, 480px) !important;
+    border-radius: 190px 190px 22px 22px !important;
+    margin: 0 auto !important;
+    border: 3px solid #d4af37 !important;
+    box-shadow: 0 16px 44px rgba(0, 0, 0, 0.22), 0 0 28px rgba(212, 175, 55, 0.35) !important;
+  }
+
+  .welcome-main-content {
+    max-width: 780px !important;
+    width: 100% !important;
+    text-align: center !important;
+  }
+
+  .royal-accent-motif {
+    font-size: 0.95rem !important;
+    margin-bottom: 4px !important;
+  }
+
+  .welcome-eyebrow-text {
+    font-size: clamp(0.78rem, 1vw, 0.92rem) !important;
+    letter-spacing: 2.2px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .welcome-hero-headline {
+    font-size: clamp(1.6rem, 3.2vw, 2.4rem) !important;
+    line-height: 1.18 !important;
+    margin-bottom: 6px !important;
+  }
+
+  .welcome-hero-subtext {
+    font-size: clamp(0.88rem, 1.15vw, 1.05rem) !important;
+    line-height: 1.45 !important;
+    margin-bottom: 16px !important;
+    max-width: 640px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  .welcome-features-grid {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: clamp(10px, 1.6vw, 16px) !important;
+    width: 100% !important;
+    max-width: 660px !important;
+    margin: 0 auto clamp(14px, 2vh, 22px) !important;
+  }
+
+  .welcome-feat-card {
+    padding: clamp(12px, 1.6vh, 18px) clamp(10px, 1.4vw, 16px) !important;
+    border-radius: 16px !important;
+    min-height: auto !important;
+  }
+
+  .feat-card-icon-wrap {
+    width: 44px !important;
+    height: 44px !important;
+    margin-bottom: 6px !important;
+  }
+
+  .feat-card-title {
+    font-size: clamp(0.84rem, 1.1vw, 0.96rem) !important;
+    font-weight: 700 !important;
+    margin-bottom: 3px !important;
+  }
+
+  .feat-card-desc {
+    font-size: clamp(0.74rem, 0.95vw, 0.84rem) !important;
+    line-height: 1.35 !important;
+  }
+
+  .welcome-cta-row {
+    width: 100% !important;
+    max-width: 660px !important;
+    margin: 0 auto !important;
+  }
+
+  .btn-begin-trial-grand {
+    width: 100% !important;
+    min-height: clamp(56px, 6.5vh, 68px) !important;
+    font-size: clamp(1.15rem, 1.6vw, 1.38rem) !important;
+    font-weight: 800 !important;
+    border-radius: 16px !important;
+    padding: 16px 32px !important;
+  }
+
+  .welcome-bottom-workflow-strip {
+    display: flex !important;
+    width: 100% !important;
+    max-width: 660px !important;
+    margin: 12px auto 0 !important;
+  }
+
+  /* COMBINE REVIEW SCREEN ON 55" TOTEM & PORTRAIT (Responsive Grand Sizing) */
+  .screen-combine {
+    width: 100% !important;
+    min-height: calc(100vh - 72px) !important;
+    height: 100% !important;
+    padding: clamp(14px, 2vh, 28px) clamp(16px, 2vw, 36px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+  }
+
+  .combine-master-card {
+    max-width: 100% !important;
+    width: 100% !important;
+    height: 100% !important;
+    min-height: calc(100vh - 100px) !important;
+    padding: clamp(24px, 2.8vh, 44px) clamp(24px, 2.5vw, 48px) !important;
+    border-radius: 36px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
+    margin: 0 auto !important;
+  }
+
+  .combine-dual-grid {
+    grid-template-columns: 1fr auto 1fr !important;
+    gap: clamp(18px, 2.6vw, 40px) !important;
+    margin: clamp(14px, 2vh, 28px) 0 !important;
+    width: 100% !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+    align-items: stretch !important;
+  }
+
+  .combine-panel {
+    padding: clamp(16px, 1.8vw, 26px) !important;
+    border-radius: 28px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    flex: 1 !important;
+    min-height: 0 !important;
+  }
+
+  /* 55" Totem Grand Preview Image Frames - Fills full vertical height on 1080x1920 totems */
+  .combine-image-frame {
+    height: 100% !important;
+    min-height: clamp(520px, 60vh, 1000px) !important;
+    border-radius: 24px !important;
+    flex: 1 !important;
+    position: relative !important;
+    overflow: hidden !important;
+    box-shadow: inset 0 0 24px rgba(0, 0, 0, 0.4) !important;
+  }
+
+  .combine-img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: cover !important;
+    object-position: center top !important;
+    display: block !important;
+  }
+
+  .combine-plus-badge {
+    width: clamp(70px, 6.5vw, 96px) !important;
+    height: clamp(70px, 6.5vw, 96px) !important;
+    font-size: 2rem !important;
+    align-self: center !important;
+    box-shadow: 0 10px 32px rgba(212, 175, 55, 0.35) !important;
+  }
+
+  .btn-generate-tryon {
+    min-height: clamp(72px, 8.5vh, 98px) !important;
+    font-size: clamp(1.38rem, 2.2vw, 1.85rem) !important;
+    font-weight: 800 !important;
+    letter-spacing: 0.05em !important;
+    padding: 22px 52px !important;
+    width: 100% !important;
+    border-radius: 24px !important;
+    box-shadow: 0 16px 44px rgba(212, 175, 55, 0.45) !important;
+  }
+
+  .btn-replace-image {
+    min-height: clamp(54px, 6vh, 66px) !important;
+    font-size: clamp(1.02rem, 1.3vw, 1.25rem) !important;
+    font-weight: 700 !important;
+    padding: 14px 24px !important;
+    border-radius: 16px !important;
+  }
+
+  .split-slider-stage {
+    max-width: 860px !important;
+    width: 100% !important;
+  }
+
+  .split-slider-container {
+    height: clamp(660px, 68vh, 920px) !important;
+  }
+}
+
+/* ==============================================================================
+   EXPLICIT LIGHT THEME CONTRAST & LEGIBILITY (NO PALE OR BLURRED TEXT)
+   ============================================================================== */
+.kiosk-app-wrapper.light-theme,
+.light-theme {
+  --color-text-primary: #1e1320;
+  --color-text-secondary: #523f54;
+}
+
+.light-theme .welcome-eyebrow-text {
+  color: #9a6f19 !important;
+  font-weight: 700 !important;
+}
+
+.light-theme .welcome-hero-headline {
+  color: #4a0e20 !important;
+}
+
+.light-theme .welcome-highlight {
+  color: #b8860b !important;
+}
+
+.light-theme .welcome-hero-subtext {
+  color: #483549 !important;
+}
+
+.light-theme .welcome-feat-card {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(184, 134, 11, 0.35) !important;
+  box-shadow: 0 6px 20px rgba(184, 134, 11, 0.08) !important;
+}
+
+.light-theme .feat-card-title {
+  color: #2b1124 !important;
+  font-weight: 700 !important;
+}
+
+.light-theme .feat-card-desc {
+  color: #5c475b !important;
+}
+
+.light-theme .combine-master-card {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border: 1.5px solid rgba(184, 134, 11, 0.45) !important;
+  box-shadow: 0 20px 60px rgba(70, 35, 55, 0.12), 0 0 35px rgba(212, 175, 55, 0.15) !important;
+}
+
+.light-theme .combine-step-pill {
+  color: #7a5806 !important;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.22), rgba(184, 134, 11, 0.12)) !important;
+  border: 1px solid rgba(184, 134, 11, 0.45) !important;
+  font-weight: 800 !important;
+}
+
+.light-theme .combine-headline {
+  color: #4a1525 !important;
+  font-weight: 800 !important;
+}
+
+.light-theme .combine-subheadline {
+  color: #5c475b !important;
+  font-weight: 500 !important;
+}
+
+.light-theme .combine-panel {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(184, 134, 11, 0.38) !important;
+  box-shadow: 0 8px 24px rgba(70, 35, 55, 0.08) !important;
+}
+
+.light-theme .combine-panel-header .panel-label {
+  color: #5a0e24 !important;
+  font-weight: 800 !important;
+}
+
+.light-theme .combine-image-frame {
+  background: radial-gradient(circle at center, #fbf7ee 0%, #f4ecdc 100%) !important;
+  border: 1.5px solid rgba(184, 134, 11, 0.45) !important;
+  box-shadow: inset 0 0 24px rgba(184, 134, 11, 0.1), 0 8px 24px rgba(70, 35, 55, 0.08) !important;
+}
+
+.light-theme .product-overlay-meta {
+  background: linear-gradient(180deg, transparent 0%, rgba(255, 252, 245, 0.88) 32%, rgba(255, 250, 240, 0.98) 100%) !important;
+  border-top: 1px solid rgba(184, 134, 11, 0.25) !important;
+}
+
+.light-theme .product-overlay-meta .meta-title {
+  color: #3b0716 !important;
+  font-weight: 700 !important;
+}
+
+.light-theme .product-overlay-meta .meta-sku {
+  color: #5a0e24 !important;
+  background: #fffdf5 !important;
+  border: 1px solid rgba(184, 134, 11, 0.4) !important;
+}
+
+.light-theme .product-overlay-meta .meta-price {
+  color: #7a5806 !important;
+  background: rgba(212, 175, 55, 0.18) !important;
+  border: 1px solid rgba(184, 134, 11, 0.3) !important;
+  font-weight: 800 !important;
+}
+
+.light-theme .product-overlay-meta .meta-fabric-chip {
+  background: rgba(90, 14, 36, 0.08) !important;
+  color: #5a0e24 !important;
+  border: 1px solid rgba(90, 14, 36, 0.2) !important;
+}
+
+.light-theme .btn-replace-image {
+  background: #fffcf7 !important;
+  border: 1.5px solid rgba(184, 134, 11, 0.45) !important;
+  color: #5a0e24 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 3px 10px rgba(90, 14, 36, 0.08) !important;
+}
+
+.light-theme .btn-replace-image:hover {
+  background: #fdf6e6 !important;
+  border-color: #d4af37 !important;
+  color: #3b0716 !important;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 18px rgba(184, 134, 11, 0.22) !important;
+}
+
+.light-theme .combine-plus-badge {
+  background: linear-gradient(135deg, #f0c042 0%, #d4af37 50%, #aa841e 100%) !important;
+  border-color: #ffffff !important;
+  color: #1a081a !important;
+  box-shadow: 0 6px 22px rgba(212, 175, 55, 0.5) !important;
+}
+
+.light-theme .btn-generate-tryon {
+  background: linear-gradient(135deg, #f0c042 0%, #d4af37 50%, #aa841e 100%) !important;
+  color: #1a081a !important;
+  font-weight: 800 !important;
+  box-shadow: 0 10px 32px rgba(212, 175, 55, 0.5) !important;
+}
+
+.light-theme .btn-generate-tryon:hover {
+  filter: brightness(1.05) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 14px 40px rgba(212, 175, 55, 0.65) !important;
+}
+
+/* ==============================================================================
+   EMIL KOWALSKI DESIGN ENGINEERING CRAFT & TOUCH POLISH
+   Sub-200ms snappy response, :active micro-scaling, hardware transforms, no stuck hover
+   ============================================================================== */
+
+/* 1. Global Touch Micro-Interactions (:active feedback) */
+.btn-gold:active,
+.btn-crimson:active,
+.btn-begin-trial-grand:active,
+.btn-generate-tryon:active,
+.btn-take-photo-direct:active,
+.btn-choose-saree-direct:active {
+  transform: scale(0.97) !important;
+  transition-duration: 100ms !important;
+}
+
+.saree-card {
+  transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1), border-color 140ms ease, box-shadow 140ms ease !important;
+  will-change: transform;
+}
+
+.saree-card:active {
+  transform: scale(0.975) !important;
+  transition-duration: 90ms !important;
+}
+
+.welcome-feat-card {
+  transition: transform 140ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 140ms ease, border-color 140ms ease !important;
+}
+
+.welcome-feat-card:active {
+  transform: scale(0.98) !important;
+  transition-duration: 90ms !important;
+}
+
+.filter-pill,
+.category-pill,
+.btn-view-pill,
+.btn-panel-action {
+  transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1), background-color 120ms ease, border-color 120ms ease !important;
+}
+
+.filter-pill:active,
+.category-pill:active,
+.btn-view-pill:active,
+.btn-panel-action:active {
+  transform: scale(0.95) !important;
+  transition-duration: 80ms !important;
+}
+
+/* Kiosk Header Compact Action Icons */
+.btn-reach-toggle,
+.btn-theme-toggle,
+.btn-lang-toggle,
+.btn-lock-device,
+.btn-admin-toggle,
+.btn-kiosk-home {
+  transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1), background-color 120ms ease !important;
+}
+
+.btn-reach-toggle:active,
+.btn-theme-toggle:active,
+.btn-lang-toggle:active,
+.btn-lock-device:active,
+.btn-admin-toggle:active,
+.btn-kiosk-home:active {
+  transform: scale(0.90) !important;
+  transition-duration: 80ms !important;
+}
+
+/* Camera Shutter & Capture Review Buttons */
+.btn-floating-shutter-gold {
+  transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1) !important;
+}
+
+.btn-floating-shutter-gold:active {
+  transform: scale(0.92) !important;
+  transition-duration: 80ms !important;
+}
+
+.btn-floating-review-btn {
+  transition: transform 120ms cubic-bezier(0.23, 1, 0.32, 1), box-shadow 120ms ease !important;
+}
+
+.btn-floating-review-btn:active {
+  transform: scale(0.96) !important;
+  transition-duration: 80ms !important;
+}
+
+/* PIN Keypad Interactive Numbers */
+.pin-key-btn {
+  transition: transform 100ms cubic-bezier(0.23, 1, 0.32, 1), background-color 100ms ease !important;
+}
+
+.pin-key-btn:active {
+  transform: scale(0.91) !important;
+  background: rgba(212, 175, 55, 0.35) !important;
+  transition-duration: 70ms !important;
+}
+
+/* 2. Modals & Dialogs: Never scale from 0. Scale from 0.96 with custom ease-out */
+.pin-modal-dialog,
+.consent-modal,
+.consent-modal-card {
+  animation: emilModalPop 200ms cubic-bezier(0.23, 1, 0.32, 1) both !important;
+  transform-origin: center center !important;
+}
+
+@keyframes emilModalPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* 3. Popovers & Dropdowns: Origin-Aware Scaling */
+.lang-dropdown-menu {
+  transform-origin: top right !important;
+  animation: emilDropdownPop 160ms cubic-bezier(0.23, 1, 0.32, 1) both !important;
+}
+
+@keyframes emilDropdownPop {
+  0% {
+    opacity: 0;
+    transform: scale(0.95) translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 4. Touch-Safe Capability Queries: Eliminate Sticky Hover on Kiosks */
+@media (hover: none), (pointer: coarse) {
+  .saree-card:hover,
+  .welcome-feat-card:hover,
+  .filter-pill:hover,
+  .btn-gold:hover,
+  .btn-crimson:hover,
+  .btn-panel-action:hover {
+    transform: none !important;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .saree-card:hover {
+    transform: translateY(-4px);
+  }
+  .welcome-feat-card:hover {
+    transform: translateY(-3px);
+  }
+  .btn-gold:hover {
+    transform: translateY(-1px);
+  }
+}
+
+/* 5. Reduced Motion Respect */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ==============================================================================
+   SHOWROOM & STAFF LOGIN IDENTITY CHIP IN HEADER
+   ============================================================================== */
+.header-auth-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(12px);
+  max-width: 380px;
+  flex-shrink: 0;
+}
+
+.auth-badge-icon {
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.auth-badge-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.auth-badge-store-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.auth-store-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #ffd700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 180px;
+}
+
+.auth-tenant-chip {
+  font-size: 0.65rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(212, 175, 55, 0.18);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  color: #ffd700;
+}
+
+.auth-tenant-chip.super {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.4);
+  color: #c084fc;
+}
+
+.auth-badge-user-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.auth-user-label {
+  font-size: 0.72rem;
+  color: var(--color-text-secondary, #b3a5b8);
+  white-space: nowrap;
+}
+
+.btn-kiosk-signout {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+  font-size: 0.68rem;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 1px 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-kiosk-signout:hover {
+  background: rgba(239, 68, 68, 0.3);
+  color: #ffffff;
+  border-color: #ef4444;
+}
+
+/* Light Theme Styling for Header Auth Badge */
+.light-theme .header-auth-badge {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(184, 134, 11, 0.4) !important;
+  box-shadow: 0 4px 14px rgba(70, 35, 55, 0.08) !important;
+}
+
+.light-theme .auth-store-label {
+  color: #5a0e24 !important;
+  font-weight: 800 !important;
+}
+
+.light-theme .auth-tenant-chip {
+  background: rgba(212, 175, 55, 0.2) !important;
+  border-color: rgba(184, 134, 11, 0.4) !important;
+  color: #7a5806 !important;
+}
+
+.light-theme .auth-tenant-chip.super {
+  background: rgba(147, 51, 234, 0.12) !important;
+  border-color: rgba(147, 51, 234, 0.3) !important;
+  color: #7e22ce !important;
+}
+
+.light-theme .auth-user-label {
+  color: #5c475b !important;
+  font-weight: 600 !important;
+}
+
+.light-theme .btn-kiosk-signout {
+  background: #fef2f2 !important;
+  border-color: #fca5a5 !important;
+  color: #b91c1c !important;
+}
+
+.light-theme .btn-kiosk-signout:hover {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+}
+
+@media (max-width: 900px) {
+  .header-auth-badge {
+    padding: 4px 8px;
+    max-width: 240px;
+  }
+  .auth-store-label {
+    max-width: 110px;
+    font-size: 0.74rem;
+  }
+  .auth-user-label {
+    font-size: 0.68rem;
+  }
+}
+
+
+/* Always prominent Showroom / Super Admin Identity Badge in Header */
+.header-auth-badge {
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 6px 14px !important;
+  border-radius: 14px !important;
+  flex-shrink: 0 !important;
+  z-index: 60 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.5) !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35) !important;
+}
+
+.light-theme .header-auth-badge {
+  background: #ffffff !important;
+  border: 1.5px solid rgba(184, 134, 11, 0.6) !important;
+  box-shadow: 0 4px 16px rgba(70, 35, 55, 0.12) !important;
+}
+
+.auth-store-label {
+  font-weight: 800 !important;
+}
+
+.auth-user-label {
+  font-weight: 600 !important;
+}
+
+
+.btn-staff-full-login {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px 20px;
+  background: rgba(212, 175, 55, 0.12);
+  border: 1.5px solid rgba(212, 175, 55, 0.4);
+  border-radius: 14px;
+  color: #ffd700;
+  text-decoration: none;
+  font-size: 0.92rem;
+  font-weight: 700;
+  transition: all 0.25s ease;
+  margin-top: 8px;
+}
+
+.btn-staff-full-login:hover {
+  background: rgba(212, 175, 55, 0.25);
+  border-color: #ffd700;
+  color: #ffffff;
+  transform: translateY(-2px);
+}
+
+.light-theme .btn-staff-full-login {
+  background: #fdfbf7;
+  border-color: rgba(184, 134, 11, 0.5);
+  color: #7a5806;
+}
+
+.light-theme .btn-staff-full-login:hover {
+  background: #b38728;
+  color: #ffffff;
+}
+
+/* ==============================================================================
+   STEP 3 (COMBINE PREVIEW) — FULLSCREEN & FLOATING HEADER STYLES
+   ============================================================================== */
+
+/* 1. Floating Pill Header in Step 3 */
+.kiosk-app-wrapper.step-combine .kiosk-header {
+  position: absolute !important;
+  top: 16px !important;
+  left: 24px !important;
+  right: 24px !important;
+  z-index: 1000 !important;
+  height: 64px !important;
+  min-height: 64px !important;
+  border-radius: 9999px !important;
+  background: rgba(18, 7, 19, 0.75) !important;
+  backdrop-filter: blur(28px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(28px) saturate(180%) !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.45) !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55), 0 0 30px rgba(212, 175, 55, 0.2) !important;
+  padding: 0 24px !important;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.kiosk-app-wrapper.light-theme.step-combine .kiosk-header {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(197, 148, 62, 0.45) !important;
+  box-shadow: 0 16px 40px rgba(100, 60, 20, 0.15) !important;
+}
+
+/* 2. Fullscreen Main Viewport for Combine */
+.kiosk-app-wrapper.step-combine .kiosk-main {
+  padding: 0 !important;
+  overflow: hidden !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  width: 100vw !important;
+  max-width: 100vw !important;
+}
+
+.kiosk-app-wrapper.step-combine .screen-combine {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  padding: 88px 24px 20px 24px !important;
+  box-sizing: border-box !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  overflow: hidden !important;
+  background: radial-gradient(circle at 50% 20%, #1e0921 0%, #070208 100%) !important;
+}
+
+.kiosk-app-wrapper.light-theme.step-combine .screen-combine {
+  background: radial-gradient(circle at 50% 20%, #fefcf7 0%, #f3ede2 100%) !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-master-card {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  border-radius: 28px !important;
+  border: 1px solid rgba(212, 175, 55, 0.25) !important;
+  background: rgba(17, 7, 19, 0.7) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5) !important;
+  backdrop-filter: blur(20px) !important;
+  padding: 14px 24px 18px 24px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  box-sizing: border-box !important;
+}
+
+.kiosk-app-wrapper.light-theme.step-combine .combine-master-card {
+  background: rgba(255, 255, 255, 0.72) !important;
+  border-color: rgba(197, 148, 62, 0.3) !important;
+  box-shadow: 0 20px 50px rgba(100, 60, 20, 0.12) !important;
+}
+
+.kiosk-app-wrapper.step-combine .screen-nav-header {
+  margin-bottom: 4px !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-headline {
+  font-size: clamp(1.2rem, 1.8vw, 1.65rem) !important;
+  margin-bottom: 2px !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-dual-grid {
+  flex: 1 !important;
+  min-height: 0 !important;
+  display: grid !important;
+  grid-template-columns: 1fr auto 1fr !important;
+  align-items: stretch !important;
+  gap: clamp(14px, 2.2vw, 36px) !important;
+  margin: 6px 0 !important;
+  height: calc(100vh - 270px) !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-panel {
+  height: 100% !important;
+  min-height: 0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 12px 16px !important;
+  border-radius: 22px !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.28) !important;
+}
+
+.kiosk-app-wrapper.light-theme.step-combine .combine-panel {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-color: rgba(197, 148, 62, 0.35) !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-image-frame {
+  flex: 1 !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  border-radius: 18px !important;
+  overflow: hidden !important;
+  position: relative !important;
+  cursor: pointer !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.kiosk-app-wrapper.step-combine .user-panel .combine-img {
+  object-fit: cover !important;
+  object-position: top center !important;
+}
+
+.kiosk-app-wrapper.step-combine .product-panel .combine-img {
+  object-fit: cover !important;
+  object-position: center 25% !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-panel-footer {
+  margin-top: 10px !important;
+}
+
+.kiosk-app-wrapper.step-combine .btn-replace-image {
+  min-height: 42px !important;
+  font-size: 0.95rem !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-cta-bar {
+  margin-top: 6px !important;
+}
+
+.kiosk-app-wrapper.step-combine .btn-generate-tryon {
+  padding: clamp(14px, 1.8vh, 18px) clamp(36px, 4vw, 56px) !important;
+  min-height: 54px !important;
+  font-size: 1.25rem !important;
+  border-radius: 9999px !important;
+}
+
+/* 3. Fullscreen Toggle Button in Saree Panel */
+.btn-fullscreen-toggle {
+  background: rgba(212, 175, 55, 0.18);
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  color: #ffd700;
+  padding: 4px 12px;
+  border-radius: 999px;
+  font-size: 0.76rem;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-fullscreen-toggle:hover {
+  background: rgba(212, 175, 55, 0.35);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+}
+
+/* 4. Fullscreen Garment Lightbox Modal */
+.garment-fullscreen-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2100;
+  background: rgba(5, 2, 7, 0.92);
+  backdrop-filter: blur(28px);
+  -webkit-backdrop-filter: blur(28px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.garment-fullscreen-content {
+  position: relative;
+  max-width: 92vw;
+  max-height: 94vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  animation: scaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.garment-fullscreen-img {
+  max-width: 100%;
+  max-height: 84vh;
+  object-fit: contain;
+  border-radius: 20px;
+  border: 2px solid rgba(212, 175, 55, 0.45);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.75), 0 0 40px rgba(212, 175, 55, 0.25);
+}
+
+.btn-close-fullscreen {
+  position: absolute;
+  top: -16px;
+  right: -16px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #d4af37;
+  color: #170914;
+  border: 2px solid #ffffff;
+  font-size: 1.2rem;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  z-index: 10;
+  transition: transform 0.2s ease;
+}
+
+.btn-close-fullscreen:hover {
+  transform: scale(1.1) rotate(90deg);
+  background: #ffd700;
+}
+
+.garment-fullscreen-caption {
+  margin-top: 14px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  color: #ffd700;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.garment-fullscreen-caption .fs-name {
+  color: #ffffff;
+}
+
+.garment-fullscreen-caption .fs-price {
+  background: rgba(212, 175, 55, 0.25);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  padding: 3px 10px;
+  border-radius: 8px;
+}
+
+.garment-fullscreen-caption .btn-gold-sm {
+  background: linear-gradient(135deg, #d4af37 0%, #aa7c11 100%);
+  color: #170914;
+  font-weight: 800;
+  padding: 6px 18px;
+  border-radius: 999px;
+  border: none;
+  cursor: pointer;
+}
+
+/* ========================================================================= */
+/* KIOSK AUTO-HIDDEN HEADER & TRUE FULLSCREEN MIRROR STAGE                   */
+/* ========================================================================= */
+.kiosk-header.kiosk-auto-hidden {
+  transform: translateY(-100%);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+}
+
+.kiosk-header:hover,
+.kiosk-header:focus-within {
+  transform: translateY(0) !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Floating Kiosk Quick Menu FAB */
+.btn-kiosk-floating-quick-menu {
+  position: fixed;
+  top: 14px;
+  right: 18px;
+  z-index: 990;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 14px;
+  background: rgba(20, 10, 24, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  border-radius: 9999px;
+  color: #fff;
+  cursor: pointer;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 12px rgba(212, 175, 55, 0.2);
+  transition: all 0.25s ease;
+}
+
+.btn-kiosk-floating-quick-menu:hover {
+  background: rgba(30, 15, 36, 0.9);
+  border-color: #ffd700;
+  transform: scale(1.04);
+  box-shadow: 0 6px 24px rgba(212, 175, 55, 0.35);
+}
+
+.kiosk-fab-brand-mini {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mini-crest-fab {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 1px solid #ffd700;
+}
+
+.crest-spark {
+  color: #ffd700;
+  font-size: 1rem;
+}
+
+.store-name-fab {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #f8fafc;
+  max-width: 130px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kiosk-fab-menu-icon {
+  font-size: 1.1rem;
+  color: #ffd700;
+  line-height: 1;
+}
+
+/* Kiosk Quick Menu Drawer */
+.kiosk-quick-drawer-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1200;
+  display: flex;
+  justify-content: flex-end;
+  align-items: stretch;
+  animation: fadeInQuickBackdrop 0.25s ease;
+}
+
+.kiosk-quick-drawer-card {
+  width: 380px;
+  max-width: 90vw;
+  background: rgba(18, 10, 24, 0.94);
+  border-left: 1px solid rgba(212, 175, 55, 0.35);
+  display: flex;
+  flex-direction: column;
+  padding: 24px;
+  gap: 18px;
+  box-shadow: -10px 0 35px rgba(0, 0, 0, 0.6);
+  animation: slideQuickDrawer 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  overflow-y: auto;
+}
+
+@keyframes slideQuickDrawer {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+@keyframes fadeInQuickBackdrop {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.quick-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  padding-bottom: 14px;
+}
+
+.quick-drawer-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.quick-crest {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  border: 1.5px solid #ffd700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(212, 175, 55, 0.15);
+  color: #ffd700;
+  font-size: 1.2rem;
+  overflow: hidden;
+}
+
+.quick-crest-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.quick-store-title {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.quick-kiosk-badge {
+  margin: 2px 0 0;
+  font-size: 0.75rem;
+  color: #cbd5e1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot-online {
+  color: #00e676;
+  font-weight: bold;
+}
+
+.btn-close-quick-drawer {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: all 0.2s;
+}
+
+.btn-close-quick-drawer:hover {
+  background: rgba(239, 68, 68, 0.4);
+  border-color: #ef4444;
+}
+
+.quick-session-info-box {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.q-info-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+}
+
+.q-lbl {
+  color: #94a3b8;
+}
+
+.q-val {
+  color: #ffd700;
+  font-weight: 600;
+}
+
+.quick-drawer-actions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quick-action-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+
+.q-act-icon {
+  font-size: 1.3rem;
+  width: 28px;
+  text-align: center;
+}
+
+.q-act-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.q-act-text strong {
+  font-size: 0.88rem;
+  color: #f8fafc;
+}
+
+.q-act-text small {
+  font-size: 0.72rem;
+  color: #94a3b8;
+}
+
+.btn-quick-chip {
+  background: rgba(212, 175, 55, 0.2);
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  color: #ffd700;
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-quick-chip:hover {
+  background: #ffd700;
+  color: #120a18;
+}
+
+.btn-quick-chip.active {
+  background: #00e676;
+  border-color: #00e676;
+  color: #052e16;
+}
+
+.btn-quick-chip.danger {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #f87171;
+}
+
+.btn-quick-chip.danger:hover {
+  background: #ef4444;
+  color: #fff;
+}
+
+.quick-menu-grand-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.25) 0%, rgba(138, 43, 226, 0.2) 100%);
+  border: 1px solid rgba(212, 175, 55, 0.55);
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.15);
+}
+
+.quick-menu-grand-btn:hover {
+  border-color: #ffd700;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.3);
+}
+
+.grand-icon {
+  font-size: 1.6rem;
+}
+
+.grand-meta {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.grand-meta strong {
+  color: #ffd700;
+  font-size: 0.95rem;
+}
+
+.grand-meta small {
+  color: #e2e8f0;
+  font-size: 0.75rem;
+}
+
+.grand-arrow {
+  color: #ffd700;
+  font-size: 1.2rem;
+}
+
+/* ========================================================================= */
+/* RESULT SCREEN: CINEMATIC FULLSCREEN, MINI-INPUTS, QR CARD & ACTION WAVE  */
+/* ========================================================================= */
+
+/* Bottom-Left Floating Mini Inputs Stack (Original Photo + Selected Saree) */
+.result-floating-mini-inputs {
+  position: absolute;
+  bottom: 24px;
+  left: 24px;
+  z-index: 50;
+  display: flex;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.mini-input-thumb-card {
+  width: 78px;
+  height: 104px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+  background: rgba(15, 8, 20, 0.85);
+  border: 1.5px solid rgba(212, 175, 55, 0.5);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 10px rgba(212, 175, 55, 0.2);
+  cursor: pointer;
+  transition: transform 0.25s ease, border-color 0.25s ease;
+}
+
+.mini-input-thumb-card:hover,
+.mini-input-thumb-card.active-mode {
+  transform: scale(1.08);
+  border-color: #ffd700;
+  box-shadow: 0 10px 30px rgba(212, 175, 55, 0.4);
+}
+
+.mini-thumb-pic {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.mini-thumb-label {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  padding: 3px 2px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #f1f5f9;
+  font-size: 0.62rem;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  border-top: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+/* Bottom-Right Floating Direct QR Code Card */
+.result-floating-qr-card {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 12px;
+  background: rgba(15, 8, 20, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1.5px solid rgba(212, 175, 55, 0.55);
+  border-radius: 16px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6), 0 0 14px rgba(212, 175, 55, 0.25);
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.result-floating-qr-card:hover {
+  transform: scale(1.04);
+  border-color: #ffd700;
+  box-shadow: 0 12px 35px rgba(212, 175, 55, 0.4);
+}
+
+.qr-floating-badge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 6px;
+}
+
+.qr-floating-heading {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #ffd700;
+}
+
+.qr-floating-code-wrapper {
+  background: #ffffff;
+  padding: 6px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 6px rgba(0, 0, 0, 0.2);
+}
+
+.qr-floating-hint {
+  margin-top: 5px;
+  font-size: 0.65rem;
+  color: #cbd5e1;
+  font-weight: 500;
+}
+
+/* Bottom-Center Floating Action Wave FAB */
+.result-action-wave-wrapper {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  pointer-events: auto;
+}
+
+.btn-wave-trigger-fab {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  background: linear-gradient(135deg, #d4af37 0%, #aa7c11 100%);
+  color: #120817;
+  font-weight: 700;
+  font-size: 0.95rem;
+  border: 1px solid #ffd700;
+  border-radius: 9999px;
+  cursor: pointer;
+  box-shadow: 0 6px 25px rgba(212, 175, 55, 0.5), 0 0 15px rgba(255, 215, 0, 0.3);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.btn-wave-trigger-fab:hover {
+  transform: scale(1.06);
+  box-shadow: 0 8px 30px rgba(212, 175, 55, 0.7);
+}
+
+.btn-wave-trigger-fab.expanded {
+  background: rgba(30, 15, 36, 0.92);
+  color: #ffd700;
+  border-color: rgba(212, 175, 55, 0.6);
+}
+
+.fab-wave-icon {
+  font-size: 1.1rem;
+}
+
+.fab-wave-arrow {
+  font-size: 0.75rem;
+}
+
+/* Wave Pills Arc / Expansion Menu */
+.action-wave-pills-arc {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 18px;
+  background: rgba(18, 10, 24, 0.92);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  border: 1.5px solid rgba(212, 175, 55, 0.5);
+  border-radius: 20px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.7), 0 0 20px rgba(212, 175, 55, 0.25);
+  animation: wavePillsPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  max-width: 90vw;
+}
+
+@keyframes wavePillsPop {
+  from {
+    opacity: 0;
+    transform: translateY(15px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.wave-pill-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 9999px;
+  color: #f8fafc;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+
+.wave-pill-btn:hover {
+  background: rgba(212, 175, 55, 0.25);
+  border-color: #ffd700;
+  color: #ffd700;
+  transform: translateY(-2px);
+}
+
+.wave-pill-btn.wave-style {
+  border-color: #ec4899;
+  color: #fbcfe8;
+}
+.wave-pill-btn.wave-style:hover {
+  background: rgba(236, 72, 153, 0.25);
+  color: #fff;
+}
+
+.wave-pill-btn.wave-buy {
+  border-color: #10b981;
+  color: #a7f3d0;
+}
+.wave-pill-btn.wave-buy:hover {
+  background: rgba(16, 185, 129, 0.25);
+  color: #fff;
+}
+
+.wave-pill-btn.wave-stories {
+  border-color: #ffd700;
+  color: #ffd700;
+}
+.wave-pill-btn.wave-stories:hover {
+  background: #ffd700;
+  color: #120817;
+}
+
+.wave-pill-btn.wave-finish {
+  background: #d4af37;
+  color: #120817;
+  border-color: #ffd700;
+}
+.wave-pill-btn.wave-finish:hover {
+  background: #ffd700;
+  transform: scale(1.04);
+}
+
+/* ========================================================================= */
+/* WHATSAPP STATUS STYLE "TODAY'S TRIALS" STORIES CAROUSEL                   */
+/* ========================================================================= */
+.today-stories-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1500;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: fadeInStories 0.25s ease;
+}
+
+@keyframes fadeInStories {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.today-stories-container {
+  width: 100vw;
+  height: 100vh;
+  max-width: 560px;
+  position: relative;
+  background: #000;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.9);
+}
+
+/* Segmented Progress Bars (WhatsApp Status Bar) */
+.stories-segmented-bars-row {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 12px;
+  z-index: 60;
+  display: flex;
+  gap: 5px;
+}
+
+.story-segment-bar-bg {
+  flex: 1;
+  height: 3.5px;
+  background: rgba(255, 255, 255, 0.28);
+  border-radius: 9999px;
+  overflow: hidden;
+}
+
+.story-segment-bar-fill {
+  height: 100%;
+  background: #ffd700;
+  border-radius: 9999px;
+  transition: width 0.1s linear;
+}
+
+/* Story Top Header */
+.story-top-header {
+  position: absolute;
+  top: 24px;
+  left: 16px;
+  right: 16px;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.story-brand-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.story-brand-crest {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid #ffd700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(212, 175, 55, 0.2);
+  color: #ffd700;
+  overflow: hidden;
+}
+
+.story-crest-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.story-brand-texts {
+  display: flex;
+  flex-direction: column;
+}
+
+.story-brand-name {
+  color: #ffffff;
+  font-size: 0.92rem;
+  font-weight: 700;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+}
+
+.story-time-hint {
+  color: #ffd700;
+  font-size: 0.72rem;
+  text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+}
+
+.btn-close-story {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: #fff;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-close-story:hover {
+  background: rgba(239, 68, 68, 0.7);
+  border-color: #ef4444;
+}
+
+/* Left & Right Tap Zones for Navigation */
+.story-tap-zone {
+  position: absolute;
+  top: 70px;
+  bottom: 120px;
+  width: 45%;
+  z-index: 40;
+  cursor: pointer;
+}
+
+.story-tap-zone.left-zone {
+  left: 0;
+}
+
+.story-tap-zone.right-zone {
+  right: 0;
+}
+
+/* Story Visual Stage */
+.story-hero-stage {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #000;
+}
+
+.story-full-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.story-watermark {
+  position: absolute;
+  top: 75px;
+  right: 18px;
+  font-family: Georgia, serif;
+  font-style: italic;
+  font-size: 0.85rem;
+  color: rgba(255, 215, 0, 0.85);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.9);
+  pointer-events: none;
+}
+
+.story-bottom-garment-card {
+  position: absolute;
+  bottom: 24px;
+  left: 18px;
+  right: 18px;
+  z-index: 50;
+  background: rgba(18, 10, 24, 0.85);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(212, 175, 55, 0.45);
+  border-radius: 16px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.7);
+}
+
+.story-card-pills {
+  display: flex;
+  gap: 8px;
+}
+
+.story-cat-badge {
+  background: rgba(212, 175, 55, 0.2);
+  color: #ffd700;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  border-radius: 9999px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+.story-price-badge {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.35);
+  border-radius: 9999px;
+  padding: 3px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.story-garment-title {
+  margin: 0;
+  color: #ffffff;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.btn-try-this-look-pulse {
+  background: linear-gradient(135deg, #d4af37 0%, #aa7c11 100%);
+  color: #120817;
+  font-weight: 700;
+  font-size: 0.88rem;
+  border: none;
+  border-radius: 10px;
+  padding: 10px;
+  cursor: pointer;
+  text-align: center;
+  transition: all 0.2s;
+  box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+}
+
+.btn-try-this-look-pulse:hover {
+  background: #ffd700;
+  transform: scale(1.02);
+}
+
+/* ========================================================================= */
+/* LIGHT THEME HIGH CONTRAST & MOBILE READABILITY ENHANCEMENTS               */
+/* ========================================================================= */
+.kiosk-app-wrapper.light-theme {
+  color: #1e293b;
+}
+
+.kiosk-app-wrapper.light-theme .glass-panel {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(180, 140, 50, 0.35) !important;
+  color: #1e293b !important;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08) !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-kiosk-floating-quick-menu {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(180, 140, 50, 0.5) !important;
+  color: #1e293b !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12) !important;
+}
+
+.kiosk-app-wrapper.light-theme .store-name-fab {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+.kiosk-app-wrapper.light-theme .kiosk-quick-drawer-card {
+  background: rgba(255, 255, 255, 0.98) !important;
+  border-left-color: rgba(180, 140, 50, 0.4) !important;
+  color: #0f172a !important;
+}
+
+.kiosk-app-wrapper.light-theme .quick-store-title {
+  color: #0f172a !important;
+}
+
+.kiosk-app-wrapper.light-theme .quick-kiosk-badge {
+  color: #475569 !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-close-quick-drawer {
+  background: rgba(0, 0, 0, 0.06) !important;
+  border-color: rgba(0, 0, 0, 0.15) !important;
+  color: #0f172a !important;
+}
+
+.kiosk-app-wrapper.light-theme .quick-session-info-box {
+  background: rgba(248, 250, 252, 0.9) !important;
+  border-color: rgba(180, 140, 50, 0.25) !important;
+}
+
+.kiosk-app-wrapper.light-theme .q-lbl {
+  color: #64748b !important;
+}
+
+.kiosk-app-wrapper.light-theme .q-val {
+  color: #92400e !important;
+  font-weight: 700 !important;
+}
+
+.kiosk-app-wrapper.light-theme .quick-action-item {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+.kiosk-app-wrapper.light-theme .q-act-text strong {
+  color: #0f172a !important;
+}
+
+.kiosk-app-wrapper.light-theme .q-act-text small {
+  color: #64748b !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-quick-chip {
+  background: #fef3c7 !important;
+  border-color: #d97706 !important;
+  color: #92400e !important;
+}
+
+.kiosk-app-wrapper.light-theme .result-floating-qr-card {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(180, 140, 50, 0.5) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+}
+
+.kiosk-app-wrapper.light-theme .qr-floating-heading {
+  color: #92400e !important;
+}
+
+.kiosk-app-wrapper.light-theme .qr-floating-hint {
+  color: #475569 !important;
+}
+
+.kiosk-app-wrapper.light-theme .mini-input-thumb-card {
+  background: #ffffff !important;
+  border-color: rgba(180, 140, 50, 0.45) !important;
+}
+
+.kiosk-app-wrapper.light-theme .mini-thumb-label {
+  background: rgba(255, 255, 255, 0.92) !important;
+  color: #0f172a !important;
+  border-top-color: rgba(180, 140, 50, 0.3) !important;
+}
+
+.kiosk-app-wrapper.light-theme .action-wave-pills-arc {
+  background: rgba(255, 255, 255, 0.96) !important;
+  border-color: rgba(180, 140, 50, 0.45) !important;
+  box-shadow: 0 10px 35px rgba(0, 0, 0, 0.15) !important;
+}
+
+.kiosk-app-wrapper.light-theme .wave-pill-btn {
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
+  color: #1e293b !important;
+}
+
+.kiosk-app-wrapper.light-theme .wave-pill-btn:hover {
+  background: #fef3c7 !important;
+  border-color: #d97706 !important;
+  color: #92400e !important;
+}
+
+/* ==============================================================================
+   ACCESSIBLE TRY-ON ERROR BANNER (LIGHT & DARK THEMES)
+   ============================================================================== */
+.tryon-error-banner.kiosk-error-accessible {
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  border-radius: 16px;
+  text-align: center;
+  background: rgba(220, 38, 38, 0.12);
+  border: 1.5px solid rgba(220, 38, 38, 0.45);
+  box-shadow: 0 8px 24px rgba(220, 38, 38, 0.1);
+}
+
+.kiosk-app-wrapper.light-theme .tryon-error-banner.kiosk-error-accessible {
+  background: #fef2f2 !important;
+  border: 1.5px solid #ef4444 !important;
+  box-shadow: 0 10px 25px rgba(239, 68, 68, 0.12) !important;
+}
+
+.tryon-error-icon {
+  font-size: 2.5rem;
+  display: block;
+  margin-bottom: 0.5rem;
+}
+
+.tryon-error-title {
+  font-size: 1.25rem;
+  margin-bottom: 0.5rem;
+  font-weight: 700;
+  color: #fca5a5;
+}
+
+.kiosk-app-wrapper.light-theme .tryon-error-title {
+  color: #991b1b !important;
+}
+
+.tryon-error-desc {
+  font-size: 0.95rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+  color: #e2e8f0;
+}
+
+.kiosk-app-wrapper.light-theme .tryon-error-desc {
+  color: #374151 !important;
+  font-weight: 500;
+}
+
+.tryon-error-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* ==============================================================================
+   TODAY'S TRIALS & QR RECOVERY DRAWER STYLES
+   ============================================================================== */
+.recent-trials-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 5, 12, 0.85);
+  backdrop-filter: blur(16px);
+  z-index: 2500;
+  display: flex;
+  justify-content: flex-end;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.recent-trials-drawer {
+  width: min(540px, 92vw);
+  height: 100vh;
+  background: rgba(22, 12, 25, 0.95);
+  border-left: 1px solid rgba(212, 175, 55, 0.35);
+  box-shadow: -15px 0 40px rgba(0, 0, 0, 0.6);
+  display: flex;
+  flex-direction: column;
+  animation: slideInRight 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.kiosk-app-wrapper.light-theme .recent-trials-drawer {
+  background: rgba(255, 255, 255, 0.98);
+  border-left: 1px solid rgba(212, 175, 55, 0.4);
+  box-shadow: -15px 0 40px rgba(70, 40, 55, 0.15);
+}
+
+.drawer-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 24px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.kiosk-app-wrapper.light-theme .drawer-header-row {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.drawer-header-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.drawer-header-title .header-icon {
+  font-size: 2rem;
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.2), rgba(168, 85, 247, 0.2));
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.drawer-header-title h3 {
+  margin: 0 0 4px 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--color-gold-light, #ffd700);
+}
+
+.kiosk-app-wrapper.light-theme .drawer-header-title h3 {
+  color: #7b1836;
+}
+
+.drawer-header-title p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--color-text-secondary, #94a3b8);
+  line-height: 1.4;
+}
+
+.btn-close-drawer-icon {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.kiosk-app-wrapper.light-theme .btn-close-drawer-icon {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+.btn-close-drawer-icon:hover {
+  transform: scale(1.08);
+  background: rgba(220, 38, 38, 0.2);
+  border-color: #ef4444;
+}
+
+.recent-trials-content-scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  scrollbar-width: thin;
+}
+
+.empty-trials-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 60px 24px;
+  color: #94a3b8;
+}
+
+.empty-trials-placeholder .empty-icon {
+  font-size: 3.5rem;
+  margin-bottom: 16px;
+  opacity: 0.6;
+}
+
+.empty-trials-placeholder h4 {
+  font-size: 1.15rem;
+  margin: 0 0 8px 0;
+  color: #e2e8f0;
+}
+
+.kiosk-app-wrapper.light-theme .empty-trials-placeholder h4 {
+  color: #1e293b;
+}
+
+.empty-trials-placeholder p {
+  font-size: 0.9rem;
+  margin: 0;
+  max-width: 320px;
+}
+
+.recent-trials-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+}
+
+.recent-trial-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  border-radius: 14px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+}
+
+.kiosk-app-wrapper.light-theme .recent-trial-card {
+  background: #ffffff;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  box-shadow: 0 4px 15px rgba(70, 40, 55, 0.06);
+}
+
+.recent-trial-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--color-gold-light, #ffd700);
+  box-shadow: 0 10px 25px rgba(212, 175, 55, 0.2);
+}
+
+.trial-thumb-box {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3/4;
+  overflow: hidden;
+  background: #0d0610;
+}
+
+.trial-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.recent-trial-card:hover .trial-thumb-img {
+  transform: scale(1.05);
+}
+
+.trial-time-pill {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  color: #ffd700;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 9999px;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+}
+
+.trial-details-box {
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.trial-saree-name {
+  font-size: 0.95rem;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.kiosk-app-wrapper.light-theme .trial-saree-name {
+  color: #1e293b;
+}
+
+.trial-cat-tag {
+  font-size: 0.8rem;
+  color: #94a3b8;
+}
+
+.btn-open-recovery-qr {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: linear-gradient(135deg, #d4af37, #aa7c11);
+  color: #120713;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-open-recovery-qr:hover {
+  transform: scale(1.02);
+  filter: brightness(1.1);
+}
+
+/* ==============================================================================
+   RECOVERY QR CODE MODAL STYLES
+   ============================================================================== */
+.recovery-qr-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 2, 7, 0.9);
+  backdrop-filter: blur(20px);
+  z-index: 3000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.25s ease-out;
+}
+
+.recovery-qr-modal {
+  position: relative;
+  width: min(720px, 94vw);
+  background: rgba(24, 12, 28, 0.95);
+  border: 1.5px solid rgba(212, 175, 55, 0.45);
+  border-radius: 24px;
+  padding: 32px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.7);
+  animation: modalScaleUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  box-sizing: border-box;
+}
+
+.kiosk-app-wrapper.light-theme .recovery-qr-modal {
+  background: #ffffff;
+  border: 1.5px solid rgba(212, 175, 55, 0.4);
+  box-shadow: 0 25px 60px rgba(70, 40, 55, 0.18);
+}
+
+.btn-close-recovery-modal {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  font-size: 1.1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.kiosk-app-wrapper.light-theme .btn-close-recovery-modal {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #1e293b;
+}
+
+.btn-close-recovery-modal:hover {
+  transform: scale(1.1);
+  background: rgba(220, 38, 38, 0.2);
+  border-color: #ef4444;
+}
+
+.recovery-modal-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.modal-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 16px;
+  border-radius: 9999px;
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  color: #ffd700;
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+}
+
+.kiosk-app-wrapper.light-theme .modal-brand-badge {
+  color: #7b1836;
+  background: rgba(123, 24, 54, 0.08);
+  border-color: rgba(123, 24, 54, 0.2);
+}
+
+.recovery-modal-header h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.kiosk-app-wrapper.light-theme .recovery-modal-header h3 {
+  color: #1e293b;
+}
+
+.recovery-modal-header .modal-subtext {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #94a3b8;
+  max-width: 480px;
+  margin: 0 auto;
+  line-height: 1.45;
+}
+
+.kiosk-app-wrapper.light-theme .recovery-modal-header .modal-subtext {
+  color: #475569;
+}
+
+.recovery-modal-body {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.recovery-look-preview-col {
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+}
+
+.recovery-preview-img {
+  width: 100%;
+  aspect-ratio: 3/4;
+  object-fit: cover;
+  border-radius: 16px;
+  border: 2px solid rgba(212, 175, 55, 0.4);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+.recovery-item-meta {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.recovery-item-meta strong {
+  font-size: 0.95rem;
+  color: #fff;
+}
+
+.kiosk-app-wrapper.light-theme .recovery-item-meta strong {
+  color: #1e293b;
+}
+
+.recovery-item-meta small {
+  font-size: 0.8rem;
+  color: #ffd700;
+}
+
+.kiosk-app-wrapper.light-theme .recovery-item-meta small {
+  color: #7b1836;
+}
+
+.recovery-qr-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.recovery-qr-box {
+  padding: 16px;
+  background: #ffffff !important;
+  border-radius: 20px;
+  border: 2px solid rgba(212, 175, 55, 0.6);
+  box-shadow: 0 12px 35px rgba(212, 175, 55, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.recovery-instruction-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 9999px;
+  background: rgba(212, 175, 55, 0.15);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  color: #ffd700;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.kiosk-app-wrapper.light-theme .recovery-instruction-pill {
+  color: #7b1836;
+  background: rgba(123, 24, 54, 0.08);
+}
+
+.wave-pill-btn.wave-qr-recovery {
+  border-color: rgba(168, 85, 247, 0.4);
+  background: rgba(168, 85, 247, 0.12);
+}
+
+.wave-pill-btn.wave-qr-recovery:hover {
+  border-color: #a855f7;
+  background: rgba(168, 85, 247, 0.25);
+  box-shadow: 0 6px 16px rgba(168, 85, 247, 0.3);
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes modalScaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+
+/* ==============================================================================
+   HIGH-END STUDIO SIDE CONSOLE STYLES (LANDSCAPE & WIDESCREEN)
+   ============================================================================== */
+.result-stage-side-console {
+  display: none; /* Hidden by default in portrait / mobile */
+}
+
+.console-garment-card {
+  padding: 14px 16px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.kiosk-app-wrapper.light-theme .console-garment-card {
+  background: #fdfaf6;
+  border: 1px solid rgba(184, 134, 11, 0.3);
+  box-shadow: 0 4px 14px rgba(70, 40, 55, 0.05);
+}
+
+.console-brand-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.console-brand-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #ffd700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kiosk-app-wrapper.light-theme .console-brand-name {
+  color: #7b1836;
+}
+
+.console-status-pill {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.15);
+  padding: 2px 8px;
+  border-radius: 9999px;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.console-garment-title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #ffffff;
+  line-height: 1.35;
+}
+
+.kiosk-app-wrapper.light-theme .console-garment-title {
+  color: #1e1320;
+}
+
+.console-badge-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.console-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
+}
+
+.console-pill.gold {
+  background: rgba(212, 175, 55, 0.18);
+  color: #ffd700;
+  border: 1px solid rgba(212, 175, 55, 0.35);
+}
+
+.kiosk-app-wrapper.light-theme .console-pill.gold {
+  color: #7b1836;
+  background: rgba(123, 24, 54, 0.08);
+  border-color: rgba(123, 24, 54, 0.2);
+}
+
+.console-price-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 4px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.kiosk-app-wrapper.light-theme .console-price-row {
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+.console-price-label {
+  font-size: 0.82rem;
+  color: #94a3b8;
+}
+
+.kiosk-app-wrapper.light-theme .console-price-label {
+  color: #64748b;
+}
+
+.console-price-val {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #ffd700;
+}
+
+.kiosk-app-wrapper.light-theme .console-price-val {
+  color: #b8860b;
+}
+
+/* Console View Mode Switcher */
+.console-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.console-section-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kiosk-app-wrapper.light-theme .console-section-label {
+  color: #64748b;
+}
+
+.console-view-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.btn-console-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.kiosk-app-wrapper.light-theme .btn-console-pill {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+}
+
+.btn-console-pill:hover {
+  background: rgba(212, 175, 55, 0.15);
+  border-color: #ffd700;
+  transform: translateY(-1px);
+}
+
+.btn-console-pill.active {
+  background: linear-gradient(135deg, #d4af37, #aa7c11) !important;
+  color: #120713 !important;
+  border-color: #ffd700 !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35) !important;
+}
+
+/* Console QR Card */
+.console-qr-card {
+  padding: 12px 14px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(212, 175, 55, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.kiosk-app-wrapper.light-theme .console-qr-card {
+  background: #fdfaf6;
+  border: 1px solid rgba(184, 134, 11, 0.3);
+}
+
+.console-qr-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.console-qr-header strong {
+  font-size: 0.85rem;
+  color: #fff;
+  display: block;
+}
+
+.kiosk-app-wrapper.light-theme .console-qr-header strong {
+  color: #1e1320;
+}
+
+.console-qr-header small {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  display: block;
+}
+
+.console-qr-box {
+  padding: 8px;
+  background: #ffffff !important;
+  border-radius: 12px;
+  border: 1.5px solid rgba(212, 175, 55, 0.5);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.console-qr-footer-hint {
+  font-size: 0.72rem;
+  color: #ffd700;
+  font-weight: 600;
+}
+
+.kiosk-app-wrapper.light-theme .console-qr-footer-hint {
+  color: #7b1836;
+}
+
+/* Console Action Buttons Grid */
+.console-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.btn-console-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.btn-console-action.gold-btn {
+  background: linear-gradient(135deg, #d4af37, #aa7c11);
+  color: #120713;
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.3);
+}
+
+.btn-console-action.amber-btn {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+}
+
+.btn-console-action.purple-btn {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: #ffffff;
+}
+
+.btn-console-action.outline-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.15);
+  color: #e2e8f0;
+}
+
+.kiosk-app-wrapper.light-theme .btn-console-action.outline-btn {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #334155;
+}
+
+.btn-console-action.danger-btn {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #fca5a5;
+}
+
+.kiosk-app-wrapper.light-theme .btn-console-action.danger-btn {
+  background: #fef2f2;
+  border-color: #ef4444;
+  color: #991b1b;
+}
+
+.btn-console-action:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+/* ==============================================================================
+   PORTRAIT MODE & MOBILE ADAPTATIONS (55" TOTEM, TABLETS, MOBILE, ROTATED LAPTOP)
+   ============================================================================== */
+@media (orientation: portrait), (max-width: 900px) {
+  .result-stage-side-console {
+    display: none !important;
+  }
+
+  .result-stage-main-canvas {
+    width: 100% !important;
+    height: 100% !important;
+    flex: 1 !important;
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .result-hero-mirror-stage {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    height: 100% !important;
+    position: relative !important;
+    overflow: hidden !important;
+  }
+
+  /* Compact View Mode Switcher Pills in Portrait: hide label, keep icon */
+  .view-pill-text {
+    display: none !important;
+  }
+
+  .btn-view-pill {
+    padding: 6px 10px !important;
+    min-width: 36px !important;
+    justify-content: center !important;
+  }
+
+  /* Non-overlapping structured positioning for bottom floating items */
+  .result-floating-mini-inputs {
+    position: absolute !important;
+    bottom: 16px !important;
+    left: 14px !important;
+    z-index: 30 !important;
+    display: flex !important;
+    gap: 8px !important;
+  }
+
+  .mini-input-thumb-card {
+    width: clamp(52px, 8vw, 68px) !important;
+    height: clamp(68px, 11vw, 88px) !important;
+    border-radius: 10px !important;
+  }
+
+  .mini-thumb-label {
+    font-size: 0.68rem !important;
+    padding: 2px 4px !important;
+  }
+
+  .result-action-wave-wrapper {
+    position: absolute !important;
+    bottom: 16px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    z-index: 40 !important;
+  }
+
+  .btn-wave-trigger-fab {
+    padding: 9px 18px !important;
+    font-size: 0.85rem !important;
+  }
+
+  .result-floating-qr-card {
+    position: absolute !important;
+    bottom: 16px !important;
+    right: 14px !important;
+    z-index: 30 !important;
+    padding: 6px 8px !important;
+    border-radius: 12px !important;
+  }
+
+  .qr-floating-heading {
+    font-size: 0.7rem !important;
+  }
+
+  .qr-floating-hint {
+    font-size: 0.62rem !important;
+  }
+
+  /* Photo inside canvas: fit comfortably with bottom padding so controls never overlap drape */
+  .result-pure-canvas-viewport {
+    padding-bottom: 110px !important;
+    padding-top: 60px !important;
+    box-sizing: border-box !important;
+  }
+
+  .result-pure-canvas-viewport img {
+    max-height: calc(100vh - 200px) !important;
+    object-fit: contain !important;
+  }
+}
+
+
+/* ==============================================================================
+   MASTER RESPONSIVE & HIGH-CONTRAST STUDIO OVERRIDES (ALL SCREENS & THEMES)
+   ============================================================================== */
+
+/* 1. Global Viewport & Scrollability: Never trap or cut off content! */
+.kiosk-app-wrapper {
+  min-height: 100vh !important;
+  height: 100vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+}
+
+.kiosk-main {
+  flex: 1 1 0% !important;
+  min-height: 0 !important;
+  width: 100% !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  padding: 12px 24px !important;
+  box-sizing: border-box !important;
+  scrollbar-width: thin !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+/* 2. Welcome Screen: 100% Fit & Visibility on 15" Laptops at 100% Zoom */
+.screen-welcome,
+.screen-welcome-master {
+  width: 100% !important;
+  max-width: 1440px !important;
+  min-height: auto !important;
+  height: auto !important;
+  overflow-y: visible !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+  gap: clamp(12px, 2vh, 24px) !important;
+  padding: 10px 16px 24px 16px !important;
+  box-sizing: border-box !important;
+}
+
+.welcome-master-grid {
+  display: grid !important;
+  grid-template-columns: minmax(240px, 320px) 1fr !important;
+  gap: clamp(16px, 2.5vw, 36px) !important;
+  align-items: center !important;
+  width: 100% !important;
+  max-width: 1320px !important;
+}
+
+.arch-gold-frame {
+  width: clamp(200px, 18vw, 280px) !important;
+  height: clamp(240px, 32vh, 320px) !important;
+  border-radius: 9999px 9999px 24px 24px !important;
+}
+
+.welcome-main-content {
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+.welcome-hero-headline {
+  font-size: clamp(1.45rem, 2.3vw, 2.15rem) !important;
+  line-height: 1.18 !important;
+  margin: 4px 0 !important;
+}
+
+.welcome-hero-subtext {
+  font-size: clamp(0.82rem, 1.1vw, 0.95rem) !important;
+  margin: 2px 0 8px 0 !important;
+  line-height: 1.35 !important;
+}
+
+.welcome-features-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 10px !important;
+  margin: 6px 0 !important;
+}
+
+.welcome-feat-card {
+  padding: 10px 14px !important;
+  border-radius: 12px !important;
+  gap: 4px !important;
+}
+
+.feat-card-icon-wrap {
+  width: 26px !important;
+  height: 26px !important;
+}
+
+.feat-card-title {
+  font-size: 0.85rem !important;
+  line-height: 1.2 !important;
+  margin: 0 !important;
+}
+
+.feat-card-desc {
+  font-size: 0.74rem !important;
+  line-height: 1.25 !important;
+  margin: 0 !important;
+}
+
+.welcome-cta-row {
+  margin-top: 8px !important;
+}
+
+.btn-begin-trial-grand {
+  padding: 12px 32px !important;
+  font-size: 1.05rem !important;
+  min-height: 48px !important;
+}
+
+.welcome-bottom-workflow-strip {
+  margin-top: 8px !important;
+}
+
+.workflow-strip-card {
+  padding: 8px 18px !important;
+}
+
+/* 3. Catalogue & Custom Garment Upload Screen: Responsive Fit & Scroll */
+.screen-catalogue {
+  width: 100% !important;
+  max-width: 1440px !important;
+  height: auto !important;
+  min-height: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  box-sizing: border-box !important;
+}
+
+.custom-input-choices {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)) !important;
+  gap: 16px !important;
+  margin: 8px 0 !important;
+}
+
+.custom-choice-card {
+  padding: 22px 18px !important;
+  border-radius: 16px !important;
+}
+
+.choice-icon-wrap {
+  font-size: 2.2rem !important;
+  margin-bottom: 8px !important;
+}
+
+.custom-preview-stage {
+  max-height: clamp(220px, 36vh, 320px) !important;
+  margin: 10px 0 !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+
+.custom-preview-image {
+  max-height: clamp(220px, 36vh, 320px) !important;
+  width: 100% !important;
+  object-fit: contain !important;
+}
+
+/* 4. Pre-Generation Review Screen (COMBINE): Proportional Fit */
+.screen-combine {
+  width: 100% !important;
+  max-width: 1440px !important;
+  height: auto !important;
+  min-height: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  box-sizing: border-box !important;
+}
+
+.combine-master-card {
+  width: 100% !important;
+  max-width: 1280px !important;
+  padding: 16px 24px !important;
+  height: auto !important;
+  min-height: auto !important;
+  box-sizing: border-box !important;
+}
+
+.combine-dual-grid {
+  display: grid !important;
+  grid-template-columns: 1fr auto 1fr !important;
+  gap: 16px !important;
+  align-items: center !important;
+  height: auto !important;
+  min-height: auto !important;
+  margin: 10px 0 !important;
+}
+
+.combine-panel {
+  height: clamp(200px, 34vh, 290px) !important;
+  max-height: 290px !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+}
+
+.combine-panel-viewport img {
+  height: 100% !important;
+  max-height: clamp(200px, 34vh, 290px) !important;
+  width: 100% !important;
+  object-fit: contain !important;
+}
+
+.combine-cta-bar {
+  margin-top: 10px !important;
+}
+
+.btn-generate-grand {
+  padding: 12px 32px !important;
+  font-size: 1.05rem !important;
+  min-height: 48px !important;
+}
+
+/* 5. Result Screen in Landscape Widescreen: 100% Clean Canvas, No Overlapping Bar */
+@media (min-width: 900px) and (orientation: landscape) {
+  /* Hide the top floating pill inside canvas in landscape since console has all controls */
+  .portrait-only-topbar {
+    display: none !important;
+  }
+
+  .result-stage-main-canvas {
+    padding: 0 !important;
+    background: radial-gradient(circle at center, #150718 0%, #060208 100%) !important;
+  }
+
+  .kiosk-app-wrapper.light-theme .result-stage-main-canvas {
+    background: radial-gradient(circle at center, #faf6f0 0%, #f3ede2 100%) !important;
+  }
+
+  .result-pure-canvas-viewport {
+    padding: 12px !important;
+    height: 100% !important;
+    max-height: calc(100vh - 96px) !important;
+  }
+
+  .result-pure-canvas-viewport img {
+    max-height: calc(100vh - 120px) !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+  }
+
+  /* Side Console: Compact vertical fit without pushing buttons off screen */
+  .result-stage-side-console {
     padding: 14px 16px !important;
-    gap: 12px !important;
+    gap: 8px !important;
   }
 
-  .wf-divider-arrow {
+  .console-garment-card {
+    padding: 10px 14px !important;
+    gap: 4px !important;
+  }
+
+  .console-garment-title {
+    font-size: 1.05rem !important;
+  }
+
+  .console-price-val {
+    font-size: 1.05rem !important;
+  }
+
+  .console-section {
+    gap: 4px !important;
+  }
+
+  .console-section-label {
+    font-size: 0.72rem !important;
+  }
+
+  .btn-console-pill {
+    padding: 6px 10px !important;
+    font-size: 0.78rem !important;
+  }
+
+  .console-qr-card {
+    padding: 8px 10px !important;
+    gap: 6px !important;
+  }
+
+  .console-qr-box {
+    padding: 6px !important;
+  }
+
+  .console-actions-grid {
+    gap: 6px !important;
+  }
+
+  .btn-console-action {
+    padding: 8px 10px !important;
+    font-size: 0.78rem !important;
+  }
+}
+
+/* 6. High-Contrast Text in Quick Menu Drawer in Light Theme */
+.kiosk-app-wrapper.light-theme .quick-menu-grand-btn {
+  background: #fdfaf6 !important;
+  border: 1.5px solid rgba(184, 134, 11, 0.45) !important;
+  box-shadow: 0 4px 15px rgba(70, 40, 55, 0.08) !important;
+}
+
+.kiosk-app-wrapper.light-theme .quick-menu-grand-btn .grand-meta strong {
+  color: #7b1836 !important;
+  font-weight: 700 !important;
+}
+
+.kiosk-app-wrapper.light-theme .quick-menu-grand-btn .grand-meta small {
+  color: #475569 !important;
+  font-weight: 500 !important;
+}
+
+.kiosk-app-wrapper.light-theme .quick-menu-grand-btn .grand-arrow {
+  color: #b8860b !important;
+}
+
+.kiosk-app-wrapper.light-theme .quick-session-info-box {
+  background: #fdfaf6 !important;
+  border: 1px solid rgba(184, 134, 11, 0.3) !important;
+}
+
+.kiosk-app-wrapper.light-theme .quick-session-info-box .q-lbl {
+  color: #64748b !important;
+}
+
+.kiosk-app-wrapper.light-theme .quick-session-info-box .q-val {
+  color: #1e1320 !important;
+  font-weight: 700 !important;
+}
+
+.kiosk-app-wrapper.light-theme .quick-action-item strong {
+  color: #1e1320 !important;
+}
+
+.kiosk-app-wrapper.light-theme .quick-action-item small {
+  color: #64748b !important;
+}
+
+.kiosk-app-wrapper.light-theme .quick-kiosk-badge {
+  color: #475569 !important;
+}
+
+/* 7. Hide floating menu trigger when Quick Menu is open */
+.btn-kiosk-floating-quick-menu {
+  position: fixed !important;
+  top: 12px !important;
+  right: 16px !important;
+  z-index: 990 !important;
+}
+
+
+/* ==============================================================================
+   ULTRA-LUXURY FULL-VIEW RESULT & BALANCED COMBINE SCREEN OVERRIDES
+   ============================================================================== */
+
+/* 1. Sleek Minimal Hamburger Button in Top Right */
+.btn-kiosk-floating-quick-menu {
+  position: fixed !important;
+  top: 14px !important;
+  right: 18px !important;
+  z-index: 1000 !important;
+  width: 46px !important;
+  height: 46px !important;
+  min-width: 46px !important;
+  min-height: 46px !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(18, 7, 22, 0.75) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.5) !important;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35) !important;
+  cursor: pointer !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-kiosk-floating-quick-menu {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(184, 134, 11, 0.45) !important;
+  box-shadow: 0 6px 20px rgba(100, 60, 20, 0.15) !important;
+}
+
+.kiosk-fab-menu-icon {
+  font-size: 1.45rem !important;
+  color: #ffd700 !important;
+  line-height: 1 !important;
+}
+
+.kiosk-app-wrapper.light-theme .kiosk-fab-menu-icon {
+  color: #7b1836 !important;
+}
+
+/* 2. Step 3 (Pre-Generation Review Screen - COMBINE): Zero Void, Centered Harmony */
+.kiosk-app-wrapper.step-combine .screen-combine,
+.screen-combine {
+  position: relative !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  width: 100% !important;
+  max-width: 1200px !important;
+  height: auto !important;
+  min-height: calc(100vh - 70px) !important;
+  max-height: none !important;
+  margin: 0 auto !important;
+  padding: clamp(16px, 2.5vh, 32px) clamp(16px, 2.5vw, 28px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-master-card,
+.combine-master-card {
+  width: 100% !important;
+  max-width: 1080px !important;
+  height: auto !important;
+  max-height: none !important;
+  margin: 0 auto !important;
+  padding: clamp(18px, 2.5vh, 28px) clamp(18px, 2.5vw, 32px) !important;
+  border-radius: 28px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+  justify-content: center !important;
+  box-sizing: border-box !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-dual-grid,
+.combine-dual-grid {
+  display: grid !important;
+  grid-template-columns: 1fr auto 1fr !important;
+  gap: clamp(16px, 2vw, 30px) !important;
+  align-items: center !important;
+  width: 100% !important;
+  height: auto !important;
+  min-height: auto !important;
+  margin: 10px 0 !important;
+  flex: none !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-panel,
+.combine-panel {
+  height: clamp(340px, 48vh, 480px) !important;
+  min-height: 320px !important;
+  max-height: 480px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 12px 14px !important;
+  border-radius: 20px !important;
+  box-sizing: border-box !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-image-frame,
+.combine-image-frame {
+  flex: 1 !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  border-radius: 16px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: radial-gradient(circle at center, #1b0a1e 0%, #060207 100%) !important;
+}
+
+.kiosk-app-wrapper.light-theme.step-combine .combine-image-frame {
+  background: radial-gradient(circle at center, #faf7f2 0%, #ede5d8 100%) !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-img,
+.combine-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-cta-bar,
+.combine-cta-bar {
+  margin-top: 14px !important;
+  display: flex !important;
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+.kiosk-app-wrapper.step-combine .btn-generate-tryon,
+.btn-generate-tryon {
+  padding: 14px 44px !important;
+  min-height: 52px !important;
+  font-size: 1.15rem !important;
+  border-radius: 9999px !important;
+}
+
+/* 3. Try-On Result Screen: 100% Clean Canvas, Full Width & Full Height */
+.screen-result {
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 100vh !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.result-hero-mirror-stage {
+  width: 100% !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  border-radius: 0 !important;
+  border: none !important;
+  background: #000 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  overflow: hidden !important;
+}
+
+.kiosk-app-wrapper.light-theme .result-hero-mirror-stage {
+  background: #fdfbf7 !important;
+}
+
+.result-stage-main-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  flex: 1 !important;
+  position: relative !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  background: #000 !important;
+}
+
+.kiosk-app-wrapper.light-theme .result-stage-main-canvas {
+  background: radial-gradient(circle at center, #faf6f0 0%, #f3ede2 100%) !important;
+}
+
+/* Hide intrusive top header bar so it never blocks customer's face or hair */
+.immersive-clean-topbar {
+  display: none !important;
+}
+
+/* The Pure Visual Canvas Viewport: 100% Full Width & Height */
+.result-pure-canvas-viewport {
+  position: relative !important;
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100vh !important;
+  flex: 1 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  background: transparent !important;
+}
+
+.result-pure-canvas-viewport img,
+.result-pure-canvas-viewport .comparison-img,
+.result-pure-canvas-viewport .split-slider-img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100vh !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+
+.split-slider-stage,
+.split-slider-container {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100vh !important;
+}
+
+/* 4. Unified Non-Intrusive Floating Bottom Dock */
+.result-floating-bottom-dock {
+  position: absolute !important;
+  bottom: 24px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 80 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 12px !important;
+  padding: 8px 14px !important;
+  border-radius: 9999px !important;
+  background: rgba(18, 7, 22, 0.82) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.45) !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6), 0 0 24px rgba(212, 175, 55, 0.2) !important;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.kiosk-app-wrapper.light-theme .result-floating-bottom-dock {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-color: rgba(184, 134, 11, 0.45) !important;
+  box-shadow: 0 12px 36px rgba(100, 60, 20, 0.16), 0 0 20px rgba(184, 134, 11, 0.15) !important;
+}
+
+.dock-pill-item {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 18px !important;
+  border-radius: 9999px !important;
+  font-size: 0.92rem !important;
+  font-weight: 600 !important;
+  color: #f1f5f9 !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  border: 1px solid rgba(212, 175, 55, 0.25) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
+}
+
+.kiosk-app-wrapper.light-theme .dock-pill-item {
+  color: #1e293b !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+  border-color: rgba(184, 134, 11, 0.3) !important;
+}
+
+.dock-pill-item:hover,
+.dock-pill-item.active {
+  background: rgba(212, 175, 55, 0.2) !important;
+  border-color: #ffd700 !important;
+  transform: translateY(-2px) !important;
+}
+
+.dock-pill-primary {
+  background: linear-gradient(135deg, #d4af37 0%, #aa7c11 100%) !important;
+  color: #170719 !important;
+  font-weight: 700 !important;
+  border: none !important;
+  box-shadow: 0 4px 18px rgba(212, 175, 55, 0.4) !important;
+}
+
+.dock-pill-primary:hover {
+  background: linear-gradient(135deg, #ffd700 0%, #c5943e 100%) !important;
+  box-shadow: 0 6px 24px rgba(212, 175, 55, 0.6) !important;
+}
+
+.dock-pill-qr {
+  background: rgba(16, 185, 129, 0.18) !important;
+  border-color: rgba(16, 185, 129, 0.45) !important;
+  color: #34d399 !important;
+}
+
+.kiosk-app-wrapper.light-theme .dock-pill-qr {
+  background: rgba(16, 185, 129, 0.12) !important;
+  color: #065f46 !important;
+}
+
+.dock-pill-qr:hover {
+  background: rgba(16, 185, 129, 0.3) !important;
+  border-color: #10b981 !important;
+}
+
+/* Widescreen Landscape Optimization */
+@media (min-width: 1024px) and (orientation: landscape) {
+  .result-hero-mirror-stage {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+  .result-stage-main-canvas {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: 100% !important;
+    margin: 0 auto !important;
+  }
+  .result-stage-side-console {
     display: none !important;
   }
 }
 
+
+
+/* ==============================================================================
+   55-INCH MONITOR MASTER RESPONSIVE & HIGH-CONTRAST SUITE (PORTRAIT & LANDSCAPE)
+   ============================================================================== */
+
+/* 1. Camera Screen: Clean Full Viewport on All Displays (No Empty Cavern Void!) */
+.screen-camera {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  min-height: calc(100vh - 80px) !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
+.camera-stage-immersive {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  max-height: calc(100vh - 80px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.45) !important;
+  background: #000000 !important;
+  position: relative !important;
+}
+
+.camera-viewport-full {
+  width: 100% !important;
+  height: 100% !important;
+  flex: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  position: relative !important;
+  border: none !important;
+  background: #000000 !important;
+}
+
+.camera-video-stream,
+.camera-viewport-full .snapshot-image {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: calc(100vh - 84px) !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+
+/* Floating Camera Controls Dock (Centered overlay at bottom - no divider clipping!) */
+.camera-floating-dock {
+  position: absolute !important;
+  bottom: 32px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 60 !important;
+  width: auto !important;
+  max-width: 92vw !important;
+  height: auto !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 16px !important;
+  padding: 12px 28px !important;
+  border-radius: 9999px !important;
+  background: rgba(18, 7, 22, 0.88) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.5) !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.65), 0 0 24px rgba(212, 175, 55, 0.2) !important;
+  box-sizing: border-box !important;
+}
+
+.kiosk-app-wrapper.light-theme .camera-floating-dock {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-color: rgba(184, 134, 11, 0.5) !important;
+  box-shadow: 0 16px 48px rgba(100, 60, 20, 0.18), 0 0 20px rgba(184, 134, 11, 0.15) !important;
+}
+
+.floating-review-actions-wrap {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 16px !important;
+  flex-wrap: wrap !important;
+}
+
+.btn-floating-review-btn {
+  padding: 14px 28px !important;
+  font-size: 1.1rem !important;
+  min-height: 52px !important;
+  border-radius: 9999px !important;
+  white-space: nowrap !important;
+  font-weight: 700 !important;
+}
+
+/* 2. Crop & Frame Modal (Proportional scaling on 55" screens) */
+.crop-modal-backdrop {
+  z-index: 1100 !important;
+}
+
+.crop-modal-dialog {
+  width: min(840px, 94vw) !important;
+  max-width: 840px !important;
+  max-height: 88vh !important;
+  border-radius: 28px !important;
+  padding: 24px 32px !important;
+}
+
+.crop-stage-container {
+  height: clamp(420px, 52vh, 650px) !important;
+  border-radius: 20px !important;
+}
+
+/* 3. Garment Selection & Custom Studio on 55" Large Displays (Eliminates 70% Beige Void) */
+@media (min-width: 1200px) or (min-height: 850px) {
+  .custom-product-studio {
+    width: 94vw !important;
+    max-width: 1480px !important;
+    min-height: clamp(600px, 72vh, 880px) !important;
+    padding: clamp(24px, 3vh, 36px) clamp(24px, 3vw, 48px) !important;
+    border-radius: 32px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
+    margin: 0 auto !important;
+  }
+
+  .preview-hero-frame {
+    width: 100% !important;
+    max-width: 960px !important;
+    height: clamp(480px, 56vh, 720px) !important;
+    border-radius: 24px !important;
+  }
+
+  .custom-preview-image {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+  }
+
+  .combine-master-card {
+    width: 94vw !important;
+    max-width: 1480px !important;
+    min-height: clamp(620px, 75vh, 920px) !important;
+    padding: clamp(24px, 3vh, 36px) clamp(24px, 3vw, 48px) !important;
+    border-radius: 32px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-evenly !important;
+    margin: 0 auto !important;
+  }
+
+  .combine-dual-grid {
+    gap: clamp(20px, 2.8vw, 44px) !important;
+    margin: 16px 0 !important;
+    flex: 1 !important;
+  }
+
+  .combine-panel {
+    height: 100% !important;
+    min-height: clamp(440px, 54vh, 700px) !important;
+    max-height: 720px !important;
+    padding: 16px 20px !important;
+    border-radius: 24px !important;
+  }
+
+  .combine-image-frame {
+    flex: 1 !important;
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+
+  .combine-img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+  }
+}
+
+/* 4. Garment Quality Validation Badges */
+.garment-validating-pill {
+  position: absolute !important;
+  bottom: 20px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  background: rgba(18, 8, 22, 0.9) !important;
+  border: 1.5px solid #d4af37 !important;
+  border-radius: 9999px !important;
+  padding: 10px 24px !important;
+  color: #ffd700 !important;
+  font-weight: 700 !important;
+  font-size: 1.05rem !important;
+  backdrop-filter: blur(16px) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  z-index: 20 !important;
+}
+
+.garment-error-pill {
+  position: absolute !important;
+  bottom: 20px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  background: rgba(220, 38, 38, 0.94) !important;
+  border: 1.5px solid #fecaca !important;
+  border-radius: 9999px !important;
+  padding: 10px 26px !important;
+  color: #ffffff !important;
+  font-weight: 800 !important;
+  font-size: 1.05rem !important;
+  backdrop-filter: blur(16px) !important;
+  box-shadow: 0 10px 30px rgba(220, 38, 38, 0.45) !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  z-index: 20 !important;
+  max-width: 90% !important;
+  text-align: center !important;
+}
+
+/* 5. Result Screen: Hide Floating Dock in Widescreen Landscape (Prevents Duplicate Controls!) */
+@media (min-width: 1024px) and (orientation: landscape) {
+  .result-floating-bottom-dock {
+    display: none !important;
+  }
+}
+
+/* 6. Bridal Styling Suite: Light Theme High-Contrast Legibility Fix */
+.kiosk-app-wrapper.light-theme .styling-drawer-card {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-left-color: rgba(184, 134, 11, 0.4) !important;
+}
+
+.kiosk-app-wrapper.light-theme .drawer-section-title {
+  color: #7b1836 !important;
+  font-weight: 800 !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-lighting-chip {
+  background: #f8fafc !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-lighting-chip .light-meta strong {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+  font-size: 1rem !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-lighting-chip .light-meta small {
+  color: #475569 !important;
+  font-weight: 600 !important;
+  font-size: 0.82rem !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-lighting-chip.active {
+  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+  border-color: #d97706 !important;
+  box-shadow: 0 4px 18px rgba(217, 119, 6, 0.3) !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-lighting-chip.active .light-meta strong {
+  color: #78350f !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-lighting-chip.active .light-meta small {
+  color: #92400e !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-drape-chip {
+  background: #f8fafc !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+.kiosk-app-wrapper.light-theme .drape-name {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+.kiosk-app-wrapper.light-theme .drape-desc {
+  color: #475569 !important;
+  font-weight: 600 !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-drape-chip.active {
+  background: #fef3c7 !important;
+  border-color: #d97706 !important;
+  color: #78350f !important;
+  box-shadow: 0 4px 18px rgba(217, 119, 6, 0.25) !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-drape-chip.active .drape-name {
+  color: #78350f !important;
+}
+
+.kiosk-app-wrapper.light-theme .btn-drape-chip.active .drape-desc {
+  color: #92400e !important;
+}
+
+.kiosk-app-wrapper.light-theme .swatch-chip {
+  background: #f8fafc !important;
+  border: 1.5px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+.kiosk-app-wrapper.light-theme .swatch-chip.active {
+  background: #fef3c7 !important;
+  border-color: #d97706 !important;
+  color: #78350f !important;
+}
+
+
+
+/* =========================================================================
+   PERFECTED 55" DISPLAY & LUXURY SHOWROOM ADAPTATIONS
+   ========================================================================= */
+
+/* 1. Custom Garment Preview Hugging: Zero Dead Black Box */
+.custom-product-preview-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 20px !important;
+  width: 100% !important;
+}
+
+.preview-hero-frame,
+.kiosk-app-wrapper .preview-hero-frame {
+  position: relative !important;
+  width: fit-content !important;
+  max-width: min(92vw, 560px) !important;
+  height: auto !important;
+  max-height: clamp(340px, 48vh, 580px) !important;
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.45) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.12) !important;
+  background: transparent !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 auto !important;
+}
+
+.light-theme .preview-hero-frame,
+.kiosk-app-wrapper.light-theme .preview-hero-frame {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.45) !important;
+  box-shadow: 0 16px 40px rgba(139, 90, 43, 0.12) !important;
+}
+
+.custom-preview-image,
+.kiosk-app-wrapper .custom-preview-image {
+  width: auto !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: clamp(340px, 48vh, 580px) !important;
+  object-fit: contain !important;
+  display: block !important;
+  border-radius: 20px !important;
+}
+
+/* 2. Step 3 (COMBINE) 55" Portrait Totem & Full Body View */
+.kiosk-app-wrapper.step-combine .screen-combine,
+.screen-combine {
+  min-height: calc(100vh - 70px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  padding: clamp(16px, 2.5vh, 32px) clamp(16px, 2.5vw, 28px) !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-master-card,
+.combine-master-card {
+  width: 100% !important;
+  max-width: 1120px !important;
+  height: auto !important;
+  min-height: clamp(640px, 78vh, 1200px) !important;
+  max-height: none !important;
+  margin: 0 auto !important;
+  padding: clamp(20px, 2.8vh, 36px) clamp(20px, 2.8vw, 40px) !important;
+  border-radius: 32px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  box-sizing: border-box !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-dual-grid,
+.combine-dual-grid {
+  display: grid !important;
+  grid-template-columns: 1fr auto 1fr !important;
+  gap: clamp(16px, 2.5vw, 36px) !important;
+  align-items: stretch !important;
+  width: 100% !important;
+  height: auto !important;
+  flex: 1 !important;
+  margin: 16px 0 !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-panel,
+.combine-panel {
+  height: 100% !important;
+  min-height: clamp(380px, 50vh, 720px) !important;
+  max-height: none !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  padding: 16px 18px !important;
+  border-radius: 24px !important;
+  box-sizing: border-box !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-image-frame,
+.combine-image-frame {
+  flex: 1 !important;
+  height: 100% !important;
+  min-height: clamp(280px, 38vh, 580px) !important;
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.kiosk-app-wrapper.light-theme.step-combine .combine-image-frame {
+  background: radial-gradient(circle at center, #faf7f2 0%, #ede5d8 100%) !important;
+}
+
+.kiosk-app-wrapper.step-combine .combine-img,
+.combine-img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100% !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+}
+
+/* 3. Result Screen Lighting & Stage Refinement for Light Theme */
+.kiosk-app-wrapper.light-theme .photo-frame,
+.kiosk-app-wrapper.light-theme .photo-frame.result-frame,
+.light-theme .photo-frame.result-frame {
+  background: radial-gradient(circle at center, #fdfbf7 0%, #f4eee2 100%) !important;
+  border: 2px solid rgba(212, 175, 55, 0.6) !important;
+  box-shadow: 0 16px 40px rgba(139, 90, 43, 0.15) !important;
+}
+
+.kiosk-app-wrapper.light-theme .split-slider-stage,
+.light-theme .split-slider-stage {
+  background: radial-gradient(circle at center, #fdfbf7 0%, #f4eee2 100%) !important;
+  border: 2px solid rgba(212, 175, 55, 0.6) !important;
+  box-shadow: 0 16px 40px rgba(139, 90, 43, 0.15) !important;
+}
+
+/* Eliminate any lingering preview-watermark overlay */
+.preview-watermark {
+  display: none !important;
+}
+
+
+/* =========================================================================
+   PERFECTED IMMERSIVE RESULT SCREEN: 100% FULL-VIEW DIGITAL MIRROR
+   (Zero Dead Space, No Scrollbars, Floating Left/Right/Bottom Widgets)
+   ========================================================================= */
+
+/* 1. Main Viewport & Stage: True 100% Full Viewport */
+.screen-result,
+.screen-result-immersive {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  position: relative !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.result-hero-mirror-stage {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100vh !important;
+  overflow: hidden !important;
+  position: relative !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  display: block !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.result-stage-main-canvas {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100vh !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: radial-gradient(circle at center, #faf6f0 0%, #f3ede2 100%) !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.result-pure-canvas-viewport {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100vh !important;
+  position: relative !important;
+  overflow: hidden !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  background: transparent !important;
+  border: none !important;
+}
+
+.result-pure-canvas-viewport .photo-frame,
+.result-pure-canvas-viewport .photo-frame.result-frame,
+.result-pure-canvas-viewport .single-stage,
+.result-pure-canvas-viewport .split-slider-stage,
+.result-pure-canvas-viewport .split-slider-container {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100vh !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.result-pure-canvas-viewport img,
+.result-pure-canvas-viewport .comparison-img,
+.result-pure-canvas-viewport .split-slider-img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100% !important;
+  max-height: 100vh !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  border-radius: 0 !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+/* Hide desktop side console so canvas takes 100% space on all devices */
+.result-stage-side-console {
+  display: none !important;
+}
+
+/* 2. Floating Left Vertical Stack (Saree on Top, Customer Photo on Bottom) */
+.result-floating-left-stack {
+  position: absolute !important;
+  left: clamp(14px, 2vw, 32px) !important;
+  bottom: clamp(80px, 10vh, 120px) !important;
+  z-index: 90 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 14px !important;
+  pointer-events: auto !important;
+}
+
+.floating-thumb-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  padding: 6px !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.5) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.12), 0 0 16px rgba(212, 175, 55, 0.15) !important;
+  cursor: pointer !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  user-select: none !important;
+}
+
+.floating-thumb-card:hover,
+.floating-thumb-card.active {
+  transform: translateY(-2px) scale(1.05) !important;
+  border-color: #ffd700 !important;
+  box-shadow: 0 14px 36px rgba(212, 175, 55, 0.4) !important;
+}
+
+.thumb-img-wrap {
+  width: clamp(68px, 6vw, 92px) !important;
+  height: clamp(84px, 7.5vh, 115px) !important;
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  background: #000 !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+.thumb-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  display: block !important;
+}
+
+.thumb-label {
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  margin-top: 4px !important;
+  white-space: nowrap !important;
+  text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8) !important;
+}
+
+/* 3. Floating Right QR Code Card */
+.result-floating-right-qr {
+  position: absolute !important;
+  right: clamp(14px, 2vw, 32px) !important;
+  bottom: clamp(80px, 10vh, 120px) !important;
+  z-index: 90 !important;
+  pointer-events: auto !important;
+}
+
+.floating-qr-card {
+  padding: 12px 14px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.5) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.14), 0 0 20px rgba(212, 175, 55, 0.16) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 6px !important;
+  text-align: center !important;
+}
+
+.qr-header-mini {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.qr-title-mini {
+  font-size: 0.78rem !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+}
+
+.qr-code-box-mini {
+  background: #ffffff !important;
+  padding: 6px !important;
+  border-radius: 14px !important;
+  border: 1px solid rgba(0, 0, 0, 0.06) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.qr-sub-mini {
+  font-size: 0.68rem !important;
+  color: #64748b !important;
+  font-weight: 600 !important;
+}
+
+/* 4. Unified Floating Bottom Action Dock */
+.result-floating-bottom-dock {
+  position: absolute !important;
+  bottom: 20px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 100 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  max-width: 95vw !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  padding: 8px 16px !important;
+  border-radius: 9999px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1.5px solid rgba(184, 134, 11, 0.45) !important;
+  box-shadow: 0 12px 36px rgba(100, 60, 20, 0.16), 0 0 20px rgba(184, 134, 11, 0.15) !important;
+  pointer-events: auto !important;
+}
+
+.dock-pill-item {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  padding: 10px 18px !important;
+  border-radius: 9999px !important;
+  font-size: 0.92rem !important;
+  font-weight: 600 !important;
+  color: #1e293b !important;
+  background: rgba(0, 0, 0, 0.04) !important;
+  border: 1px solid rgba(184, 134, 11, 0.3) !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  white-space: nowrap !important;
+}
+
+.dock-pill-item:hover,
+.dock-pill-item.active {
+  background: rgba(212, 175, 55, 0.25) !important;
+  border-color: #d4af37 !important;
+  transform: translateY(-2px) !important;
+}
+
+.dock-pill-primary {
+  background: linear-gradient(135deg, #d4af37 0%, #aa7c11 100%) !important;
+  color: #170719 !important;
+  font-weight: 700 !important;
+  border: none !important;
+  box-shadow: 0 4px 18px rgba(212, 175, 55, 0.4) !important;
+}
+
+.dock-pill-primary:hover {
+  background: linear-gradient(135deg, #ffd700 0%, #c5943e 100%) !important;
+  box-shadow: 0 6px 24px rgba(212, 175, 55, 0.6) !important;
+}
+
+.dock-pill-amber {
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border: none !important;
+}
+
+.dock-pill-amber:hover {
+  background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%) !important;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.5) !important;
+}
+
+.dock-pill-danger {
+  color: #dc2626 !important;
+  border-color: rgba(220, 38, 38, 0.3) !important;
+  background: rgba(220, 38, 38, 0.06) !important;
+}
+
+.dock-pill-danger:hover {
+  background: rgba(220, 38, 38, 0.15) !important;
+  border-color: #dc2626 !important;
+}
+
+
+/* =========================================================================
+   PERFECTED MINIMALIST CAMERA CONTROLS OVERLAY (PORTRAIT & LANDSCAPE)
+   (Zero White Box Background, Timer on Top, Clean Floating Icon-Only Dock)
+   ========================================================================= */
+
+/* 1. Top Floating Bar with Timer Strip Prominently Centered */
+.camera-floating-top-bar {
+  position: absolute !important;
+  top: clamp(16px, 2.5vh, 32px) !important;
+  left: clamp(16px, 2.5vw, 36px) !important;
+  right: clamp(16px, 2.5vw, 36px) !important;
+  z-index: 50 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  pointer-events: none !important;
+}
+
+.camera-floating-top-bar > * {
+  pointer-events: auto !important;
+}
+
+.camera-timer-pill-strip {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 5px 12px !important;
+  border-radius: 9999px !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1.5px solid rgba(212, 175, 55, 0.5) !important;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), 0 0 16px rgba(212, 175, 55, 0.15) !important;
+}
+
+.btn-timer-pill-floating {
+  padding: 6px 14px !important;
+  border-radius: 9999px !important;
+  border: none !important;
+  background: transparent !important;
+  color: #334155 !important;
+  font-size: 0.88rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+.btn-timer-pill-floating:hover {
+  background: rgba(212, 175, 55, 0.15) !important;
+  color: #1e293b !important;
+}
+
+.btn-timer-pill-floating.active {
+  background: linear-gradient(135deg, #d4af37 0%, #aa7c11 100%) !important;
+  color: #120713 !important;
+  box-shadow: 0 2px 10px rgba(212, 175, 55, 0.45) !important;
+}
+
+/* 2. Bottom Floating Controls: 100% Transparent Over Camera Feed (NO White Capsule Card!) */
+.camera-floating-dock:not(.review-mode) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.kiosk-app-wrapper.light-theme .camera-floating-dock:not(.review-mode) {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.camera-floating-controls-bottom {
+  position: absolute !important;
+  bottom: clamp(28px, 4.5vh, 52px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 60 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: clamp(28px, 5vw, 60px) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: auto !important;
+}
+
+/* 3. Circular Sleek Glassmorphic Action Buttons (Upload & Retry) */
+.camera-circle-icon-btn {
+  width: clamp(62px, 6vw, 76px) !important;
+  height: clamp(62px, 6vw, 76px) !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.9) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 2px solid rgba(212, 175, 55, 0.6) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22), 0 0 18px rgba(212, 175, 55, 0.2) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  user-select: none !important;
+}
+
+.camera-circle-icon-btn:hover {
+  transform: scale(1.12) !important;
+  border-color: #ffd700 !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 14px 36px rgba(212, 175, 55, 0.5), 0 0 24px rgba(212, 175, 55, 0.3) !important;
+}
+
+.camera-circle-icon-btn:active {
+  transform: scale(0.92) !important;
+}
+
+.camera-circle-icon-btn .circle-btn-icon {
+  font-size: clamp(1.6rem, 2vw, 2rem) !important;
+  line-height: 1 !important;
+  display: block !important;
+}
+
+/* 4. Center Grand Gold Shutter Button */
+.btn-floating-shutter-gold {
+  background: transparent !important;
+  border: none !important;
+  cursor: pointer !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.btn-floating-shutter-gold .shutter-gold-outer {
+  width: clamp(88px, 8.5vw, 108px) !important;
+  height: clamp(88px, 8.5vw, 108px) !important;
+  border-radius: 50% !important;
+  border: 4px solid #d4af37 !important;
+  padding: 5px !important;
+  box-shadow: 0 0 32px rgba(212, 175, 55, 0.65), 0 8px 24px rgba(0, 0, 0, 0.45) !important;
+  transition: all 0.2s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: rgba(212, 175, 55, 0.15) !important;
+}
+
+.btn-floating-shutter-gold .shutter-gold-core {
+  width: 100% !important;
+  height: 100% !important;
+  border-radius: 50% !important;
+  background: linear-gradient(135deg, #fce084 0%, #d4af37 50%, #997517 100%) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  color: #1b0a1e !important;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.6) !important;
+}
+
+.btn-floating-shutter-gold .shutter-gold-icon {
+  font-size: clamp(2rem, 2.4vw, 2.6rem) !important;
+  line-height: 1 !important;
+}
+
+.btn-floating-shutter-gold:hover .shutter-gold-outer {
+  transform: scale(1.08) !important;
+  border-color: #ffd700 !important;
+  box-shadow: 0 0 44px rgba(212, 175, 55, 0.85), 0 10px 28px rgba(0, 0, 0, 0.55) !important;
+}
+
+.btn-floating-shutter-gold:active .shutter-gold-outer {
+  transform: scale(0.94) !important;
+}
+
+
+/* =========================================================================
+   ACCESSIBLE 55" TOTEM CAMERA & REVIEW CONTROLS (WAIST HEIGHT CLUSTER)
+   ========================================================================= */
+
+/* 1. Two-Tier Bottom Camera Controls Stack (Waist-height on 55" totem) */
+.camera-floating-dock-stack {
+  position: absolute !important;
+  bottom: clamp(24px, 4.5vh, 48px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 60 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 14px !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: auto !important;
+}
+
+.camera-floating-controls-bottom {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: clamp(18px, 3.5vw, 42px) !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  pointer-events: auto !important;
+}
+
+.camera-floating-controls-bottom.review-controls {
+  position: absolute !important;
+  bottom: clamp(28px, 4.5vh, 52px) !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 60 !important;
+}
+
+/* 2. Sleek Circular Glassmorphic Icon Buttons (No words, floating directly over camera) */
+.camera-circle-icon-btn {
+  width: clamp(58px, 6vw, 72px) !important;
+  height: clamp(58px, 6vw, 72px) !important;
+  border-radius: 50% !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 2px solid rgba(212, 175, 55, 0.6) !important;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.22), 0 0 16px rgba(212, 175, 55, 0.2) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  cursor: pointer !important;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  user-select: none !important;
+}
+
+.camera-circle-icon-btn:hover {
+  transform: scale(1.12) !important;
+  border-color: #ffd700 !important;
+  background: rgba(255, 255, 255, 0.98) !important;
+  box-shadow: 0 14px 36px rgba(212, 175, 55, 0.5), 0 0 24px rgba(212, 175, 55, 0.3) !important;
+}
+
+.camera-circle-icon-btn:active {
+  transform: scale(0.92) !important;
+}
+
+.camera-circle-icon-btn .circle-btn-icon {
+  font-size: clamp(1.4rem, 1.8vw, 1.85rem) !important;
+  line-height: 1 !important;
+  display: block !important;
+  color: #1e293b !important;
+}
+
+.camera-circle-icon-btn.confirm-icon-btn {
+  background: linear-gradient(135deg, #f6e27a 0%, #d4af37 50%, #aa7c11 100%) !important;
+  border-color: #ffd700 !important;
+  box-shadow: 0 10px 32px rgba(212, 175, 55, 0.55) !important;
+}
+
+.camera-circle-icon-btn.confirm-icon-btn .circle-btn-icon {
+  color: #1b0a1e !important;
+  font-weight: 800 !important;
+}
+
+.camera-circle-icon-btn.disabled-pose {
+  opacity: 0.5 !important;
+  filter: grayscale(0.6) !important;
+}
+
+/* 3. Pose Quality Warning Panel: Positioned on the Bottom-Right Side */
+.pose-issue-panel {
+  position: absolute !important;
+  top: auto !important;
+  left: auto !important;
+  right: clamp(16px, 2.5vw, 36px) !important;
+  bottom: clamp(120px, 15vh, 170px) !important;
+  max-width: min(88vw, 380px) !important;
+  z-index: 80 !important;
+  margin: 0 !important;
+}
+
+.pose-minimized-chip {
+  position: absolute !important;
+  top: auto !important;
+  left: auto !important;
+  right: clamp(16px, 2.5vw, 36px) !important;
+  bottom: clamp(120px, 15vh, 170px) !important;
+  z-index: 80 !important;
+}
+
+/* 4. Desktop Only Top Back Button */
+@media (min-width: 1024px) {
+  .btn-floating-back.desktop-only {
+    display: inline-flex !important;
+  }
+}
+@media (orientation: portrait) {
+  .btn-floating-back.desktop-only {
+    display: none !important;
+  }
+}
+
+/* ==============================================================================
+   SCREEN 3: CATALOGUE - BOTTOM-UP ACCESSIBLE KIOSK ERGONOMICS (55" TOTEM & DESKTOP)
+   ============================================================================== */
+.screen-catalogue {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+  position: relative !important;
+  gap: 0 !important;
+}
+
+.catalogue-stage-area {
+  flex: 1 1 auto !important;
+  min-height: 0 !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  padding: clamp(12px, 2vh, 24px) clamp(16px, 2.5vw, 32px) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 16px !important;
+}
+
+.saree-grid-container {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)) !important;
+  gap: clamp(16px, 2vw, 24px) !important;
+  padding-bottom: 24px !important;
+  width: 100% !important;
+}
+
+.saree-card {
+  border-radius: 20px !important;
+  overflow: hidden !important;
+  display: flex !important;
+  flex-direction: column !important;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease !important;
+  cursor: pointer !important;
+}
+
+.saree-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 30px rgba(212, 175, 55, 0.25) !important;
+}
+
+.saree-image-wrap {
+  width: 100% !important;
+  height: clamp(260px, 32vh, 340px) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.saree-card-img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  transition: transform 0.4s ease !important;
+}
+
+.saree-card:hover .saree-card-img {
+  transform: scale(1.05) !important;
+}
+
+/* Accessible Bottom Dock pinned at waist height */
+.catalogue-bottom-dock {
+  flex-shrink: 0 !important;
+  width: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 10px !important;
+  padding: 12px clamp(16px, 3vw, 36px) 16px !important;
+  background: rgba(18, 7, 19, 0.94) !important;
+  backdrop-filter: blur(20px) !important;
+  -webkit-backdrop-filter: blur(20px) !important;
+  border-top: 1.5px solid var(--border-gold-subtle) !important;
+  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.5) !important;
+  z-index: 40 !important;
+  box-sizing: border-box !important;
+}
+
+.kiosk-app-wrapper.light-theme .catalogue-bottom-dock {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-top: 1.5px solid rgba(179, 135, 40, 0.35) !important;
+  box-shadow: 0 -12px 36px rgba(100, 70, 30, 0.15) !important;
+}
+
+/* Category Filter Bar */
+.category-filters-scroll {
+  display: flex !important;
+  gap: 10px !important;
+  overflow-x: auto !important;
+  padding: 4px 2px !important;
+  scrollbar-width: none !important;
+  -webkit-overflow-scrolling: touch !important;
+  align-items: center !important;
+  justify-content: flex-start !important;
+}
+
+.category-filters-scroll::-webkit-scrollbar {
+  display: none !important;
+}
+
+.filter-pill {
+  flex-shrink: 0 !important;
+  background: rgba(255, 255, 255, 0.06) !important;
+  border: 1px solid var(--border-gold-subtle) !important;
+  color: var(--color-text-secondary) !important;
+  padding: 10px 20px !important;
+  border-radius: 999px !important;
+  font-size: 0.92rem !important;
+  font-weight: 600 !important;
+  white-space: nowrap !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+  touch-action: manipulation !important;
+}
+
+.filter-pill.active {
+  background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-gold-dark) 100%) !important;
+  color: #120713 !important;
+  font-weight: 800 !important;
+  border-color: var(--color-gold-light) !important;
+  box-shadow: 0 4px 16px rgba(212, 175, 55, 0.35) !important;
+}
+
+/* Bottom Touch Bar */
+.catalogue-touch-bar {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 16px !important;
+  width: 100% !important;
+  padding: 8px 16px !important;
+  border-radius: 999px !important;
+  box-sizing: border-box !important;
+}
+
+.product-mode-switcher-bar {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: rgba(0, 0, 0, 0.28) !important;
+  padding: 5px !important;
+  border-radius: 999px !important;
+  border: 1px solid var(--border-gold-subtle) !important;
+}
+
+.btn-mode-tab {
+  padding: 10px 22px !important;
+  border-radius: 999px !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--color-text-muted) !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  transition: all 0.25s ease !important;
+  touch-action: manipulation !important;
+}
+
+.btn-mode-tab.active {
+  background: linear-gradient(135deg, var(--color-gold) 0%, var(--color-gold-dark) 100%) !important;
+  color: #120713 !important;
+  font-weight: 800 !important;
+  box-shadow: 0 4px 14px rgba(212, 175, 55, 0.35) !important;
+}
+
+.customer-portrait-pill {
+  cursor: pointer !important;
+  transition: transform 0.2s ease !important;
+}
+
+.customer-portrait-pill:hover {
+  transform: scale(1.04) !important;
+}
+
+.pill-change-text {
+  font-size: 0.78rem !important;
+  color: var(--color-gold-light) !important;
+  text-decoration: underline !important;
+}
+
+/* Custom Product Studio Layout */
+.custom-product-studio {
+  flex: 1 1 auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  align-items: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 480px !important;
+  padding: 24px !important;
+  border-radius: 28px !important;
+  box-sizing: border-box !important;
+}
+
+.custom-input-choices {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+  gap: 24px !important;
+  width: 100% !important;
+  max-width: 800px !important;
+  margin: auto !important;
+}
+
+.custom-choice-card {
+  padding: 36px 24px !important;
+  border-radius: 24px !important;
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 16px !important;
+}
+
+.custom-choice-card .choice-icon {
+  font-size: 3rem !important;
+}
+
+.custom-product-preview-card {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 100% !important;
+  height: 100% !important;
+  gap: 14px !important;
+}
+
+.preview-hero-frame {
+  flex: 1 1 auto !important;
+  width: 100% !important;
+  max-width: 780px !important;
+  height: clamp(340px, 50vh, 600px) !important;
+  max-height: clamp(340px, 50vh, 600px) !important;
+  border-radius: 24px !important;
+  overflow: hidden !important;
+  background: #000000 !important;
+  border: 1.5px solid var(--border-gold-subtle) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.custom-preview-image {
+  max-height: 100% !important;
+  max-width: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  object-fit: contain !important;
+}
+
+.preview-validation-status {
+  display: flex !important;
+  justify-content: center !important;
+  width: 100% !important;
+}
+
+.garment-validating-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 8px 20px !important;
+  border-radius: 999px !important;
+  background: rgba(234, 179, 8, 0.16) !important;
+  border: 1.5px solid rgba(234, 179, 8, 0.45) !important;
+  color: #fde047 !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+}
+
+.garment-error-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 8px 20px !important;
+  border-radius: 999px !important;
+  background: rgba(239, 68, 68, 0.18) !important;
+  border: 1.5px solid rgba(239, 68, 68, 0.45) !important;
+  color: #fca5a5 !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  max-width: 90% !important;
+  text-align: center !important;
+}
+
+.garment-success-pill {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  padding: 8px 20px !important;
+  border-radius: 999px !important;
+  background: rgba(34, 197, 94, 0.18) !important;
+  border: 1.5px solid rgba(34, 197, 94, 0.45) !important;
+  color: #86efac !important;
+  font-size: 0.95rem !important;
+  font-weight: 700 !important;
+}
+
+.preview-actions-bar {
+  display: flex !important;
+  align-items: center !important;
+  gap: 14px !important;
+  flex-wrap: wrap !important;
+  justify-content: center !important;
+  margin-top: 6px !important;
+}
+
+.preview-actions-bar button {
+  min-height: 52px !important;
+  padding: 12px 24px !important;
+  font-size: 1rem !important;
+  border-radius: 999px !important;
+}
+
+.dock-pill-purple {
+  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%) !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  border: none !important;
+  box-shadow: 0 4px 16px rgba(124, 58, 237, 0.4) !important;
+}
+
+.dock-pill-purple:hover {
+  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%) !important;
+  box-shadow: 0 6px 20px rgba(124, 58, 237, 0.6) !important;
+  transform: translateY(-2px) !important;
+}
+
+/* =========================================================================
+   TRUE 100% ZERO-OVERFLOW FULL VIEWPORT ENGINE FOR RESULT SCREEN
+   (Eliminates 1680px/1080px Container Collision on 55" & 4K Screens)
+   ========================================================================= */
+.kiosk-app-wrapper.step-result,
+.kiosk-app-wrapper.step-result .kiosk-main,
+.kiosk-app-wrapper.step-result .kiosk-totem-container,
+.kiosk-app-wrapper.step-result .screen-result,
+.kiosk-app-wrapper.step-result .screen-result-immersive,
+.kiosk-app-wrapper.step-result .result-hero-mirror-stage,
+.kiosk-app-wrapper.step-result .result-stage-main-canvas {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  min-width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: radial-gradient(circle at center, #faf6f0 0%, #f3ede2 100%) !important;
+}
+
+/* Ensure dark theme has its luxury background */
+.kiosk-app-wrapper.step-result:not(.light-theme),
+.kiosk-app-wrapper.step-result:not(.light-theme) .result-stage-main-canvas {
+  background: radial-gradient(circle at center, #150718 0%, #060208 100%) !important;
+}
+
+/* Hide desktop side console permanently on result screen */
+.kiosk-app-wrapper.step-result .result-stage-side-console {
+  display: none !important;
+}
+
+/* Pure Canvas Viewport: Perfectly Centered In Viewport */
+.kiosk-app-wrapper.step-result .result-pure-canvas-viewport {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  max-width: 100vw !important;
+  max-height: 100vh !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+  z-index: 10 !important;
+}
+
+/* Photo Stage Container */
+.kiosk-app-wrapper.step-result .result-pure-canvas-viewport .photo-frame,
+.kiosk-app-wrapper.step-result .result-pure-canvas-viewport .photo-frame.result-frame,
+.kiosk-app-wrapper.step-result .result-pure-canvas-viewport .single-stage,
+.kiosk-app-wrapper.step-result .result-pure-canvas-viewport .split-slider-stage,
+.kiosk-app-wrapper.step-result .result-pure-canvas-viewport .split-slider-container {
+  width: 100vw !important;
+  max-width: 100vw !important;
+  height: 100vh !important;
+  max-height: 100vh !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+/* Customer Photo / Drape Image: SCALES TO FULL VIEWPORT HEIGHT MAINTAINING ASPECT RATIO */
+.kiosk-app-wrapper.step-result .result-pure-canvas-viewport img,
+.kiosk-app-wrapper.step-result .result-pure-canvas-viewport .comparison-img,
+.kiosk-app-wrapper.step-result .result-pure-canvas-viewport .split-slider-img {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: 100vw !important;
+  max-height: calc(100vh - 110px) !important;
+  object-fit: contain !important;
+  object-position: center center !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  display: block !important;
+}
+
+/* Floating Left Thumbnails (Anchored relative to real screen) */
+.kiosk-app-wrapper.step-result .result-floating-left-stack {
+  position: fixed !important;
+  left: clamp(16px, 2.5vw, 36px) !important;
+  bottom: clamp(90px, 12vh, 120px) !important;
+  z-index: 9990 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 12px !important;
+  pointer-events: auto !important;
+}
+
+/* Floating Right QR Card: ALWAYS VISIBLE ON SCREEN (Fixed to true viewport) */
+.kiosk-app-wrapper.step-result .result-floating-right-qr {
+  position: fixed !important;
+  z-index: 9995 !important;
+  pointer-events: auto !important;
+  display: flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+@media (orientation: landscape) {
+  .kiosk-app-wrapper.step-result .result-floating-right-qr {
+    right: clamp(20px, 3vw, 48px) !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    bottom: auto !important;
+  }
+}
+
+@media (orientation: portrait), (max-width: 900px) {
+  .kiosk-app-wrapper.step-result .result-floating-right-qr {
+    right: clamp(14px, 2vw, 24px) !important;
+    bottom: clamp(90px, 12vh, 120px) !important;
+    top: auto !important;
+    transform: none !important;
+  }
+}
+
+.floating-qr-card {
+  padding: 12px 14px !important;
+  background: #ffffff !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 2px solid #d4af37 !important;
+  border-radius: 20px !important;
+  box-shadow: 0 14px 40px rgba(0, 0, 0, 0.22), 0 0 24px rgba(212, 175, 55, 0.28) !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  gap: 8px !important;
+  text-align: center !important;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.floating-qr-card:hover {
+  transform: translateY(-3px) scale(1.04) !important;
+  border-color: #ffd700 !important;
+  box-shadow: 0 18px 48px rgba(212, 175, 55, 0.45) !important;
+}
+
+.qr-header-mini {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+}
+
+.qr-pulse-dot {
+  width: 8px !important;
+  height: 8px !important;
+  background: #10b981 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 0 10px #10b981 !important;
+  animation: pulseDot 1.5s infinite !important;
+}
+
+.qr-title-mini {
+  font-size: 0.82rem !important;
+  font-weight: 700 !important;
+  color: #1e293b !important;
+  letter-spacing: 0.3px !important;
+}
+
+.qr-code-box-mini {
+  background: #ffffff !important;
+  padding: 4px !important;
+  border-radius: 12px !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.qr-sub-mini {
+  font-size: 0.72rem !important;
+  color: #64748b !important;
+  font-weight: 600 !important;
+}
+
+/* Unified Floating Bottom Dock: ALWAYS IN EXACT SCREEN CENTER & NEVER CLIPPED */
+.kiosk-app-wrapper.step-result .result-floating-bottom-dock {
+  position: fixed !important;
+  bottom: 20px !important;
+  left: 50% !important;
+  transform: translateX(-50%) !important;
+  z-index: 9999 !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 10px !important;
+  max-width: calc(100vw - 32px) !important;
+  width: auto !important;
+  box-sizing: border-box !important;
+  padding: 8px 16px !important;
+  border-radius: 9999px !important;
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(24px) !important;
+  -webkit-backdrop-filter: blur(24px) !important;
+  border: 1.5px solid rgba(184, 134, 11, 0.45) !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.2), 0 0 20px rgba(212, 175, 55, 0.25) !important;
+  overflow-x: auto !important;
+  overflow-y: hidden !important;
+  scrollbar-width: none !important;
+}
+
+.kiosk-app-wrapper.step-result .result-floating-bottom-dock::-webkit-scrollbar {
+  display: none !important;
+}
+
+.kiosk-app-wrapper.step-result .dock-pill-item {
+  flex-shrink: 0 !important;
+  padding: 8px 14px !important;
+  font-size: 0.88rem !important;
+  white-space: nowrap !important;
+}

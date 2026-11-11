@@ -1,4 +1,4 @@
-<div class="kiosk-app-wrapper" [class.reach-mode-enabled]="isReachModeActive()" [class.light-theme]="isLightTheme()" (click)="onUserInteraction()" (touchstart)="onUserInteraction()">
+<div class="kiosk-app-wrapper" [class.reach-mode-enabled]="isReachModeActive()" [class.light-theme]="isLightTheme()" [class.step-combine]="kioskService.currentStep() === 'COMBINE'" [class.step-result]="kioskService.currentStep() === 'RESULT'" (click)="onUserInteraction()" (touchstart)="onUserInteraction()">
   <!-- Top Reach Mode Active Banner (Dismissible by tap) -->
   @if (isReachModeActive()) {
     <div class="reach-mode-indicator-bar" (click)="toggleReachMode()" id="reach-mode-banner">
@@ -7,14 +7,19 @@
     </div>
   }
 
-  <!-- Top Showroom Kiosk Header Bar -->
-  <header class="kiosk-header">
+  <!-- Top Showroom Kiosk Header Bar (Auto-hidden in Kiosk Mode, accessible on top-edge hover or via Quick Menu) -->
+  <header
+    class="kiosk-header"
+    [class.kiosk-auto-hidden]="!isAdminMode() && !isHeaderHovered()"
+    (mouseenter)="isHeaderHovered.set(true)"
+    (mouseleave)="isHeaderHovered.set(false)"
+  >
     <div class="header-brand">
-      <div class="brand-crest" [class.has-custom-logo]="!!customStoreLogo()">
+      <div class="brand-crest" [class.has-custom-logo]="!!customStoreLogo()" (click)="onSecretLogoTap($event)" title="NeXooAi Fashion">
         @if (customStoreLogo()) {
           <img [src]="customStoreLogo()" alt="Store Logo" class="brand-crest-logo" />
         } @else {
-          <img src="assets/images/nexooai_logo.svg" alt="NeXooAi Logo" class="brand-crest-logo" />
+          <img src="assets/images/nexooai_icon.png" alt="NeXooAi Logo" class="brand-crest-logo" />
         }
       </div>
       <div class="brand-text">
@@ -23,37 +28,52 @@
       </div>
     </div>
 
+    <!-- Showroom & Staff Login Identity Chip (Shown ONLY in Admin Mode) -->
+    @if (isAdminMode()) {
+    <div class="header-auth-badge glass-panel" [title]="'Authenticated Floor Session: ' + (authShopName() || authShopId())">
+      <div class="auth-badge-icon">
+        {{ authUserRole() === 'super_admin' ? '👑' : (authUserRole() === 'kiosk_terminal' ? '🖥️' : '🏢') }}
+      </div>
+      <div class="auth-badge-info">
+        <div class="auth-badge-store-row">
+          <span class="auth-store-label">{{ authShopName() || (authUserRole() === 'super_admin' ? 'Super Admin HQ' : (authUserRole() === 'kiosk_terminal' ? 'Floor Kiosk Terminal' : 'Showroom Kiosk')) }}</span>
+          <span class="auth-tenant-chip" [class.super]="authUserRole() === 'super_admin'" [class.terminal]="authUserRole() === 'kiosk_terminal'">
+            {{ authUserRole() === 'super_admin' ? 'HQ MASTER' : (authUserRole() === 'kiosk_terminal' ? 'KIOSK MIRROR' : (authShopId() || 'SHOP')) }}
+          </span>
+        </div>
+        <div class="auth-badge-user-row">
+          <span class="auth-user-label">👤 {{ authUserName() || 'Authorized Floor Staff' }}</span>
+          <button type="button" class="btn-kiosk-signout" (click)="logoutKiosk()" title="Sign Out & Lock Kiosk">
+            🚪 Sign Out
+          </button>
+        </div>
+      </div>
+    </div>
+    }
+
+
+
     <div class="header-controls">
       <!-- Kiosk Status Indicator -->
-      <div class="status-indicator">
+      <div class="status-indicator" [title]="'kioskReady' | translate">
         <span class="pulse-dot"></span>
         <span class="status-text">{{ 'kioskReady' | translate }}</span>
       </div>
 
-      <!-- Ergonomic Reachability Mode Toggle (For Tall Showroom Displays) -->
+      <!-- Ergonomic Reachability Mode Toggle (Icon Button) -->
       <button
         class="btn-reach-toggle"
         (click)="toggleReachMode()"
         [class.active]="isReachModeActive()"
         id="btn-reach-toggle"
-        [title]="t().reachModeBtn"
+        [title]="isReachModeActive() ? ('restoreStandardHeight' | translate) : ('reachModeBtn' | translate)"
       >
         <span class="reach-icon">♿</span>
-        <span class="reach-btn-text">{{ isReachModeActive() ? ('restoreStandardHeight' | translate) : ('reachModeBtn' | translate) }}</span>
       </button>
 
-      <!-- Exit to Public Home -->
-      <a
-        href="/"
-        class="btn-kiosk-home"
-        id="btn-kiosk-home"
-        title="Exit to NeXooAi Home Portal"
-      >
-        <span class="home-icon">⌂</span>
-        <span class="home-label">Home</span>
-      </a>
 
-      <!-- Theme Switcher (Dark <-> Light) -->
+
+      <!-- Theme Switcher (Compact Icon Button) -->
       <button
         class="btn-theme-toggle"
         (click)="toggleTheme()"
@@ -62,10 +82,9 @@
         [title]="isLightTheme() ? t().darkThemeBtn : t().lightThemeBtn"
       >
         <span class="theme-icon">{{ isLightTheme() ? '🌙' : '☀️' }}</span>
-        <span class="theme-label">{{ isLightTheme() ? ('darkThemeLabel' | translate) : ('lightThemeLabel' | translate) }}</span>
       </button>
 
-      <!-- Multi-Language Selector (English, Tamil, Hindi, Malayalam, Telugu) -->
+      <!-- Multi-Language Selector (Compact Icon Button) -->
       <div class="lang-selector-wrapper">
         <button
           class="btn-lang-toggle"
@@ -75,8 +94,7 @@
           type="button"
         >
           <span class="lang-icon">🌐</span>
-          <span class="lang-flag">{{ translationService.currentLangInfo().flag }}</span>
-          <span class="lang-label">{{ translationService.currentLangInfo().label }}</span>
+          <span class="lang-code">{{ translationService.currentLanguage().toUpperCase() }}</span>
           <span class="lang-arrow">▾</span>
         </button>
 
@@ -124,19 +142,14 @@
         </button>
       }
 
-      <!-- Lock Showroom Kiosk Device Button -->
+      <!-- Lock Showroom Kiosk Device Button (Icon Pill) -->
       @if (kioskService.isKioskUnlocked() && !isAdminMode()) {
         <button class="btn-lock-device" (click)="lockKioskDevice()" id="btn-lock-kiosk-device" [title]="t().lockKioskBtn">
           <span>🔒</span>
-          <span>{{ 'lockKioskBtn' | translate }}</span>
         </button>
       }
 
-      <!-- Unobtrusive Store Admin Portal Toggle Button (PIN Protected) -->
-      <button class="btn-admin-toggle" (click)="openAdminPinModal()" id="btn-admin-toggle" [title]="t().adminPortalBtn">
-        <span>🛡️</span>
-        <span>{{ isAdminMode() ? ('adminExitBtn' | translate) : ('adminPortalTitle' | translate) }}</span>
-      </button>
+
 
       <!-- Mobile Hamburger Menu Trigger (Only visible on mobile/tablet <= 860px) -->
       <button
@@ -150,6 +163,158 @@
       </button>
     </div>
   </header>
+
+  <!-- Kiosk Floating Quick Menu Trigger (Always available in Kiosk Mode) -->
+  @if (!isAdminMode() && !isKioskQuickMenuOpen()) {
+    <button
+      type="button"
+      class="btn-kiosk-floating-quick-menu glass-panel"
+      (click)="toggleKioskQuickMenu()"
+      title="Menu"
+      id="btn-kiosk-quick-menu-trigger"
+      aria-label="Menu"
+    >
+      @if (customStoreLogo()) {
+        <img [src]="customStoreLogo()" alt="Logo" class="mini-crest-fab" />
+      }
+      <span class="kiosk-fab-menu-icon">&#x2630;</span>
+    </button>
+  }
+
+  <!-- Kiosk Quick Menu Drawer / Modal -->
+  @if (isKioskQuickMenuOpen()) {
+    <div class="kiosk-quick-drawer-backdrop" (click)="closeKioskQuickMenu()">
+      <div class="kiosk-quick-drawer-card glass-panel" (click)="$event.stopPropagation()">
+        <!-- Header -->
+        <div class="quick-drawer-header">
+          <div class="quick-drawer-brand">
+            <div class="quick-crest">
+              @if (customStoreLogo()) {
+                <img [src]="customStoreLogo()" alt="Store Logo" class="quick-crest-img" />
+              } @else {
+                <span>✦</span>
+              }
+            </div>
+            <div>
+              <h3 class="quick-store-title">{{ customStoreName() || t().appName }}</h3>
+              <p class="quick-kiosk-badge">
+                <span>🖥️ {{ authUserRole() === 'kiosk_terminal' ? 'Floor Totem Mirror' : (authShopName() || 'Showroom Terminal') }}</span>
+                <span class="dot-online">● Online</span>
+              </p>
+            </div>
+          </div>
+          <button type="button" class="btn-close-quick-drawer" (click)="closeKioskQuickMenu()" aria-label="Close Menu">✕</button>
+        </div>
+
+        <!-- Authorized Session Info Box -->
+        <div class="quick-session-info-box">
+          <div class="q-info-row">
+            <span class="q-lbl">👤 Authorized User:</span>
+            <span class="q-val">{{ authUserName() || 'Showroom Floor Associate' }}</span>
+          </div>
+          <div class="q-info-row">
+            <span class="q-lbl">🏬 Location:</span>
+            <span class="q-val">{{ storeCityForm() || 'Showroom Main Floor' }}</span>
+          </div>
+        </div>
+
+        <!-- Quick Actions List -->
+        <div class="quick-drawer-actions-list">
+          <!-- Multi-Language Selector -->
+          <div class="quick-action-item">
+            <span class="q-act-icon">🌐</span>
+            <div class="q-act-text">
+              <strong>Language / மொழி</strong>
+              <small>{{ translationService.currentLangInfo().label }}</small>
+            </div>
+            <button type="button" class="btn-quick-chip" (click)="toggleLanguageMenu()">
+              Change ▾
+            </button>
+          </div>
+
+          <!-- Theme Switcher -->
+          <div class="quick-action-item">
+            <span class="q-act-icon">{{ isLightTheme() ? '🌙' : '☀️' }}</span>
+            <div class="q-act-text">
+              <strong>{{ isLightTheme() ? 'Dark Theme' : 'Light Theme' }}</strong>
+              <small>{{ isLightTheme() ? 'Switch to Midnight Gold' : 'Switch to Pearl Ivory' }}</small>
+            </div>
+            <button type="button" class="btn-quick-chip" (click)="toggleTheme()">
+              {{ isLightTheme() ? 'Dark' : 'Light' }}
+            </button>
+          </div>
+
+          <!-- Today's Trials Lookbook Stories -->
+          <button type="button" class="quick-menu-grand-btn gold-glow" (click)="openTodayStories(); closeKioskQuickMenu()">
+            <span class="grand-icon">✨</span>
+            <div class="grand-meta">
+              <strong>{{ translationService.currentLanguage() === 'ta' ? 'இன்றைய டிரையல்கள் (Stories)' : "Today's Trials (Lookbook Stories)" }}</strong>
+              <small>Browse recent customer saree drape looks</small>
+            </div>
+            <span class="grand-arrow">➔</span>
+          </button>
+
+          <!-- Today's Trials & QR Recovery Button -->
+          <button type="button" class="quick-menu-grand-btn purple-glow" (click)="openRecentTrialsDrawer(); closeKioskQuickMenu()">
+            <span class="grand-icon">📲</span>
+            <div class="grand-meta">
+              <strong>{{ translationService.currentLanguage() === 'ta' ? 'இன்றைய டிரையல்கள் & QR மீட்பு' : "Today's Trials & QR Recovery" }}</strong>
+              <small>{{ translationService.currentLanguage() === 'ta' ? 'முந்தைய வாடிக்கையாளர் படங்களை எடுத்து QR ஸ்கேன் செய்ய' : 'View past try-ons & scan their QR codes' }}</small>
+            </div>
+            <span class="grand-arrow">➔</span>
+          </button>
+
+          <!-- Reachability / Accessibility Mode -->
+          <div class="quick-action-item">
+            <span class="q-act-icon">♿</span>
+            <div class="q-act-text">
+              <strong>Reach Mode (Lower UI)</strong>
+              <small>Ergonomic height for touch comfort</small>
+            </div>
+            <button type="button" class="btn-quick-chip" [class.active]="isReachModeActive()" (click)="toggleReachMode()">
+              {{ isReachModeActive() ? 'On' : 'Off' }}
+            </button>
+          </div>
+
+          <!-- Reset Session -->
+          <div class="quick-action-item" *ngIf="kioskService.currentStep() !== 'WELCOME'">
+            <span class="q-act-icon">🔄</span>
+            <div class="q-act-text">
+              <strong>Reset Session</strong>
+              <small>Clear photo & restart for new customer</small>
+            </div>
+            <button type="button" class="btn-quick-chip danger" (click)="finishSession(); closeKioskQuickMenu()">
+              Reset
+            </button>
+          </div>
+
+          <!-- Lock Kiosk -->
+          <div class="quick-action-item">
+            <span class="q-act-icon">🔒</span>
+            <div class="q-act-text">
+              <strong>Lock Kiosk</strong>
+              <small>Staff 4-Digit PIN required to unlock</small>
+            </div>
+            <button type="button" class="btn-quick-chip" (click)="lockKioskDevice(); closeKioskQuickMenu()">
+              Lock
+            </button>
+          </div>
+
+          <!-- Sign Out -->
+          <div class="quick-action-item">
+            <span class="q-act-icon">🚪</span>
+            <div class="q-act-text">
+              <strong>Sign Out Floor Kiosk</strong>
+              <small>Exit to login & switch showroom</small>
+            </div>
+            <button type="button" class="btn-quick-chip danger" (click)="logoutKiosk(); closeKioskQuickMenu()">
+              Sign Out
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
 
   <!-- ========================================================================= -->
   <!-- MOBILE LUXURY SLIDE-OUT NAVIGATION DRAWER (OFF-CANVAS)                     -->
@@ -176,6 +341,13 @@
           <div class="drawer-section">
             <span class="drawer-section-title">{{ translationService.currentLanguage() === 'ta' ? 'அமைப்புகள் & நிர்வாகம்' : 'Quick Actions & Settings' }}</span>
 
+            <!-- Exit to Home Portal -->
+            <a href="/" class="drawer-menu-item" (click)="closeMobileDrawer()">
+              <span class="drawer-item-icon">⌂</span>
+              <span class="drawer-item-text">Exit to Home Portal</span>
+              <span class="drawer-item-arrow">→</span>
+            </a>
+
             <!-- Theme Switcher -->
             <button class="drawer-menu-item" (click)="toggleTheme(); closeMobileDrawer()">
               <span class="drawer-item-icon">{{ isLightTheme() ? '🌙' : '☀️' }}</span>
@@ -199,12 +371,7 @@
               </button>
             }
 
-            <!-- Store Admin Portal Gateway -->
-            <button class="drawer-menu-item highlight" (click)="openAdminPinModal(); closeMobileDrawer()">
-              <span class="drawer-item-icon">🛡️</span>
-              <span class="drawer-item-text">{{ isAdminMode() ? ('adminExitBtn' | translate) : ('adminPortalTitle' | translate) }}</span>
-              <span class="drawer-item-arrow">→</span>
-            </button>
+
           </div>
 
           <!-- Language Selector Grid -->
@@ -258,6 +425,17 @@
           <h2 class="staff-gate-title">{{ t().staffGateTitle }}</h2>
           <p class="staff-gate-subtitle">{{ t().staffGateSubtitle }}</p>
 
+          <!-- Hardware Device Pairing Status -->
+          <div class="totem-pairing-status-pill">
+            @if (kioskService.pairedDeviceId(); as pId) {
+              <span class="status-icon online">🟢</span>
+              <span class="status-text">Paired Terminal: <strong>{{ kioskService.pairedDeviceName() || pId }}</strong> ({{ pId }})</span>
+            } @else {
+              <span class="status-icon warning">⚠️</span>
+              <span class="status-text">Unpaired Totem — Pair via Showroom Admin Launch URL or enter Staff PIN</span>
+            }
+          </div>
+
           <!-- 4-Dot Staff PIN Display -->
           <div class="pin-display-dots staff-dots">
             <span class="pin-dot" [class.filled]="staffPinInput().length >= 1"></span>
@@ -303,6 +481,24 @@
               <span>🔓</span>
               <span>{{ t().staffGateUnlockBtn }}</span>
             </button>
+            <button
+              type="button"
+              class="btn-demo-kiosk-bypass"
+              (click)="unlockDemoKiosk()"
+              id="btn-demo-kiosk-bypass"
+            >
+              <span>🚀</span>
+              <span>Launch Demo Kiosk</span>
+            </button>
+            <a
+              href="/login?returnUrl=/kiosk"
+              class="btn-staff-full-login"
+              id="btn-staff-full-login"
+              title="Showroom Staff & Manager Credential Sign In"
+            >
+              <span>🔐</span>
+              <span>Store Login (Username & Password)</span>
+            </a>
           </div>
 
           <p class="staff-gate-footer-hint">
@@ -2488,24 +2684,9 @@
             <div class="welcome-master-grid">
               <!-- Left Hero Arch Showcase -->
               <div class="welcome-arch-showcase">
-                <!-- Floating Left Column Captions -->
-                <div class="arch-side-captions">
-                  <div class="arch-side-group">
-                    <span class="arch-side-gold">Traditional</span>
-                    <span class="arch-side-gold">Sarees</span>
-                  </div>
-                  <div class="arch-side-group">
-                    <h3 class="arch-side-title">Modern</h3>
-                    <h3 class="arch-side-title">Technology</h3>
-                  </div>
-                  <div class="arch-side-group">
-                    <p class="arch-side-sub">A New Shopping<br>Experience</p>
-                  </div>
-                </div>
-
                 <!-- Arch Frame with Model -->
                 <div class="arch-gold-frame">
-                  <img src="assets/images/welcome_arch_model.jpg" alt="NeXooAI Luxury Silk Sarees" class="arch-model-img" />
+                  <img src="assets/images/welcome_arch_model_clean.jpg" alt="NeXooAI Luxury Silk Sarees" class="arch-model-img" />
                   <div class="arch-gold-overlay-border"></div>
                 </div>
 
@@ -2714,48 +2895,123 @@
                     </div>
                   }
                 } @else {
-                  <!-- Snapshot Review View -->
-                  <div class="snapshot-review-wrapper">
+                  <!-- Snapshot Review View with AI Quality Guard -->
+                  <div
+                    class="snapshot-review-wrapper"
+                    [class.snapshot-invalid]="poseValidation() && !isCapturedPoseValid()"
+                    [class.snapshot-valid]="isCapturedPoseValid()"
+                  >
                     <img [src]="capturedPreviewUrl()" alt="Captured Customer Photo" class="snapshot-image" />
 
-                    <!-- Pose Validation Feedback Toast (Auto-dismissible) -->
-                    @if (poseValidation(); as pv) {
-                      <div class="pose-feedback-toast" [class.success]="pv.green_tick" (click)="dismissPoseToast()">
-                        <span class="toast-tick">✓</span>
-                        <div class="toast-text">
-                          <strong>{{ translationService.currentLanguage() === 'ta' ? pv.guidance_message_ta : pv.guidance_message_en }}</strong>
-                          <small>Gemini Quality Score: {{ (pv.pose_score * 100).toFixed(0) }}%</small>
+                    <!-- Live AI Analyzing Scanner Overlay -->
+                    @if (isValidatingPose()) {
+                      <div class="pose-validating-overlay">
+                        <div class="scanner-sweep-line"></div>
+                        <div class="analyzing-status-pill">
+                          <span class="pulse-spin">⏳</span>
+                          <span>{{ translationService.currentLanguage() === 'ta' ? 'AI புகைப்படத் தரம் மற்றும் போஸ் சரிபார்க்கிறது...' : 'AI is validating photo pose and quality...' }}</span>
                         </div>
-                        <button type="button" class="btn-toast-close" (click)="dismissPoseToast(); $event.stopPropagation()">✕</button>
                       </div>
+                    }
+
+                    <!-- Quality Warning Card (When is_valid: false or green_tick: false) -->
+                    @if (poseValidation(); as pv) {
+                      @if (!isCapturedPoseValid()) {
+                        @if (!isPoseIssuePanelDismissed()) {
+                          <div class="pose-issue-panel glass-panel">
+                            <div class="issue-header-badge">
+                              <div class="issue-badge-title-wrap">
+                                <span class="badge-icon">⚠️</span>
+                                <span class="badge-title">{{ translationService.currentLanguage() === 'ta' ? 'புகைப்படம் ஏற்கப்படவில்லை' : 'Photo Posture Not Accepted' }}</span>
+                              </div>
+                              <button
+                                type="button"
+                                class="btn-dismiss-pose-issue"
+                                (click)="dismissPoseIssuePanel()"
+                                [title]="translationService.currentLanguage() === 'ta' ? 'கார்டை சுருக்கு / மறை (Minimize)' : 'Minimize Issue Warning'"
+                                aria-label="Minimize warning"
+                              >
+                                ✕
+                              </button>
+                            </div>
+
+                          <div class="issue-score-meter-box">
+                            <div class="meter-info-row">
+                              <span>{{ translationService.currentLanguage() === 'ta' ? 'AI தர மதிப்பீடு (Quality Score):' : 'AI Quality Score:' }}</span>
+                              <strong class="score-percent danger">{{ (pv.pose_score * 100).toFixed(0) }}%</strong>
+                            </div>
+                            <div class="meter-progress-track">
+                              <div class="meter-fill danger" [style.width.%]="pv.pose_score * 100"></div>
+                            </div>
+                            <small class="meter-hint">{{ translationService.currentLanguage() === 'ta' ? 'குறைந்தது 50% தரம் தேவை (Min 50% required)' : 'Minimum 50% quality required to drape' }}</small>
+                          </div>
+
+                          <div class="issue-guidance-box">
+                            <p class="guidance-main-msg">
+                              {{ translationService.currentLanguage() === 'ta' ? pv.guidance_message_ta : pv.guidance_message_en }}
+                            </p>
+                            <ul class="issue-checklist">
+                              <li>
+                                <span class="check-icon danger">✕</span>
+                                <span>{{ translationService.currentLanguage() === 'ta' ? 'கேமரா செங்குத்தாக (Portrait) இருக்க வேண்டும்' : 'Camera must be held vertically (Portrait)' }}</span>
+                              </li>
+                              <li>
+                                <span class="check-icon danger">✕</span>
+                                <span>{{ translationService.currentLanguage() === 'ta' ? 'சேலை பொருத்த முகம் மற்றும் உடல் வடிவம் தேவை' : 'Face and posture must be clearly visible' }}</span>
+                              </li>
+                              <li>
+                                <span class="check-icon safe">🔒</span>
+                                <span>{{ translationService.currentLanguage() === 'ta' ? 'டோக்கன் வீணாவதைத் தடுக்க மீண்டும் படம் எடுக்கவும்' : 'Retake photo to protect AI token quota' }}</span>
+                              </li>
+                            </ul>
+                          </div>
+                        </div>
+                        } @else {
+                          <!-- Compact Minimized Floating Warning Chip -->
+                          <button
+                            type="button"
+                            class="pose-minimized-chip"
+                            (click)="expandPoseIssuePanel()"
+                            [title]="translationService.currentLanguage() === 'ta' ? 'முழு எச்சரிக்கையைப் பார்க்க கிளிக் செய்யவும்' : 'Click to view full issue details'"
+                          >
+                            <span class="chip-icon">⚠️</span>
+                            <span class="chip-text">{{ translationService.currentLanguage() === 'ta' ? '1 சிக்கல் உள்ளது (காட்டு)' : '1 Quality Issue (View Details)' }}</span>
+                            <span class="chip-score danger">{{ (pv.pose_score * 100).toFixed(0) }}%</span>
+                          </button>
+                        }
+                      } @else {
+                        <!-- Valid Photo Success Pill -->
+                        <div class="pose-feedback-toast success">
+                          <span class="toast-tick">✓</span>
+                          <div class="toast-text">
+                            <strong>{{ translationService.currentLanguage() === 'ta' ? (pv.guidance_message_ta || 'போர்ட்ரெய்ட் தோற்றம் மிகச் சரியானது!') : (pv.guidance_message_en || 'Portrait posture confirmed!') }}</strong>
+                            <small>AI Quality Score: {{ (pv.pose_score * 100).toFixed(0) }}% — Ready for Virtual Draping</small>
+                          </div>
+                        </div>
+                      }
                     }
                   </div>
                 }
               </div>
 
-              <!-- FLOATING TOP BAR OVERLAY -->
+              <!-- FLOATING TOP BAR OVERLAY: Subtle Guidance Pill Only (Accessible at top) -->
               <div class="camera-floating-top-bar">
-                <button class="btn-floating-back" (click)="goBackFromCamera()" id="btn-camera-back" title="Go Back">
+                <button class="btn-floating-back desktop-only" (click)="goBackFromCamera()" id="btn-camera-back" title="Go Back">
                   <span class="back-arrow">←</span>
                   <span>{{ t().backBtn }}</span>
                 </button>
 
-                <!-- Shrunk Subtle Guidance Badge Pill -->
+                <!-- Subtle Guidance Badge Pill -->
                 <div class="camera-hint-floating-pill">
                   <span class="pill-sparkle">✨</span>
                   <span class="pill-text">{{ translationService.currentLanguage() === 'ta' ? 'இயற்கை வெளிச்சத்தில் நிற்கவும்' : 'Stand centered in natural lighting' }}</span>
                 </div>
-
-                <!-- Quick Upload Floating Icon Button -->
-                <button class="btn-floating-top-icon" (click)="cameraFileInput.click()" id="btn-camera-quick-upload" title="Upload Photo">
-                  <span>📁</span>
-                </button>
               </div>
 
-              <!-- FLOATING BOTTOM CONTROLS DOCK (Overlaid on top of camera feed) -->
+              <!-- ACCESSIBLE BOTTOM CAMERA CONTROLS (Waist-Height for 55" Totem & Desktop) -->
               @if (!capturedPreviewUrl()) {
-                <div class="camera-floating-dock">
-                  <!-- Floating Timer Strip -->
+                <div class="camera-floating-dock-stack">
+                  <!-- Tier 1: Timer Strip (Sitting cleanly above the action buttons with a small gap) -->
                   <div class="camera-timer-pill-strip">
                     <span class="timer-mini-label">⏱️</span>
                     <button
@@ -2788,21 +3044,33 @@
                     >10s</button>
                   </div>
 
-                  <!-- Floating Action Buttons Row -->
-                  <div class="camera-floating-actions-row">
-                    <!-- File Upload Floating Button -->
+                  <!-- Tier 2: The 4 Accessible Action Buttons (Icon-Only, Floating Directly over Camera Feed) -->
+                  <div class="camera-floating-controls-bottom">
+                    <!-- 1. Back Button (Accessible at waist height without reaching 6 feet up!) -->
                     <button
                       type="button"
-                      class="btn-floating-action-side"
-                      (click)="cameraFileInput.click()"
-                      id="btn-camera-upload"
-                      title="Upload Photo File"
+                      class="camera-circle-icon-btn back-icon-btn"
+                      (click)="goBackFromCamera()"
+                      id="btn-camera-back-bottom"
+                      [title]="t().backBtn"
+                      aria-label="Back"
                     >
-                      <span class="side-icon">📁</span>
-                      <span class="side-label">{{ t().uploadFallbackBtn }}</span>
+                      <span class="circle-btn-icon">←</span>
                     </button>
 
-                    <!-- Large Floating Shutter Button Trigger -->
+                    <!-- 2. Upload Photo Icon Button -->
+                    <button
+                      type="button"
+                      class="camera-circle-icon-btn upload-icon-btn"
+                      (click)="cameraFileInput.click()"
+                      id="btn-camera-upload"
+                      [title]="t().uploadFallbackBtn"
+                      aria-label="Upload Photo File"
+                    >
+                      <span class="circle-btn-icon">📁</span>
+                    </button>
+
+                    <!-- 3. Center Grand Gold Shutter Button -->
                     @if (isCountingDown()) {
                       <button
                         type="button"
@@ -2810,6 +3078,7 @@
                         (click)="cancelCountdown()"
                         id="btn-camera-cancel-countdown"
                         title="Cancel Countdown"
+                        aria-label="Cancel Countdown"
                       >
                         <div class="shutter-gold-outer pulse-countdown">
                           <span class="shutter-gold-icon">✕</span>
@@ -2823,46 +3092,80 @@
                         (click)="startCaptureWithTimer()"
                         id="btn-camera-capture"
                         [title]="selectedTimer() > 0 ? t().captureBtn + ' (' + selectedTimer() + 's)' : t().captureBtn"
+                        aria-label="Capture Photo"
                       >
                         <div class="shutter-gold-outer">
                           <div class="shutter-gold-core">
                             <span class="shutter-gold-icon">📷</span>
                           </div>
                         </div>
-                        <span class="shutter-gold-text">{{ selectedTimer() > 0 ? t().captureBtn + ' (' + selectedTimer() + 's)' : t().captureBtn }}</span>
                       </button>
                     }
 
-                    <!-- Camera Refresh / Retry Button -->
+                    <!-- 4. Retry / Refresh Camera Stream Button -->
                     <button
                       type="button"
-                      class="btn-floating-action-side"
+                      class="camera-circle-icon-btn retry-icon-btn"
                       (click)="retryCamera()"
-                      title="Refresh Camera Stream"
+                      id="btn-camera-retry"
+                      [title]="t().retryCameraBtn"
+                      aria-label="Refresh Camera"
                     >
-                      <span class="side-icon">🔄</span>
-                      <span class="side-label">{{ t().retryCameraBtn }}</span>
+                      <span class="circle-btn-icon">🔄</span>
                     </button>
                   </div>
                 </div>
               } @else {
-                <!-- FLOATING REVIEW ACTIONS DOCK (Overlaid on top of review photo) -->
-                <div class="camera-floating-dock review-mode">
-                  <div class="floating-review-actions-wrap">
-                    <button type="button" class="btn-floating-review-btn secondary" (click)="retakePhoto()" id="btn-camera-retake">
-                      <span class="btn-icon">🔄</span>
-                      <span>{{ t().retakeBtn }}</span>
-                    </button>
-                    <button type="button" class="btn-floating-review-btn secondary" (click)="openCropper(capturedPreviewUrl()!, 'customer')" id="btn-camera-crop">
-                      <span class="btn-icon">✂️</span>
-                      <span>{{ t().cropModalTitle }}</span>
-                    </button>
-                    <button type="button" class="btn-floating-review-btn primary" (click)="confirmPhotoAndProceed()" id="btn-camera-confirm">
-                      <span class="btn-icon">🥻</span>
-                      <span>{{ t().confirmPhotoBtn }}</span>
-                      <span class="btn-arrow">➔</span>
-                    </button>
-                  </div>
+                <!-- FLOATING REVIEW CONTROLS (Icon-Only Floating Action Dock) -->
+                <div class="camera-floating-controls-bottom review-controls">
+                  <!-- Retake Photo (Icon Button) -->
+                  <button
+                    type="button"
+                    class="camera-circle-icon-btn retake-icon-btn"
+                    (click)="retakePhoto()"
+                    id="btn-camera-retake"
+                    [title]="t().retakeBtn"
+                    aria-label="Retake Photo"
+                  >
+                    <span class="circle-btn-icon">🔄</span>
+                  </button>
+
+                  <!-- Adjust Crop & Frame (Icon Button) -->
+                  <button
+                    type="button"
+                    class="camera-circle-icon-btn crop-icon-btn"
+                    (click)="openCropper(capturedPreviewUrl()!, 'customer')"
+                    id="btn-camera-crop"
+                    [title]="translationService.currentLanguage() === 'ta' ? 'படம் வெட்டு & அளவு' : 'Adjust Crop & Frame'"
+                    aria-label="Crop Photo"
+                  >
+                    <span class="circle-btn-icon">✂️</span>
+                  </button>
+
+                  <!-- Upload Different File (Icon Button) -->
+                  <button
+                    type="button"
+                    class="camera-circle-icon-btn upload-icon-btn"
+                    (click)="cameraFileInput.click()"
+                    id="btn-camera-review-upload"
+                    [title]="translationService.currentLanguage() === 'ta' ? 'வேறொரு படம் பதிவேற்றவும்' : 'Upload Different Photo'"
+                    aria-label="Upload Photo"
+                  >
+                    <span class="circle-btn-icon">📁</span>
+                  </button>
+
+                  <!-- Confirm & Proceed (Gold Button - only enabled when valid) -->
+                  <button
+                    type="button"
+                    class="camera-circle-icon-btn confirm-icon-btn btn-gold"
+                    [class.disabled-pose]="poseValidation() && !isCapturedPoseValid()"
+                    (click)="confirmPhotoAndProceed()"
+                    id="btn-camera-confirm"
+                    [title]="translationService.currentLanguage() === 'ta' ? 'சேலையைத் தேர்வு செய்யவும்' : t().confirmPhotoBtn"
+                    aria-label="Confirm Photo"
+                  >
+                    <span class="circle-btn-icon">✓</span>
+                  </button>
                 </div>
               }
 
@@ -2898,306 +3201,319 @@
         <!-- ------------------------------------------------------------------- -->
         @else if (kioskService.currentStep() === 'CATALOGUE') {
           <div class="screen-catalogue">
-            <!-- Screen Toolbar with Back Button & Customer Avatar -->
-            <div class="catalogue-toolbar glass-panel">
-              <button class="btn-nav-back" (click)="goBackFromCatalogue()" id="btn-catalogue-back">
-                <span>←</span>
-                <span>{{ t().backBtn }}</span>
-              </button>
-
-              <div class="catalogue-heading-group">
-                <h2 class="catalogue-title">{{ t().catalogueTitle }}</h2>
-                <p class="catalogue-subtitle">{{ t().catalogueSubtitle }}</p>
-              </div>
-
-              <!-- Customer Avatar Pill -->
-              @if (kioskService.customerPhotoDataUrl(); as avatarUrl) {
-                <div class="customer-portrait-pill">
-                  <img [src]="avatarUrl" alt="Customer Avatar" class="pill-avatar" />
-                  <div class="pill-info">
-                    <span class="pill-tag">{{ 'yourPhotoLabel' | translate }}</span>
-                    <button class="pill-change-btn" (click)="retakePhoto()">{{ t().changePhotoBtn }}</button>
+            <!-- Stage Area (Fills upper screen, scrolls upwards above bottom dock) -->
+            <div class="catalogue-stage-area">
+              <!-- API Connectivity Alert Banner -->
+              @if (!isApiConnected()) {
+                <div class="api-offline-banner glass-panel" id="api-offline-alert" style="margin-bottom: 1.2rem; display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border: 1px solid rgba(220, 38, 38, 0.4); background: rgba(220, 38, 38, 0.1); border-radius: 14px;">
+                  <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 1.5rem;">⚠️</span>
+                    <div>
+                      <strong style="color: #fca5a5; display: block;">{{ apiErrorMessage() }}</strong>
+                      <small style="color: #e2e8f0;">{{ 'apiOfflineTitle' | translate }}</small>
+                    </div>
                   </div>
-                </div>
-              }
-            </div>
-
-            <!-- Product Selection Mode Switcher (Catalog vs Custom Product) -->
-            <div class="product-mode-switcher-bar">
-              <button
-                class="btn-mode-tab"
-                [class.active]="productSelectionMode() === 'catalog'"
-                (click)="setProductSelectionMode('catalog')"
-                id="tab-catalog"
-              >
-                <span>🥻</span>
-                <span>{{ t().selectFromCatalog }}</span>
-              </button>
-              <button
-                class="btn-mode-tab"
-                [class.active]="productSelectionMode() === 'custom'"
-                (click)="setProductSelectionMode('custom')"
-                id="tab-custom-product"
-              >
-                <span>✨📷</span>
-                <span>{{ t().uploadCustomProduct }}</span>
-              </button>
-            </div>
-
-            <!-- API Connectivity Alert Banner -->
-            @if (!isApiConnected()) {
-              <div class="api-offline-banner glass-panel" id="api-offline-alert" style="margin-bottom: 1.2rem; display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.5rem; border: 1px solid rgba(220, 38, 38, 0.4); background: rgba(220, 38, 38, 0.1); border-radius: 14px;">
-                <div style="display: flex; align-items: center; gap: 12px;">
-                  <span style="font-size: 1.5rem;">⚠️</span>
-                  <div>
-                    <strong style="color: #fca5a5; display: block;">{{ apiErrorMessage() }}</strong>
-                    <small style="color: #e2e8f0;">{{ 'apiOfflineTitle' | translate }}</small>
-                  </div>
-                </div>
-                <button type="button" class="btn-gold" style="padding: 0.5rem 1rem; font-size: 0.9rem;" (click)="reloadCatalog()">
-                  <span>🔄</span>
-                  <span>{{ 'retryConnectionBtn' | translate }}</span>
-                </button>
-              </div>
-            }
-
-            <!-- MODE A: SHOWROOM PRODUCT CATALOGUE -->
-            @if (productSelectionMode() === 'catalog') {
-              <!-- Category Filter Tabs (Loaded dynamically from database API) -->
-              <div class="category-filters-scroll">
-                <button
-                  class="filter-pill"
-                  [class.active]="activeCategory() === 'all'"
-                  (click)="filterCategory('all')"
-                >
-                  {{ t().allCategories }}
-                </button>
-                @if (categories().length > 0) {
-                  @for (cat of categories(); track cat.id) {
-                    <button
-                      class="filter-pill"
-                      [class.active]="activeCategory() === cat.name_en"
-                      (click)="filterCategory(cat.name_en)"
-                    >
-                      ✦ {{ translationService.currentLanguage() === 'ta' ? cat.name_ta : cat.name_en }}
-                    </button>
-                  }
-                }
-              </div>
-
-              <!-- Garment Cards Grid or Empty Catalog State -->
-              @if (displayedCatalog().length === 0) {
-                <div class="catalog-empty-card glass-panel">
-                  <span class="empty-icon">🥻</span>
-                  <h3>{{ t().emptyCatalogTitle }}</h3>
-                  <p>{{ 'reloadCatalogueHint' | translate }}</p>
-                  <button class="btn-gold" (click)="reloadCatalog()" id="btn-reload-catalog">
+                  <button type="button" class="btn-gold" style="padding: 0.5rem 1rem; font-size: 0.9rem;" (click)="reloadCatalog()">
                     <span>🔄</span>
-                    <span>{{ t().reloadCatalogBtn }}</span>
+                    <span>{{ 'retryConnectionBtn' | translate }}</span>
                   </button>
                 </div>
-              } @else {
-                <div class="saree-grid-container">
-                  @for (item of displayedCatalog(); track item.id) {
-                    <div class="saree-card glass-panel" (click)="selectSaree(item)">
-                      <div class="saree-image-wrap">
-                        <img [src]="item.primary_image_url" [alt]="item.name_en" class="saree-card-img" />
-                        <span class="saree-category-badge">{{ item.category }}</span>
-                        <span class="saree-sku-tag">{{ item.sku }}</span>
-                      </div>
+              }
 
-                      <div class="saree-card-body">
-                        <h3 class="saree-card-title">
-                          {{ translationService.currentLanguage() === 'ta' ? item.name_ta : item.name_en }}
-                        </h3>
-
-                        <div class="saree-meta-tags">
-                          <span class="meta-tag"><strong>{{ t().fabricLabel }}</strong> {{ item.fabric }}</span>
-                          <span class="meta-tag"><strong>{{ t().colorLabel }}</strong> {{ item.color }}</span>
-                          @if (item.pallu_type) {
-                            <span class="meta-tag"><strong>{{ t().palluLabel }}</strong> {{ item.pallu_type }}</span>
-                          }
+              <!-- MODE A: SHOWROOM PRODUCT CATALOGUE -->
+              @if (productSelectionMode() === 'catalog') {
+                @if (displayedCatalog().length === 0) {
+                  <div class="catalog-empty-card glass-panel">
+                    <span class="empty-icon">🥻</span>
+                    <h3>{{ t().emptyCatalogTitle }}</h3>
+                    <p>{{ 'reloadCatalogueHint' | translate }}</p>
+                    <button class="btn-gold" (click)="reloadCatalog()" id="btn-reload-catalog">
+                      <span>🔄</span>
+                      <span>{{ t().reloadCatalogBtn }}</span>
+                    </button>
+                  </div>
+                } @else {
+                  <div class="saree-grid-container">
+                    @for (item of displayedCatalog(); track item.id) {
+                      <div class="saree-card glass-panel" (click)="selectSaree(item)">
+                        <div class="saree-image-wrap">
+                          <img [src]="item.primary_image_url" [alt]="item.name_en" class="saree-card-img" />
+                          <span class="saree-category-badge">{{ item.category }}</span>
+                          <span class="saree-sku-tag">{{ item.sku }}</span>
                         </div>
 
-                        <div class="saree-footer">
-                          <div class="saree-price-block">
-                            <span class="price-currency">₹</span>
-                            <span class="price-amount">{{ item.price.toLocaleString('en-IN') }}</span>
+                        <div class="saree-card-body">
+                          <h3 class="saree-card-title">
+                            {{ translationService.currentLanguage() === 'ta' ? item.name_ta : item.name_en }}
+                          </h3>
+
+                          <div class="saree-meta-tags">
+                            <span class="meta-tag"><strong>{{ t().fabricLabel }}</strong> {{ item.fabric }}</span>
+                            <span class="meta-tag"><strong>{{ t().colorLabel }}</strong> {{ item.color }}</span>
+                            @if (item.pallu_type) {
+                              <span class="meta-tag"><strong>{{ t().palluLabel }}</strong> {{ item.pallu_type }}</span>
+                            }
                           </div>
 
-                          <button class="btn-gold tryon-cta-btn">
-                            <span>🥻</span>
-                            <span>{{ t().tryThisSareeBtn }}</span>
-                          </button>
+                          <div class="saree-footer">
+                            <div class="saree-price-block">
+                              <span class="price-currency">₹</span>
+                              <span class="price-amount">{{ item.price.toLocaleString('en-IN') }}</span>
+                            </div>
+
+                            <button class="btn-gold tryon-cta-btn">
+                              <span>🥻</span>
+                              <span>{{ t().tryThisSareeBtn }}</span>
+                            </button>
+                          </div>
                         </div>
+                      </div>
+                    }
+                  </div>
+                }
+              }
+
+              <!-- MODE B: CUSTOM PRODUCT PHOTO STUDIO -->
+              @else {
+                <div class="custom-product-studio glass-panel">
+                  <!-- Hidden inputs for file upload & camera snapshot -->
+                  <input
+                    #productFileInput
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    (change)="onProductFileUpload($event)"
+                    style="display: none;"
+                    id="input-product-file"
+                  />
+                  <canvas #productCanvasElement style="display: none;"></canvas>
+
+                  <!-- Camera Permission/Availability Error Banner -->
+                  @if (productCameraError() && !kioskService.customGarmentDataUrl()) {
+                    <div class="product-camera-error-banner" id="product-camera-error">
+                      <span class="error-icon">📷⚠️</span>
+                      <div class="camera-error-text">
+                        <strong>{{ productCameraError() }}</strong>
+                        <p>{{ 'customProductCameraHint' | translate }}</p>
                       </div>
                     </div>
                   }
-                </div>
-              }
-            }
 
-            <!-- MODE B: CUSTOM PRODUCT PHOTO STUDIO -->
-            @else {
-              <div class="custom-product-studio glass-panel">
-                <!-- Hidden inputs for file upload & camera snapshot -->
-                <input
-                  #productFileInput
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  (change)="onProductFileUpload($event)"
-                  style="display: none;"
-                  id="input-product-file"
-                />
-                <canvas #productCanvasElement style="display: none;"></canvas>
-
-                <div class="custom-studio-header">
-                  <h3 class="custom-studio-title">✨ {{ t().customGarmentTitle }}</h3>
-                  <p class="custom-studio-subtitle">{{ t().customGarmentSubtitle }}</p>
-                </div>
-
-                <!-- Validation Error Banner -->
-                @if (productValidationError()) {
-                  <div class="product-error-banner" id="product-validation-error">
-                    <span class="error-icon">⚠️</span>
-                    <span class="error-msg-text">{{ productValidationError() }}</span>
-                  </div>
-                }
-
-                <!-- Camera Permission/Availability Error Banner -->
-                @if (productCameraError() && !kioskService.customGarmentDataUrl()) {
-                  <div class="product-camera-error-banner" id="product-camera-error">
-                    <span class="error-icon">📷⚠️</span>
-                    <div class="camera-error-text">
-                      <strong>{{ productCameraError() }}</strong>
-                      <p>{{ 'customProductCameraHint' | translate }}</p>
-                    </div>
-                  </div>
-                }
-
-                <!-- State 1: Choose Camera or File Upload -->
-                @if (!kioskService.customGarmentDataUrl()) {
-                  <div class="custom-input-choices">
-                    <!-- Option 1: Live Camera Studio -->
-                    <div class="custom-choice-card camera-choice" [class.camera-active]="isProductCameraActive()">
-                      <div class="choice-card-header">
-                        <span class="choice-icon">📷</span>
-                        <h4 class="choice-title">{{ t().takeProductPhotoBtn }}</h4>
-                        <p class="choice-desc">{{ t().productPhotoGuide }}</p>
-                      </div>
-
-                      @if (!isProductCameraActive()) {
-                        <button
-                          class="btn-gold btn-choice-action"
-                          (click)="startProductCamera()"
-                          id="btn-start-product-cam"
-                        >
-                          <span>📷</span>
-                          <span>{{ t().takeProductPhotoBtn }}</span>
-                        </button>
-                      } @else {
-                        <div class="product-camera-viewport">
-                          <video #productVideoElement autoplay playsinline muted class="product-video-feed"></video>
-                          <div class="product-cam-guide-box">
-                            <span class="guide-corner tl"></span>
-                            <span class="guide-corner tr"></span>
-                            <span class="guide-corner bl"></span>
-                            <span class="guide-corner br"></span>
-                            <span class="cam-guide-text">{{ t().productPhotoGuide }}</span>
+                  <!-- State 1: Choose Camera or File Upload -->
+                  @if (!kioskService.customGarmentDataUrl()) {
+                    <div class="custom-input-choices">
+                      <!-- Option 1: Live Camera Studio -->
+                      <div class="custom-choice-card camera-choice" [class.camera-active]="isProductCameraActive()">
+                        @if (!isProductCameraActive()) {
+                          <div class="choice-card-header">
+                            <span class="choice-icon">📷</span>
+                            <h4 class="choice-title">{{ t().takeProductPhotoBtn }}</h4>
+                            <p class="choice-desc">{{ t().productPhotoGuide }}</p>
                           </div>
-                        </div>
-
-                        <div class="product-cam-actions">
                           <button
-                            class="btn-gold"
-                            (click)="captureProductPhoto()"
-                            id="btn-product-shutter"
+                            class="btn-gold btn-choice-action"
+                            (click)="startProductCamera()"
+                            id="btn-start-product-cam"
                           >
-                            <span>📸</span>
+                            <span>📷</span>
                             <span>{{ t().takeProductPhotoBtn }}</span>
                           </button>
+                        } @else {
+                          <div class="product-camera-viewport">
+                            <video #productVideoElement autoplay playsinline muted class="product-video-feed"></video>
+                            <div class="product-cam-guide-box">
+                              <span class="guide-corner tl"></span>
+                              <span class="guide-corner tr"></span>
+                              <span class="guide-corner bl"></span>
+                              <span class="guide-corner br"></span>
+                              <span class="cam-guide-text">{{ t().productPhotoGuide }}</span>
+                            </div>
+                          </div>
+
+                          <div class="product-cam-actions">
+                            <button
+                              class="btn-gold"
+                              (click)="captureProductPhoto()"
+                              id="btn-product-shutter"
+                            >
+                              <span>📸</span>
+                              <span>{{ t().takeProductPhotoBtn }}</span>
+                            </button>
+                            <button
+                              class="btn-outline"
+                              (click)="stopProductCamera()"
+                              id="btn-cancel-product-cam"
+                            >
+                              <span>✕</span>
+                              <span>{{ t().backBtn }}</span>
+                            </button>
+                          </div>
+                        }
+                      </div>
+
+                      <!-- Option 2: Upload from Device Picker -->
+                      @if (!isProductCameraActive()) {
+                        <div class="custom-choice-card upload-choice">
+                          <div class="choice-card-header">
+                            <span class="choice-icon">📁</span>
+                            <h4 class="choice-title">{{ t().uploadProductPhotoBtn }}</h4>
+                            <p class="choice-desc">{{ 'customProductFormatHint' | translate }}</p>
+                          </div>
+
                           <button
-                            class="btn-outline"
-                            (click)="stopProductCamera()"
-                            id="btn-cancel-product-cam"
+                            class="btn-outline btn-choice-action"
+                            (click)="productFileInput.click()"
+                            id="btn-upload-product-file"
                           >
-                            <span>✕</span>
-                            <span>{{ t().backBtn }}</span>
+                            <span>📁</span>
+                            <span>{{ t().uploadProductPhotoBtn }}</span>
                           </button>
                         </div>
                       }
                     </div>
-
-                    <!-- Option 2: Upload from Device Picker -->
-                    <div class="custom-choice-card upload-choice">
-                      <div class="choice-card-header">
-                        <span class="choice-icon">📁</span>
-                        <h4 class="choice-title">{{ t().uploadProductPhotoBtn }}</h4>
-                        <p class="choice-desc">{{ 'customProductFormatHint' | translate }}</p>
+                  } @else {
+                    <!-- State 2: Custom Product Preview & AI Garment Validation Status -->
+                    <div class="custom-product-preview-card">
+                      <div class="preview-hero-frame">
+                        <img
+                          [src]="kioskService.customGarmentDataUrl()"
+                          alt="Custom Product Preview"
+                          class="custom-preview-image"
+                          id="img-custom-product-preview"
+                        />
                       </div>
 
-                      <button
-                        class="btn-outline btn-choice-action"
-                        (click)="productFileInput.click()"
-                        id="btn-upload-product-file"
-                      >
-                        <span>📁</span>
-                        <span>{{ t().uploadProductPhotoBtn }}</span>
-                      </button>
-                    </div>
-                  </div>
-                } @else {
-                  <!-- State 2: Custom Product Preview & Action Bar -->
-                  <div class="custom-product-preview-card">
-                    <div class="preview-hero-frame">
-                      <img
-                        [src]="kioskService.customGarmentDataUrl()"
-                        alt="Custom Product Preview"
-                        class="custom-preview-image"
-                        id="img-custom-product-preview"
-                      />
-                      <span class="preview-badge">✨ {{ t().customGarmentBadge }}</span>
-                    </div>
+                      <!-- Validation status pill positioned cleanly under preview -->
+                      <div class="preview-validation-status">
+                        @if (isValidatingGarment()) {
+                          <div class="garment-validating-pill">
+                            <span class="spinner-mini">⏳</span>
+                            <span>{{ translationService.currentLanguage() === 'ta' ? 'ஆடை தரம் AI மூலம் சரிபார்க்கப்படுகிறது...' : 'Validating garment quality with AI...' }}</span>
+                          </div>
+                        } @else if (productValidationError()) {
+                          <div class="garment-error-pill">
+                            <span>⚠️</span>
+                            <span>{{ productValidationError() }}</span>
+                          </div>
+                        } @else if (isCustomGarmentValid()) {
+                          <div class="garment-success-pill">
+                            <span>✅</span>
+                            <span>{{ translationService.currentLanguage() === 'ta' ? 'ஆடை புகைப்படம் உறுதி செய்யப்பட்டது!' : 'Garment photo verified!' }}</span>
+                          </div>
+                        }
+                      </div>
 
-                    <div class="preview-actions-bar">
+                      <!-- Custom Garment Action Bar at bottom of card -->
+                      <div class="preview-actions-bar">
+                        <button
+                          class="btn-outline"
+                          (click)="retakeProductPhoto()"
+                          id="btn-retake-product"
+                          title="Change Product Photo"
+                        >
+                          <span>🔄</span>
+                          <span>{{ t().retakeProductBtn }}</span>
+                        </button>
+                        <button
+                          class="btn-outline"
+                          (click)="productFileInput.click()"
+                          id="btn-replace-product-file"
+                        >
+                          <span>📁</span>
+                          <span>{{ t().uploadFallbackBtn }}</span>
+                        </button>
+                        <button
+                          class="btn-outline btn-remove-product"
+                          (click)="removeCustomGarment()"
+                          id="btn-remove-product"
+                        >
+                          <span>🗑️</span>
+                          <span>{{ t().removeProductBtn }}</span>
+                        </button>
+                        <button
+                          class="btn-gold"
+                          [disabled]="isValidatingGarment() || !isCustomGarmentValid()"
+                          (click)="confirmCustomProductAndProceed()"
+                          id="btn-confirm-custom-product"
+                        >
+                          <span>✓</span>
+                          <span>{{ t().confirmProductBtn }}</span>
+                          <span>➔</span>
+                        </button>
+                      </div>
+                    </div>
+                  }
+                </div>
+              }
+            </div>
+
+            <!-- Bottom Accessible Touch Dock (Pinned at comfortable waist height for 55" totem & landscape) -->
+            <div class="catalogue-bottom-dock">
+              <!-- Tier 1: Category Filter Tabs (if in Catalog mode) -->
+              @if (productSelectionMode() === 'catalog') {
+                <div class="category-filters-scroll">
+                  <button
+                    class="filter-pill"
+                    [class.active]="activeCategory() === 'all'"
+                    (click)="filterCategory('all')"
+                  >
+                    ✦ {{ t().allCategories }}
+                  </button>
+                  @if (categories().length > 0) {
+                    @for (cat of categories(); track cat.id) {
                       <button
-                        class="btn-outline"
-                        (click)="retakeProductPhoto()"
-                        id="btn-retake-product"
+                        class="filter-pill"
+                        [class.active]="activeCategory() === cat.name_en"
+                        (click)="filterCategory(cat.name_en)"
                       >
-                        <span>🔄</span>
-                        <span>{{ t().retakeProductBtn }}</span>
+                        ✦ {{ translationService.currentLanguage() === 'ta' ? cat.name_ta : cat.name_en }}
                       </button>
-                      <button
-                        class="btn-outline"
-                        (click)="productFileInput.click()"
-                        id="btn-replace-product-file"
-                      >
-                        <span>📁</span>
-                        <span>{{ t().uploadFallbackBtn }}</span>
-                      </button>
-                      <button
-                        class="btn-outline btn-remove-product"
-                        (click)="removeCustomGarment()"
-                        id="btn-remove-product"
-                      >
-                        <span>🗑️</span>
-                        <span>{{ t().removeProductBtn }}</span>
-                      </button>
-                      <button
-                        class="btn-gold"
-                        (click)="confirmCustomProductAndProceed()"
-                        id="btn-confirm-custom-product"
-                      >
-                        <span>✓</span>
-                        <span>{{ t().confirmProductBtn }}</span>
-                        <span>➔</span>
-                      </button>
+                    }
+                  }
+                </div>
+              }
+
+              <!-- Tier 2: Bottom Touch Navigation & Mode Switcher -->
+              <div class="catalogue-touch-bar glass-panel">
+                <!-- Back Button -->
+                <button class="btn-nav-back" (click)="goBackFromCatalogue()" id="btn-catalogue-back">
+                  <span>←</span>
+                  <span>{{ t().backBtn }}</span>
+                </button>
+
+                <!-- Product Selection Mode Switcher (Catalog vs Custom Product) -->
+                <div class="product-mode-switcher-bar">
+                  <button
+                    class="btn-mode-tab"
+                    [class.active]="productSelectionMode() === 'catalog'"
+                    (click)="setProductSelectionMode('catalog')"
+                    id="tab-catalog"
+                  >
+                    <span>🥻</span>
+                    <span>{{ t().selectFromCatalog }}</span>
+                  </button>
+                  <button
+                    class="btn-mode-tab"
+                    [class.active]="productSelectionMode() === 'custom'"
+                    (click)="setProductSelectionMode('custom')"
+                    id="tab-custom-product"
+                  >
+                    <span>✨📷</span>
+                    <span>{{ t().uploadCustomProduct }}</span>
+                  </button>
+                </div>
+
+                <!-- Customer Portrait Pill -->
+                @if (kioskService.customerPhotoDataUrl(); as avatarUrl) {
+                  <div class="customer-portrait-pill" (click)="retakePhoto()">
+                    <img [src]="avatarUrl" alt="Customer Avatar" class="pill-avatar" />
+                    <div class="pill-info">
+                      <span class="pill-tag">{{ 'yourPhotoLabel' | translate }}</span>
+                      <span class="pill-change-text">{{ t().changePhotoBtn }}</span>
                     </div>
                   </div>
                 }
               </div>
-            }
+            </div>
           </div>
         }
 
@@ -3214,6 +3530,7 @@
                   <span>{{ t().backBtn }}</span>
                 </button>
                 <div class="screen-title-center">
+                  <span class="combine-step-pill">STEP 3 OF 3 • PRE-GENERATION REVIEW</span>
                   <h2 class="combine-headline">✨ {{ t().combineTitle }}</h2>
                   <p class="combine-subheadline">{{ t().combineSubtitle }}</p>
                 </div>
@@ -3225,13 +3542,16 @@
                 <!-- Panel 1: Customer Portrait -->
                 <div class="combine-panel user-panel glass-panel">
                   <div class="combine-panel-header">
-                    <span class="panel-icon">👤</span>
-                    <span class="panel-label">{{ t().userPhotoLabel }}</span>
+                    <div class="header-left">
+                      <span class="panel-icon">👤</span>
+                      <span class="panel-label">{{ t().userPhotoLabel }}</span>
+                    </div>
+                    <span class="panel-verified-tag">✓ Live Capture</span>
                   </div>
 
                   <div class="combine-image-frame">
                     @if (kioskService.customerPhotoDataUrl(); as userUrl) {
-                      <img [src]="userUrl" alt="Customer Portrait" class="combine-img" id="img-combine-user" />
+                      <img [src]="userUrl" alt="Customer Portrait" class="combine-img" id="img-combine-user" (error)="handleUserImgError($event)" />
                     }
                   </div>
 
@@ -3241,36 +3561,62 @@
                       (click)="replaceUserPhoto()"
                       id="btn-replace-user-photo"
                     >
-                      <span>🔄</span>
+                      <span>📸</span>
                       <span>{{ t().replaceUserPhotoBtn }}</span>
                     </button>
                   </div>
                 </div>
 
                 <!-- Center Drape Connector Icon -->
-                <div class="combine-plus-badge">
-                  <span>+</span>
+                <div class="combine-plus-badge" title="AI Neural Drape Fusion">
+                  <span class="plus-icon">✦</span>
+                  <span class="plus-label">AI DRAPE</span>
                 </div>
 
                 <!-- Panel 2: Selected Product (Showroom Saree or Custom Upload) -->
                 <div class="combine-panel product-panel glass-panel">
                   <div class="combine-panel-header">
-                    <span class="panel-icon">🥻</span>
-                    <span class="panel-label">{{ t().selectedProductLabel }}</span>
+                    <div class="header-left">
+                      <span class="panel-icon">🥻</span>
+                      <span class="panel-label">{{ t().selectedProductLabel }}</span>
+                    </div>
+                    <div class="header-right-actions" style="display: flex; align-items: center; gap: 8px;">
+                      <button type="button" class="btn-fullscreen-toggle" (click)="openGarmentFullscreen()" title="Full Screen View">
+                        <span>⛶</span>
+                        <span class="fs-text">Full Screen</span>
+                      </button>
+                      @if (kioskService.selectedSaree(); as s) {
+                        <span class="panel-verified-tag saree-cat-tag">{{ s.category }}</span>
+                      }
+                    </div>
                   </div>
 
-                  <div class="combine-image-frame">
+                  <div class="combine-image-frame" (click)="openGarmentFullscreen()" title="Tap to expand full screen">
                     @if (kioskService.selectedSaree(); as saree) {
-                      <img [src]="saree.primary_image_url" [alt]="saree.name_en" class="combine-img" id="img-combine-product" />
+                      <img [src]="saree.primary_image_url || '/assets/images/col_kanchipuram.png'" [alt]="saree.name_en" class="combine-img" id="img-combine-product" (error)="handleGarmentImgError($event)" />
                       <div class="product-overlay-meta">
-                        <span class="meta-sku">{{ saree.sku }}</span>
-                        <span class="meta-title">{{ translationService.currentLanguage() === 'ta' ? saree.name_ta : saree.name_en }}</span>
+                        <div class="meta-top-row">
+                          <span class="meta-sku">{{ saree.sku }}</span>
+                          @if (saree.price) {
+                            <span class="meta-price">₹{{ saree.price | number }}</span>
+                          }
+                        </div>
+                        <div class="meta-title-row">
+                          <span class="meta-title">{{ translationService.currentLanguage() === 'ta' ? saree.name_ta : saree.name_en }}</span>
+                          @if (saree.fabric) {
+                            <span class="meta-fabric-chip">{{ saree.fabric }}</span>
+                          }
+                        </div>
                       </div>
                     } @else if (kioskService.customGarmentDataUrl(); as customUrl) {
-                      <img [src]="customUrl" alt="Custom Product" class="combine-img" id="img-combine-product" />
+                      <img [src]="customUrl" alt="Custom Product" class="combine-img" id="img-combine-product" (error)="handleGarmentImgError($event)" />
                       <div class="product-overlay-meta">
-                        <span class="meta-sku">CUSTOM</span>
-                        <span class="meta-title">{{ t().customGarmentBadge }}</span>
+                        <div class="meta-top-row">
+                          <span class="meta-sku">CUSTOM-FABRIC</span>
+                        </div>
+                        <div class="meta-title-row">
+                          <span class="meta-title">{{ t().customGarmentBadge }}</span>
+                        </div>
                       </div>
                     }
                   </div>
@@ -3345,11 +3691,11 @@
 
               <!-- Real-time Processing State vs Authentic Error Alert -->
               @if (tryOnError()) {
-                <div class="tryon-error-banner glass-panel" style="margin: 1.5rem 0; padding: 1.5rem; border: 1px solid rgba(220, 38, 38, 0.4); background: rgba(220, 38, 38, 0.15); border-radius: 16px; text-align: center;">
-                  <span style="font-size: 2.5rem; display: block; margin-bottom: 0.5rem;">⚠️</span>
-                  <h3 style="color: #fca5a5; font-size: 1.25rem; margin-bottom: 0.5rem;">{{ t().tryonFailedTitle }}</h3>
-                  <p style="color: #e2e8f0; font-size: 0.95rem; margin-bottom: 1.5rem;">{{ tryOnError() }}</p>
-                  <div style="display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;">
+                <div class="tryon-error-banner glass-panel kiosk-error-accessible">
+                  <span class="tryon-error-icon">⚠️</span>
+                  <h3 class="tryon-error-title">{{ t().tryonFailedTitle }}</h3>
+                  <p class="tryon-error-desc">{{ tryOnError() }}</p>
+                  <div class="tryon-error-actions">
                     <button type="button" class="btn-gold" (click)="retryCurrentTryOn()" id="btn-tryon-retry">
                       <span>🔄</span>
                       <span>{{ t().retryTryonBtn }}</span>
@@ -3400,8 +3746,11 @@
           <div class="screen-result screen-result-immersive">
             <!-- 1. Hero Full-View Mirror Stage (100% Unobstructed Photo First!) -->
             <div class="result-hero-mirror-stage glass-panel">
+              <!-- LEFT / MAIN: The Pure Visual Mirror Canvas Stage -->
+              <div class="result-stage-main-canvas">
+
               <!-- Floating Top Minimal Bar -->
-              <div class="result-mirror-top-bar">
+              <div class="result-mirror-top-bar immersive-clean-topbar">
                 <!-- Left: Garment Info Chip -->
                 <div class="mirror-garment-chip result-garment-showcase">
                   @if (kioskService.customGarmentDataUrl()) {
@@ -3453,6 +3802,15 @@
                     <span>👤</span>
                     <span>{{ t().viewOriginalBtn }}</span>
                   </button>
+                  <button
+                    class="btn-view-pill btn-fill-pill"
+                    [class.active]="isFillScreenMode()"
+                    (click)="toggleFillScreenMode()"
+                    id="btn-toggle-fill"
+                    [title]="isFillScreenMode() ? 'Switch to Fit Photo Mode' : 'Switch to Full Screen Fill'"
+                  >
+                    <span>{{ isFillScreenMode() ? '🔲 Full' : '🔍 Fit' }}</span>
+                  </button>
                 </div>
               </div>
 
@@ -3478,7 +3836,7 @@
               }
 
               <!-- The Pure Visual Hero Display Stage -->
-              <div class="result-pure-canvas-viewport">
+              <div class="result-pure-canvas-viewport" [class.fill-cover-mode]="isFillScreenMode()">
                   @if (coupleImageUrl()) {
                     <div class="photo-frame result-frame single-stage couple-twin-stage">
                       <div class="couple-stage-bar">
@@ -3490,7 +3848,7 @@
                         alt="Couple Coordinated Drape"
                         class="comparison-img couple-banner-img"
                       />
-                      <span class="preview-watermark">✦ {{ customStoreName() || 'NeXooAi Luxury Silks' }}</span>
+                      
                     </div>
                   } @else if (resultViewMode() === 'slider') {
                     <div class="split-slider-stage">
@@ -3667,7 +4025,7 @@
                           aria-label="Interactive Drape Slider"
                         />
 
-                        <span class="preview-watermark">✦ NeXooAi Haute Couture</span>
+                        
                       </div>
 
                       <!-- Slider Guidance Instruction Bar -->
@@ -3693,7 +4051,7 @@
                           alt="Virtual Try-On Result"
                           class="comparison-img"
                         />
-                        <span class="preview-watermark">✦ NeXooAi Trial</span>
+                        
                       </div>
                     </div>
                   } @else if (resultViewMode() === 'result') {
@@ -3704,7 +4062,17 @@
                         alt="Virtual Drape Preview"
                         class="comparison-img"
                       />
-                      <span class="preview-watermark">✦ NeXooAi Trial</span>
+                      
+                    </div>
+                  } @else if (resultViewMode() === 'saree') {
+                    <div class="photo-frame original-frame single-stage">
+                      <span class="frame-tag gold-tag">🥻 {{ kioskService.selectedSaree()?.name_ta || kioskService.selectedSaree()?.name_en || 'தேர்ந்தெடுக்கப்பட்ட சேலை' }}</span>
+                      <img
+                        [src]="kioskService.customGarmentDataUrl() || kioskService.selectedSaree()?.primary_image_url || 'assets/images/saree1.jpg'"
+                        alt="Selected Saree Pattern"
+                        class="comparison-img"
+                      />
+                      
                     </div>
                   } @else {
                     <div class="photo-frame original-frame single-stage">
@@ -3719,74 +4087,235 @@
 
               </div> <!-- Close result-pure-canvas-viewport -->
 
-              <!-- Floating Luxury Bottom Action Dock -->
-              <div class="result-floating-dock">
-                <button
-                  type="button"
-                  class="btn-result-action-pill btn-pill-styling"
-                  (click)="toggleStylingDrawer()"
-                  [class.active]="showStylingDrawer()"
-                  id="btn-toggle-styling-drawer"
+              <!-- 1. LEFT SIDE FLOATING VERTICAL STACK (Selected Garment on Top, Customer Original Photo on Bottom) -->
+              <div class="result-floating-left-stack">
+                <!-- Top: Selected Garment / Saree -->
+                <div
+                  class="floating-thumb-card"
+                  [class.active]="resultViewMode() === 'saree'"
+                  (click)="setResultViewMode(resultViewMode() === 'saree' ? 'result' : 'saree')"
+                  [title]="translationService.currentLanguage() === 'ta' ? 'தேர்ந்தெடுத்த ஆடை பார்க்க' : 'View Selected Garment'"
                 >
-                  <span class="pill-icon">✨</span>
-                  <span class="pill-label">{{ translationService.currentLanguage() === 'ta' ? 'ஆபரணம் & ஒப்பனை' : 'Style & Jewels' }}</span>
-                  @if (selectedJewellery() !== 'none' || selectedLighting() !== 'mandapam') {
-                    <span class="pill-active-badge">●</span>
-                  }
-                </button>
+                  <div class="thumb-img-wrap">
+                    <img
+                      [src]="kioskService.customGarmentDataUrl() || kioskService.selectedSaree()?.primary_image_url || 'assets/images/saree1.jpg'"
+                      alt="Selected Saree"
+                      class="thumb-img"
+                    />
+                  </div>
+                  <span class="thumb-label">🥻 {{ translationService.currentLanguage() === 'ta' ? 'ஆடை' : 'Saree' }}</span>
+                </div>
 
-                <button
-                  type="button"
-                  class="btn-result-action-pill btn-pill-share"
-                  (click)="toggleShareDrawer()"
-                  [class.active]="showShareDrawer()"
-                  id="btn-toggle-share-drawer"
+                <!-- Bottom: Customer Original Photo -->
+                <div
+                  class="floating-thumb-card"
+                  [class.active]="resultViewMode() === 'original'"
+                  (click)="setResultViewMode(resultViewMode() === 'original' ? 'result' : 'original')"
+                  [title]="translationService.currentLanguage() === 'ta' ? 'அசல் படம் பார்க்க' : 'View Original Photo'"
                 >
-                  <span class="pill-icon">📲</span>
-                  <span class="pill-label">{{ translationService.currentLanguage() === 'ta' ? 'பகிர் & QR' : 'Share & QR' }}</span>
-                </button>
-
-                <button
-                  type="button"
-                  class="btn-result-action-pill btn-pill-buy"
-                  (click)="openBuyCounterModal()"
-                  id="btn-result-buy-slip"
-                >
-                  <span class="pill-icon">🛍️</span>
-                  <span class="pill-label">{{ translationService.currentLanguage() === 'ta' ? 'வாங்கும் சீட்டு' : 'Buy Slip' }}</span>
-                </button>
-
-                <button
-                  type="button"
-                  class="btn-result-action-pill btn-pill-try-other"
-                  (click)="tryAnotherSaree()"
-                  id="btn-try-another-saree"
-                >
-                  <span class="pill-icon">🥻</span>
-                  <span class="pill-label">{{ t().tryAnotherSareeBtn }}</span>
-                </button>
-
-                <button
-                  type="button"
-                  class="btn-result-action-pill btn-pill-retake"
-                  (click)="retakePhoto()"
-                  id="btn-result-retake-photo"
-                >
-                  <span class="pill-icon">📷</span>
-                  <span class="pill-label">{{ t().retakeBtn }}</span>
-                </button>
-
-                <button
-                  type="button"
-                  class="btn-result-action-pill btn-pill-finish"
-                  (click)="finishSession()"
-                  id="btn-result-finish-session"
-                >
-                  <span class="pill-icon">✓</span>
-                  <span class="pill-label">{{ t().finishSessionBtn }}</span>
-                </button>
+                  <div class="thumb-img-wrap">
+                    <img
+                      [src]="kioskService.customerPhotoDataUrl()"
+                      alt="Original Portrait"
+                      class="thumb-img"
+                    />
+                  </div>
+                  <span class="thumb-label">👤 {{ translationService.currentLanguage() === 'ta' ? 'அசல்' : 'Original' }}</span>
+                </div>
               </div>
-            </div> <!-- Close result-hero-mirror-stage -->
+
+              <!-- 2. RIGHT SIDE FLOATING QR CODE CARD (Always available for direct phone save) -->
+              <div class="result-floating-right-qr">
+                <div class="floating-qr-card glass-panel">
+                  <div class="qr-header-mini">
+                    <span class="qr-pulse-dot"></span>
+                    <span class="qr-title-mini">{{ translationService.currentLanguage() === 'ta' ? 'மொபைலில் சேமிக்க' : 'Scan to Download' }}</span>
+                  </div>
+                  <div class="qr-code-box-mini">
+                    <app-qr-code
+                      [value]="kioskService.tryOnResult()?.qr_download_url || kioskService.tryOnResult()?.result_image_url || 'https://tryon.nexooai.in/kiosk'"
+                      [size]="130"
+                      errorCorrectionLevel="M"
+                    ></app-qr-code>
+                  </div>
+                  <span class="qr-sub-mini">{{ translationService.currentLanguage() === 'ta' ? 'HD படம் பதிவிறக்க' : 'Direct Mobile Download' }}</span>
+                </div>
+              </div>
+
+              <!-- 3. UNIFIED FLOATING BOTTOM DOCK -->
+              <div class="result-floating-bottom-dock glass-panel">
+                <button
+                  type="button"
+                  class="dock-pill-item"
+                  (click)="setResultViewMode(resultViewMode() === 'slider' ? 'result' : 'slider')"
+                  [class.active]="resultViewMode() === 'slider'"
+                  id="btn-dock-slider-mode"
+                >
+                  <span class="dock-icon">↔️</span>
+                  <span class="dock-txt">{{ resultViewMode() === 'slider' ? (translationService.currentLanguage() === 'ta' ? 'முழு வடிவம்' : 'Full Drape') : (translationService.currentLanguage() === 'ta' ? 'ஸ்லைடர் ஒப்பீடு' : 'Slider Compare') }}</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="dock-pill-item dock-pill-primary btn-gold"
+                  (click)="toggleStylingDrawer()"
+                  id="btn-dock-styling-trigger"
+                >
+                  <span class="dock-icon">⚡</span>
+                  <span class="dock-txt">{{ translationService.currentLanguage() === 'ta' ? 'விருப்பங்கள் & ஆபரணங்கள்' : 'Actions & Styling' }} ▲</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="dock-pill-item dock-pill-purple"
+                  (click)="openRecentTrialsDrawer()"
+                  id="btn-dock-recent-trials"
+                  [title]="translationService.currentLanguage() === 'ta' ? 'முந்தைய வாடிக்கையாளர் டிரையல்கள்' : 'View Previous Customer Trials'"
+                >
+                  <span class="dock-icon">📲</span>
+                  <span class="dock-txt">{{ translationService.currentLanguage() === 'ta' ? 'முந்தைய டிரையல்கள்' : "Today's Trials" }}</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="dock-pill-item dock-pill-amber"
+                  (click)="openBuyCounterModal()"
+                  id="btn-dock-buy-slip"
+                >
+                  <span class="dock-icon">🛍️</span>
+                  <span class="dock-txt">{{ translationService.currentLanguage() === 'ta' ? 'வாங்கும் சீட்டு' : 'Buy Slip' }}</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="dock-pill-item dock-pill-outline"
+                  (click)="tryAnotherSaree()"
+                  id="btn-dock-another-saree"
+                >
+                  <span class="dock-icon">🥻</span>
+                  <span class="dock-txt">{{ translationService.currentLanguage() === 'ta' ? 'வேறு ஆடை' : 'Try Another' }}</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="dock-pill-item dock-pill-outline"
+                  (click)="retakePhoto()"
+                  id="btn-dock-retake-photo"
+                >
+                  <span class="dock-icon">📷</span>
+                  <span class="dock-txt">{{ translationService.currentLanguage() === 'ta' ? 'மீண்டும் படம்' : 'Retake' }}</span>
+                </button>
+
+                <button
+                  type="button"
+                  class="dock-pill-item dock-pill-danger"
+                  (click)="finishSession()"
+                  id="btn-dock-finish"
+                >
+                  <span class="dock-icon">✓</span>
+                  <span class="dock-txt">{{ translationService.currentLanguage() === 'ta' ? 'முடி' : 'Done' }}</span>
+                </button>
+              </div> <!-- Close result-floating-bottom-dock -->
+            </div> <!-- Close result-stage-main-canvas -->
+
+              <!-- RIGHT: Dedicated Luxury Showroom Console (15" Laptops, Desktops & Widescreen) -->
+              <aside class="result-stage-side-console glass-panel">
+                <!-- 1. Boutique Brand & Garment Header Card -->
+                <div class="console-garment-card">
+                  <div class="console-brand-row">
+                    <span class="console-brand-name">✦ {{ customStoreName() || 'NeXooAi Luxury Silks' }}</span>
+                    <span class="console-status-pill">● Live Result</span>
+                  </div>
+                  @if (kioskService.customGarmentDataUrl()) {
+                    <h3 class="console-garment-title">{{ t().customGarmentTitle }}</h3>
+                    <div class="console-badge-row">
+                      <span class="console-pill gold">✦ Bespoke Drape</span>
+                      <span class="console-pill">Custom Upload</span>
+                    </div>
+                  } @else if (kioskService.selectedSaree(); as saree) {
+                    <h3 class="console-garment-title">{{ translationService.currentLanguage() === 'ta' ? saree.name_ta : saree.name_en }}</h3>
+                    <div class="console-badge-row">
+                      <span class="console-pill gold">🥻 {{ saree.category }}</span>
+                      <span class="console-pill code">{{ saree.sku }}</span>
+                    </div>
+                    <div class="console-price-row">
+                      <span class="console-price-label">{{ translationService.currentLanguage() === 'ta' ? 'ஷோரூம் விலை:' : 'Showroom Price:' }}</span>
+                      <span class="console-price-val">₹{{ saree.price.toLocaleString('en-IN') }}</span>
+                    </div>
+                  }
+                </div>
+
+                <!-- 2. Interactive View Mode Switcher -->
+                <div class="console-section">
+                  <label class="console-section-label">👀 {{ translationService.currentLanguage() === 'ta' ? 'தோற்ற முறைகள்' : 'View Modes' }}</label>
+                  <div class="console-view-grid">
+                    <button type="button" class="btn-console-pill" [class.active]="resultViewMode() === 'result'" (click)="setResultViewMode('result')">
+                      <span>✨</span>
+                      <span>{{ translationService.currentLanguage() === 'ta' ? 'சேலைத் தோற்றம்' : 'Draped View' }}</span>
+                    </button>
+                    <button type="button" class="btn-console-pill" [class.active]="resultViewMode() === 'slider'" (click)="setResultViewMode('slider')">
+                      <span>↔️</span>
+                      <span>{{ translationService.currentLanguage() === 'ta' ? 'முன் / பின் ஸ்லைடர்' : 'Slider Compare' }}</span>
+                    </button>
+                    <button type="button" class="btn-console-pill" [class.active]="resultViewMode() === 'compare'" (click)="setResultViewMode('compare')">
+                      <span>👥</span>
+                      <span>{{ translationService.currentLanguage() === 'ta' ? 'பக்கவாட்டு பார்வை' : 'Side-by-Side' }}</span>
+                    </button>
+                    <button type="button" class="btn-console-pill" [class.active]="resultViewMode() === 'original'" (click)="setResultViewMode('original')">
+                      <span>👤</span>
+                      <span>{{ translationService.currentLanguage() === 'ta' ? 'அசல் படம்' : 'Original Photo' }}</span>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- 3. High-Contrast Interactive QR Code Box -->
+                <div class="console-qr-card">
+                  <div class="console-qr-header">
+                    <span class="qr-pulse-dot"></span>
+                    <div>
+                      <strong>{{ translationService.currentLanguage() === 'ta' ? 'மொபைலில் HD படம் சேமிக்க' : 'Save HD Photo to Mobile' }}</strong>
+                      <small>{{ translationService.currentLanguage() === 'ta' ? 'கேமரா மூலம் QR-ஐ ஸ்கேன் செய்க' : 'Scan with phone camera' }}</small>
+                    </div>
+                  </div>
+                  <div class="console-qr-box">
+                    <app-qr-code
+                      [value]="kioskService.tryOnResult()?.qr_download_url || kioskService.tryOnResult()?.result_image_url || 'https://tryon.nexooai.in/kiosk'"
+                      [size]="140"
+                      errorCorrectionLevel="M"
+                    ></app-qr-code>
+                  </div>
+                  <span class="console-qr-footer-hint">{{ translationService.currentLanguage() === 'ta' ? 'நேரடியாக கேலரியில் சேமிக்கலாம்' : 'Direct HD Gallery Download' }}</span>
+                </div>
+
+                <!-- 4. Action Command Grid -->
+                <div class="console-actions-grid">
+                  <button type="button" class="btn-console-action gold-btn" (click)="toggleStylingDrawer()">
+                    <span>💍</span>
+                    <span>{{ translationService.currentLanguage() === 'ta' ? 'ஆபரணங்கள் & ஒப்பனை' : 'Style & Jewels' }}</span>
+                  </button>
+                  <button type="button" class="btn-console-action amber-btn" (click)="openBuyCounterModal()">
+                    <span>🛍️</span>
+                    <span>{{ translationService.currentLanguage() === 'ta' ? 'வாங்கும் சீட்டு' : 'Buy Slip' }}</span>
+                  </button>
+                  <button type="button" class="btn-console-action purple-btn" (click)="openRecentTrialsDrawer()">
+                    <span>📲</span>
+                    <span>{{ translationService.currentLanguage() === 'ta' ? 'இன்றைய டிரையல்கள் & QR' : "Today's Trials & QR" }}</span>
+                  </button>
+                  <button type="button" class="btn-console-action outline-btn" (click)="tryAnotherSaree()">
+                    <span>🥻</span>
+                    <span>{{ t().tryAnotherSareeBtn }}</span>
+                  </button>
+                  <button type="button" class="btn-console-action outline-btn" (click)="retakePhoto()">
+                    <span>📷</span>
+                    <span>{{ t().retakeBtn }}</span>
+                  </button>
+                  <button type="button" class="btn-console-action danger-btn" (click)="finishSession()">
+                    <span>✓</span>
+                    <span>{{ t().finishSessionBtn }}</span>
+                  </button>
+                </div>
+              </aside>
+</div> <!-- Close result-hero-mirror-stage -->
 
             <!-- On-Demand Luxury Styling Drawer (Opens ONLY when requested!) -->
             @if (showStylingDrawer()) {
@@ -4161,7 +4690,7 @@
 
                       <div class="qr-display-center">
                         <app-qr-code
-                          [value]="kioskService.tryOnResult()?.qr_download_url || kioskService.tryOnResult()?.result_image_url || ''"
+                          [value]="kioskService.tryOnResult()?.qr_download_url || kioskService.tryOnResult()?.result_image_url || 'https://tryon.nexooai.in/kiosk'"
                           [size]="140"
                         ></app-qr-code>
                       </div>
@@ -4218,6 +4747,7 @@
         }
       </div>
     }
+
   </main>
 
   <!-- ========================================================================= -->
@@ -4670,7 +5200,7 @@
           >
             <div
               class="crop-image-transform"
-              [style.transform]="'translate(' + cropPanX() + 'px, ' + cropPanY() + 'px) scale(' + cropZoom() + ')'"
+              [style.transform]="'translate(' + cropPanX() + 'px, ' + cropPanY() + 'px) scale(' + cropZoom() + ') rotate(' + cropRotation() + 'deg)'"
             >
               <img [src]="rawImageForCrop()" alt="Crop Source Image" class="crop-source-img" draggable="false" />
             </div>
@@ -4686,9 +5216,15 @@
           </div>
         </div>
 
-        <!-- Zoom & Framing Toolstrip -->
+        <!-- Zoom, Framing & 90° Rotation Toolstrip -->
         <div class="crop-toolbar">
           <div class="crop-zoom-controls">
+            <!-- 90 Degree Rotation Tool -->
+            <button type="button" class="btn-crop-tool btn-rotate-tool" (click)="rotateCrop()" title="Rotate 90 Degrees">
+              <span>🔄</span>
+              <span>{{ translationService.currentLanguage() === 'ta' ? '90° சுழற்று' : 'Rotate 90°' }}</span>
+            </button>
+
             <button type="button" class="btn-crop-tool" (click)="adjustCropZoom(-0.2)" title="Zoom Out">
               {{ t().cropZoomOut }}
             </button>
@@ -4732,138 +5268,7 @@
   <!-- DRAGGABLE FLOATING EDGE DOCK (Moves along side edges, snaps left/right)   -->
   <!-- ========================================================================= -->
   @if (!isAdminMode() && kioskService.currentStep() !== 'WELCOME') {
-    <aside
-      class="floating-edge-dock"
-      [class.dock-left]="floatingDockSide() === 'left'"
-      [class.dock-right]="floatingDockSide() === 'right'"
-      [class.dock-expanded]="isFloatingDockExpanded()"
-      [class.dock-dragging]="isDraggingDock()"
-      [style.top.px]="floatingDockTop()"
-      (touchstart)="onDockTouchStart($event)"
-      (touchmove)="onDockTouchMove($event)"
-      (touchend)="onDockTouchEnd()"
-    >
-      <!-- Collapsed Edge Tab / Trigger -->
-      @if (!isFloatingDockExpanded()) {
-        <button
-          type="button"
-          class="dock-pill-trigger"
-          (click)="toggleFloatingDockExpanded()"
-          (mousedown)="onDockMouseDown($event)"
-          [title]="'dockQuickMenuHint' | translate"
-          id="dock-pill-trigger"
-        >
-          <span class="dock-handle-icon" title="Drag along edge">⋮⋮</span>
-          <span class="dock-pill-badge">⚡</span>
-          <span class="dock-pill-label">{{ 'dockMenu' | translate }}</span>
-        </button>
-      }
-
-      <!-- Expanded Dock Menu -->
-      @if (isFloatingDockExpanded()) {
-        <div class="dock-expanded-panel glass-panel">
-          <!-- Dock Header with Drag Handle & Switch Edge -->
-          <div class="dock-panel-header" (mousedown)="onDockMouseDown($event)">
-            <div class="dock-drag-grip" title="Drag vertically along edge or across to switch sides">
-              <span class="grip-icon">⋮⋮</span>
-              <span class="grip-text">{{ 'dockDragToMove' | translate }}</span>
-            </div>
-            <div class="dock-header-actions">
-              <button
-                type="button"
-                class="btn-dock-tool btn-dock-side"
-                (click)="toggleDockSide()"
-                [title]="floatingDockSide() === 'right' ? ('dockSwitchLeft' | translate) : ('dockSwitchRight' | translate)"
-              >
-                ⇄ {{ floatingDockSide() === 'right' ? ('dockSwitchLeft' | translate) : ('dockSwitchRight' | translate) }}
-              </button>
-              <button
-                type="button"
-                class="btn-dock-tool btn-dock-close"
-                (click)="toggleFloatingDockExpanded()"
-                [title]="'dockClose' | translate"
-              >
-                ✕
-              </button>
-            </div>
-          </div>
-
-          <!-- Action Items -->
-          <div class="dock-items-grid">
-            <!-- Reachability Toggle -->
-            <button
-              type="button"
-              class="dock-action-btn"
-              [class.active]="isReachModeActive()"
-              (click)="toggleReachMode()"
-              id="dock-btn-reach"
-            >
-              <span class="btn-icon">♿</span>
-              <span class="btn-label">{{ isReachModeActive() ? ('restoreStandardHeight' | translate) : ('reachModeBtn' | translate) }}</span>
-            </button>
-
-            <!-- Theme Toggle -->
-            <button
-              type="button"
-              class="dock-action-btn"
-              (click)="toggleTheme()"
-              id="dock-btn-theme"
-            >
-              <span class="btn-icon">{{ isLightTheme() ? '🌙' : '☀️' }}</span>
-              <span class="btn-label">{{ isLightTheme() ? ('darkThemeLabel' | translate) : ('lightThemeLabel' | translate) }}</span>
-            </button>
-
-            <!-- Multi-Language Selector Trigger -->
-            <button
-              type="button"
-              class="dock-action-btn"
-              (click)="toggleLanguageMenu()"
-              id="dock-btn-lang"
-            >
-              <span class="btn-icon">🌐</span>
-              <span class="btn-label">{{ translationService.currentLangInfo().label }}</span>
-            </button>
-
-            <!-- Reset Session (active during session) -->
-            @if (kioskService.currentStep() !== 'WELCOME') {
-              <button
-                type="button"
-                class="dock-action-btn reset-btn"
-                (click)="finishSession()"
-                id="dock-btn-reset"
-              >
-                <span class="btn-icon">🔄</span>
-                <span class="btn-label">{{ 'resetSession' | translate }}</span>
-              </button>
-            }
-
-            <!-- Lock Kiosk -->
-            @if (kioskService.isKioskUnlocked()) {
-              <button
-                type="button"
-                class="dock-action-btn"
-                (click)="lockKioskDevice()"
-                id="dock-btn-lock"
-              >
-                <span class="btn-icon">🔒</span>
-                <span class="btn-label">{{ 'lockKioskBtn' | translate }}</span>
-              </button>
-            }
-
-            <!-- Admin Portal -->
-            <button
-              type="button"
-              class="dock-action-btn"
-              (click)="openAdminPinModal()"
-              id="dock-btn-admin"
-            >
-              <span class="btn-icon">🛡️</span>
-              <span class="btn-label">{{ 'adminPortalTitle' | translate }}</span>
-            </button>
-          </div>
-        </div>
-      }
-    </aside>
+    
   }
 
   <!-- ========================================================================= -->
@@ -5374,4 +5779,194 @@
 <app-toast-container></app-toast-container>
 <app-confirm-dialog></app-confirm-dialog>
 
+
+
+    <!-- FULLSCREEN GARMENT LIGHTBOX (EDGE-TO-EDGE FABRIC VIEW) -->
+    @if (showGarmentFullscreen()) {
+      <div class="garment-fullscreen-backdrop" (click)="closeGarmentFullscreen()">
+        <div class="garment-fullscreen-content" (click)="$event.stopPropagation()">
+          <button type="button" class="btn-close-fullscreen" (click)="closeGarmentFullscreen()" title="Close Fullscreen">✕</button>
+          @if (kioskService.selectedSaree(); as s) {
+            <img [src]="s.primary_image_url || '/assets/images/col_kanchipuram.png'" class="garment-fullscreen-img" [alt]="s.name_en" />
+            <div class="garment-fullscreen-caption">
+              <span class="fs-name">{{ translationService.currentLanguage() === 'ta' ? s.name_ta : s.name_en }}</span>
+              @if (s.price) {
+                <span class="fs-price">₹{{ s.price | number }}</span>
+              }
+              <button type="button" class="btn-gold-sm" (click)="closeGarmentFullscreen()">{{ t().backBtn }}</button>
+            </div>
+          } @else if (kioskService.customGarmentDataUrl(); as cUrl) {
+            <img [src]="cUrl" class="garment-fullscreen-img" alt="Custom Product" />
+            <div class="garment-fullscreen-caption">
+              <span class="fs-name">{{ t().customGarmentBadge }}</span>
+              <button type="button" class="btn-gold-sm" (click)="closeGarmentFullscreen()">{{ t().backBtn }}</button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+  <!-- ========================================================================= -->
+  
+  <!-- ========================================================================= -->
+  <!-- TODAY'S TRIALS & QR RECOVERY DRAWER                                        -->
+  <!-- ========================================================================= -->
+  @if (showRecentTrialsDrawer()) {
+    <div class="recent-trials-backdrop" (click)="closeRecentTrialsDrawer()">
+      <div class="recent-trials-drawer glass-panel" (click)="$event.stopPropagation()">
+        <div class="drawer-header-row">
+          <div class="drawer-header-title">
+            <span class="header-icon">📲</span>
+            <div>
+              <h3>{{ translationService.currentLanguage() === 'ta' ? 'இன்றைய டிரையல்கள் & QR மீட்பு' : "Today's Trials & QR Recovery" }}</h3>
+              <p>{{ translationService.currentLanguage() === 'ta' ? 'இன்று செய்யப்பட்ட அனைத்து சேலை டிரையல்கள் • QR குறியீட்டை மீண்டும் ஸ்கேன் செய்ய' : 'All try-ons completed today • Tap to recover and scan QR code' }}</p>
+            </div>
+          </div>
+          <button type="button" class="btn-close-drawer-icon" (click)="closeRecentTrialsDrawer()" aria-label="Close">✕</button>
+        </div>
+
+        <div class="recent-trials-content-scroll">
+          @if (lookbookFeed().length === 0) {
+            <div class="empty-trials-placeholder">
+              <span class="empty-icon">🥻</span>
+              <h4>{{ translationService.currentLanguage() === 'ta' ? 'இன்று இன்னும் டிரையல்கள் பதிவு செய்யப்படவில்லை' : 'No try-ons recorded yet today' }}</h4>
+              <p>{{ translationService.currentLanguage() === 'ta' ? 'கியோஸ்கில் புதிய வாடிக்கையாளர் படம் எடுத்து சேலை மாற்றும்போது இங்கு தானாக சேரும்.' : 'Completed try-on sessions will appear here automatically.' }}</p>
+            </div>
+          } @else {
+            <div class="recent-trials-grid">
+              @for (look of lookbookFeed(); track look.job_id) {
+                <div class="recent-trial-card glass-panel" (click)="openRecoveryQrModal(look)">
+                  <div class="trial-thumb-box">
+                    <img [src]="look.result_image_url" [alt]="look.saree_name_en || 'Saree Drape'" class="trial-thumb-img" />
+                    <span class="trial-time-pill">{{ look.created_at ? (look.created_at | slice:11:16) : 'Today' }}</span>
+                  </div>
+                  <div class="trial-details-box">
+                    <strong class="trial-saree-name">{{ look.saree_name_en || 'Saree Try-on' }}</strong>
+                    <span class="trial-cat-tag">🥻 {{ look.category || 'Silk Saree' }}</span>
+                    <button type="button" class="btn-open-recovery-qr">
+                      <span>📲</span>
+                      <span>{{ translationService.currentLanguage() === 'ta' ? 'QR குறியீடு' : 'Show QR' }}</span>
+                    </button>
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ========================================================================= -->
+  <!-- RECOVERY QR CODE POPUP MODAL                                              -->
+  <!-- ========================================================================= -->
+  @if (selectedRecoveryLook()) {
+    <div class="recovery-qr-backdrop" (click)="closeRecoveryQrModal()">
+      <div class="recovery-qr-modal glass-panel" (click)="$event.stopPropagation()">
+        <button type="button" class="btn-close-recovery-modal" (click)="closeRecoveryQrModal()" aria-label="Close">✕</button>
+
+        <div class="recovery-modal-header">
+          <div class="modal-brand-badge">
+            <span class="gold-icon">👑</span>
+            <span>{{ customStoreName() || 'NeXooAi Luxury Silks' }}</span>
+          </div>
+          <h3>{{ translationService.currentLanguage() === 'ta' ? 'மொபைலில் சேமிக்க QR குறியீடு' : 'Scan to Download HD Photo' }}</h3>
+          <p class="modal-subtext">
+            {{ translationService.currentLanguage() === 'ta' ? 'உங்கள் போன் கேமராவை திறந்து இந்த QR கோடை ஸ்கேன் செய்து உடனடியாக புகைப்படத்தை பெறலாம்.' : 'Point your phone camera at this QR code to view and save your try-on photo.' }}
+          </p>
+        </div>
+
+        <div class="recovery-modal-body">
+          <div class="recovery-look-preview-col">
+            <img [src]="selectedRecoveryLook()?.result_image_url" alt="Draped Result" class="recovery-preview-img" />
+            <div class="recovery-item-meta">
+              <strong>{{ selectedRecoveryLook()?.saree_name_en || 'Silk Saree' }}</strong>
+              <small>🥻 {{ selectedRecoveryLook()?.category || 'Traditional Silk' }}</small>
+            </div>
+          </div>
+
+          <div class="recovery-qr-col">
+            <div class="recovery-qr-box glass-panel">
+              <app-qr-code
+                [value]="selectedRecoveryLook()?.qr_download_url || selectedRecoveryLook()?.result_image_url || ''"
+                [size]="220"
+                errorCorrectionLevel="M"
+              ></app-qr-code>
+            </div>
+            <div class="recovery-instruction-pill">
+              <span>📷</span>
+              <span>{{ translationService.currentLanguage() === 'ta' ? 'நேரடியாக கேலரியில் சேமிக்கலாம்' : 'Save directly to your phone gallery' }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- WHATSAPP STATUS STYLE "TODAY'S TRIALS" STORIES CAROUSEL                   -->
+  <!-- ========================================================================= -->
+  @if (showTodayStoriesModal()) {
+    <div class="today-stories-backdrop" (click)="closeTodayStories()">
+      <div class="today-stories-container" (click)="$event.stopPropagation()">
+        <!-- Top Segmented WhatsApp Status Progress Bars -->
+        <div class="stories-segmented-bars-row">
+          @for (item of lookbookFeed(); track item.job_id; let idx = $index) {
+            <div class="story-segment-bar-bg">
+              <div
+                class="story-segment-bar-fill"
+                [style.width.%]="idx < activeStoryIndex() ? 100 : (idx === activeStoryIndex() ? storyProgress() : 0)"
+              ></div>
+            </div>
+          }
+        </div>
+
+        <!-- Story Header: Boutique Logo, Name, Time, Close Button -->
+        <div class="story-top-header">
+          <div class="story-brand-meta">
+            <div class="story-brand-crest">
+              @if (customStoreLogo()) {
+                <img [src]="customStoreLogo()" alt="Logo" class="story-crest-img" />
+              } @else {
+                <span>✦</span>
+              }
+            </div>
+            <div class="story-brand-texts">
+              <strong class="story-brand-name">{{ customStoreName() || 'NeXooAi Luxury Saree Try-On' }}</strong>
+              <span class="story-time-hint">✨ Today's Draping • Look #{{ activeStoryIndex() + 1 }} of {{ lookbookFeed().length }}</span>
+            </div>
+          </div>
+          <button type="button" class="btn-close-story" (click)="closeTodayStories()" aria-label="Close Stories">✕</button>
+        </div>
+
+        <!-- Touch Tap Zones: Left = Previous Story, Right = Next Story -->
+        <div class="story-tap-zone left-zone" (click)="prevStory()" title="Previous Story"></div>
+        <div class="story-tap-zone right-zone" (click)="nextStory()" title="Next Story"></div>
+
+        <!-- Current Story High-Res Image -->
+        @if (lookbookFeed().length > 0) {
+          @let curStory = lookbookFeed()[activeStoryIndex() % lookbookFeed().length];
+          <div class="story-hero-stage">
+            <img [src]="curStory.result_image_url" [alt]="curStory.saree_name_en" class="story-full-img" />
+
+            <!-- Luxury Watermark -->
+            <span class="story-watermark">✦ {{ customStoreName() || 'NeXooAi Luxury Silks' }}</span>
+
+            <!-- Bottom Story Garment Card -->
+            <div class="story-bottom-garment-card glass-panel">
+              <div class="story-card-pills">
+                <span class="story-cat-badge">🥻 {{ curStory.category }}</span>
+                <span class="story-price-badge">₹{{ curStory.price.toLocaleString('en-IN') }}</span>
+              </div>
+              <h3 class="story-garment-title">
+                {{ translationService.currentLanguage() === 'ta' ? curStory.saree_name_ta : curStory.saree_name_en }}
+              </h3>
+              <button type="button" class="btn-try-this-look-pulse" (click)="selectStoryGarmentAndTry(curStory)">
+                <span>✨ Try This Look On Me</span>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
 

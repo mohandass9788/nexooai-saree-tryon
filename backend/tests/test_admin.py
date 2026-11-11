@@ -90,6 +90,24 @@ async def test_admin_toggle_product_status(manager_headers):
 
 @pytest.mark.asyncio
 async def test_admin_jobs_and_safe_retry(manager_headers):
+    from datetime import datetime
+    from backend.app.db.session import AsyncSessionLocal
+    from backend.app.db.models import TryOnJobModel
+
+    async with AsyncSessionLocal() as session:
+        test_job = TryOnJobModel(
+            id="job_4b99ef21",
+            product_id="test_prod_01",
+            shop_id="shop_default",
+            status="failed",
+            error_message="PROVIDER_TIMEOUT",
+            processing_time_ms=1200,
+            estimated_cost_usd=0.0,
+            created_at=datetime.utcnow(),
+        )
+        session.add(test_job)
+        await session.commit()
+
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         # List jobs
         jobs_resp = await client.get("/api/v1/admin/jobs", headers=manager_headers)

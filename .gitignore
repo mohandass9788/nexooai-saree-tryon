@@ -276,3 +276,7 @@ backend/test-media/
 .DS_Store
 Thumbs.db
 
+
+# Scratch and agent files
+scratch/
+.agents/

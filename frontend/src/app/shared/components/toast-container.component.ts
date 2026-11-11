@@ -43,8 +43,8 @@ import { NotificationService, ToastItem } from '../../core/services/notification
   styles: [`
     .toast-portal-container {
       position: fixed;
-      top: 2rem;
-      right: 2rem;
+      top: 5.25rem;
+      right: 1.5rem;
       z-index: 99999;
       display: flex;
       flex-direction: column;
@@ -52,6 +52,16 @@ import { NotificationService, ToastItem } from '../../core/services/notification
       max-width: 420px;
       width: calc(100vw - 3rem);
       pointer-events: none;
+    }
+    @media (max-width: 768px) {
+      .toast-portal-container {
+        top: auto;
+        bottom: 1.25rem;
+        right: 1rem;
+        left: 1rem;
+        width: auto;
+        max-width: none;
+      }
     }
     .kiosk-toast {
       pointer-events: auto;
