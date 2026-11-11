@@ -2957,3 +2957,112 @@
     padding: 1.25rem;
   }
 }
+
+/* =========================================================================
+   2-Letter Language Pill & Dropdown (🌐 TA ▾)
+   ========================================================================= */
+.lang-pill-container {
+  position: relative;
+}
+
+.lang-pill-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--bg-card, rgba(25, 15, 35, 0.85));
+  border: 1px solid var(--border-card, rgba(212, 175, 55, 0.3));
+  color: var(--text-primary, #f7f3f9);
+  padding: 0.38rem 0.75rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 0.82rem;
+  letter-spacing: 0.04em;
+  transition: all 0.2s ease;
+}
+
+.lang-pill-btn:hover {
+  border-color: #ffd700;
+  transform: translateY(-1px);
+}
+
+.lang-icon {
+  font-size: 0.95rem;
+}
+
+.lang-code {
+  color: #ffd700;
+}
+
+.lang-caret {
+  font-size: 0.7rem;
+  opacity: 0.7;
+}
+
+.lang-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  background: #190f23;
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  padding: 0.4rem;
+  min-width: 170px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.theme-light .lang-dropdown-menu {
+  background: #ffffff;
+  border-color: rgba(212, 175, 55, 0.4);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.lang-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  background: transparent;
+  border: none;
+  border-radius: 8px;
+  color: #f7f3f9;
+  cursor: pointer;
+  font-size: 0.85rem;
+  transition: background 0.15s ease;
+}
+
+.theme-light .lang-dropdown-item {
+  color: #1a1a2e;
+}
+
+.lang-dropdown-item:hover {
+  background: rgba(255, 23, 125, 0.15);
+  color: #ffd700;
+}
+
+.lang-dropdown-item.active {
+  background: rgba(212, 175, 55, 0.2);
+  color: #ffd700;
+  font-weight: 700;
+}
+
+.lang-item-code {
+  font-weight: 800;
+  font-size: 0.78rem;
+  color: #ffd700;
+}
+
+.lang-item-native {
+  font-size: 0.82rem;
+}
+
+.check-mark {
+  font-size: 0.8rem;
+  color: #ffd700;
+  margin-left: 0.5rem;
+}

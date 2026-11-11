@@ -27,23 +27,38 @@
         <a href="#collections" class="nav-item" (click)="scrollToSection('collections', $event)">{{ t('navCollections') }}</a>
         <a href="#for-stores" class="nav-item" (click)="scrollToSection('for-stores', $event)">{{ t('navForStores') }}</a>
         <a *ngIf="showPricingSection()" href="#pricing" class="nav-item" (click)="scrollToSection('pricing', $event)">{{ t('navPricing') }}</a>
-        <a href="#contact" class="nav-item" (click)="scrollToSection('contact', $event)">{{ t('navContact') }}</a>
+        <a routerLink="/contact" class="nav-item">{{ t('navContact') }}</a>
       </nav>
 
       <!-- Right Action Items -->
       <div class="nav-right-actions">
         <!-- Compact Language Selector (Icon Pill) -->
-        <div class="language-dropdown-wrap desktop-only" title="Select Website Language">
-          <span class="lang-globe-icon">🌐</span>
-          <select
-            class="lang-select-box"
-            [ngModel]="currentLang()"
-            (ngModelChange)="setLanguage($event)"
-            aria-label="Select website language">
+                <!-- Compact 2-Letter Language Selector Pill (🌐 TA ▾) -->
+        <div class="lang-pill-container desktop-only">
+          <button
+            type="button"
+            class="lang-pill-btn"
+            (click)="toggleLangDropdown($event)"
+            title="Switch Language">
+            <span class="lang-icon">🌐</span>
+            <span class="lang-code">{{ currentLang().toUpperCase() }}</span>
+            <span class="lang-caret">▾</span>
+          </button>
+
+          <!-- Dropdown Menu -->
+          <div *ngIf="showLangDropdown()" class="lang-dropdown-menu">
             @for (lang of languages; track lang.code) {
-              <option [value]="lang.code">{{ lang.code.toUpperCase() }} ({{ lang.nativeLabel }})</option>
+              <button
+                type="button"
+                class="lang-dropdown-item"
+                [class.active]="currentLang() === lang.code"
+                (click)="selectLanguageAndClose(lang.code)">
+                <span class="lang-item-code">{{ lang.code.toUpperCase() }}</span>
+                <span class="lang-item-native">{{ lang.nativeLabel }}</span>
+                <span *ngIf="currentLang() === lang.code" class="check-mark">✓</span>
+              </button>
             }
-          </select>
+          </div>
         </div>
 
         <!-- Theme Toggle Switch (Compact Icon Button) -->
@@ -118,7 +133,7 @@
         <a *ngIf="showPricingSection()" href="#pricing" class="mobile-nav-link" (click)="scrollToSection('pricing', $event)">
           <span>💳</span> <span>{{ t('navPricing') }}</span>
         </a>
-        <a href="#contact" class="mobile-nav-link" (click)="scrollToSection('contact', $event)">
+        <a routerLink="/contact" class="mobile-nav-link" (click)="closeMobileNav()">
           <span>📞</span> <span>{{ t('navContact') }}</span>
         </a>
       </nav>
@@ -884,7 +899,7 @@
           <a href="#how-it-works" (click)="scrollToSection('how-it-works', $event)">{{ t('navHowItWorks') }}</a>
           <a href="#collections" (click)="scrollToSection('collections', $event)">{{ t('navCollections') }}</a>
           <a *ngIf="showPricingSection()" href="#pricing" (click)="scrollToSection('pricing', $event)">{{ t('navPricing') }}</a>
-          <a href="#contact" (click)="scrollToSection('contact', $event)">{{ t('navContact') }}</a>
+          <a routerLink="/contact">{{ t('navContact') }}</a>
           <a routerLink="/login">{{ t('navShowroomLogin') }}</a>
         </div>
 

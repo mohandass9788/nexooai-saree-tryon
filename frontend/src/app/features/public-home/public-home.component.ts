@@ -87,6 +87,7 @@ export class PublicHomeComponent implements OnInit, OnDestroy {
   // Language & Theme State
   languages = LANGUAGE_OPTIONS;
   currentLang = signal<LanguageCode>('en');
+  showLangDropdown = signal<boolean>(false);
   isDarkMode = signal<boolean>(true);
   billingCycle = signal<'monthly' | 'yearly'>('monthly');
 
@@ -859,6 +860,27 @@ export class PublicHomeComponent implements OnInit, OnDestroy {
   // =========================================================================
   // LANGUAGE SWITCHER
   // =========================================================================
+  
+  toggleLangDropdown(event?: Event) {
+    if (event) {
+      event.stopPropagation();
+    }
+    this.showLangDropdown.update((v) => !v);
+  }
+
+  selectLanguageAndClose(lang: LanguageCode) {
+    this.setLanguage(lang);
+    this.showLangDropdown.set(false);
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (target && !target.closest('.lang-pill-container')) {
+      this.showLangDropdown.set(false);
+    }
+  }
+
   setLanguage(lang: LanguageCode) {
     this.currentLang.set(lang);
     try {

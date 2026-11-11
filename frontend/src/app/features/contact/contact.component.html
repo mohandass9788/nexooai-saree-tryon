@@ -1,0 +1,318 @@
+<div class="contact-page-container" [class.theme-dark]="isDarkMode()" [class.theme-light]="!isDarkMode()">
+  <!-- Top Navigation Header -->
+  <header class="contact-navbar">
+    <div class="nav-content">
+      <!-- Brand Logo -->
+      <a routerLink="/" class="nav-brand">
+        <div class="logo-brain-icon">
+          <img
+            [src]="isDarkMode() ? 'assets/images/nexooai_icon.png' : 'assets/images/nexooai_icon_black.png'"
+            alt="NeXooAI Logo"
+            width="38"
+            height="38"
+            class="brand-logo-img"
+          />
+        </div>
+        <div class="brand-text-block">
+          <span class="brand-title">NeXoo<span class="brand-ai">AI</span></span>
+          <span class="brand-slogan">{{ t('tagline') }}</span>
+        </div>
+      </a>
+
+      <!-- Right Action Bar -->
+      <div class="nav-right-actions">
+        <!-- Back to Home Button -->
+        <a routerLink="/" class="btn-back-home">
+          <span>←</span> <span>{{ currentLang() === 'ta' ? 'முகப்புக்குத் திரும்பு' : 'Back to Home' }}</span>
+        </a>
+
+        <!-- Compact 2-Letter Language Selector Pill -->
+        <div class="lang-pill-container">
+          <button
+            type="button"
+            class="lang-pill-btn"
+            (click)="toggleLangDropdown()"
+            title="Switch Language">
+            <span class="lang-icon">🌐</span>
+            <span class="lang-code">{{ currentLang().toUpperCase() }}</span>
+            <span class="lang-caret">▾</span>
+          </button>
+
+          <!-- Dropdown Menu -->
+          <div *ngIf="showLangDropdown()" class="lang-dropdown-menu">
+            @for (lang of languages; track lang.code) {
+              <button
+                type="button"
+                class="lang-dropdown-item"
+                [class.active]="currentLang() === lang.code"
+                (click)="selectLanguage(lang.code)">
+                <span class="lang-item-code">{{ lang.code.toUpperCase() }}</span>
+                <span class="lang-item-native">{{ lang.nativeLabel }}</span>
+                <span *ngIf="currentLang() === lang.code" class="check-mark">✓</span>
+              </button>
+            }
+          </div>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button
+          type="button"
+          class="theme-toggle-btn"
+          (click)="toggleTheme()"
+          [title]="isDarkMode() ? 'Switch to Light Mode' : 'Switch to Dark Mode'"
+          aria-label="Toggle theme">
+          <span>{{ isDarkMode() ? '☀️' : '🌙' }}</span>
+        </button>
+
+        <!-- Showroom Portal Login -->
+        <a routerLink="/login" class="btn-login-pill">
+          <span>🔑</span> <span>{{ t('navLogin') }}</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Hero Header -->
+  <section class="contact-hero-section">
+    <div class="hero-inner">
+      <div class="badge-pill">
+        <span>✦</span> <span>{{ t('contactBadge') }}</span>
+      </div>
+      <h1 class="hero-heading">
+        {{ t('contactTitle') }}
+      </h1>
+      <p class="hero-subtext">
+        {{ t('contactSubtitle') }}
+      </p>
+    </div>
+  </section>
+
+  <!-- Main Content Grid -->
+  <main class="contact-main-grid">
+    <!-- Left Column: Dual Leadership Cards -->
+    <div class="leadership-column">
+      <div class="section-subheading-wrap">
+        <h2 class="subheading-title">
+          {{ currentLang() === 'ta' ? 'நிர்வாகத் தலைமை' : 'Executive Leadership' }}
+        </h2>
+        <p class="subheading-desc">
+          {{ currentLang() === 'ta' ? 'எங்கள் நிறுவனத் தலைவர்களுடன் நேரடியாகத் தொடர்பு கொண்டு உங்கள் ஷோரூமிற்கான ஆலோசனைகளைப் பெறுங்கள்.' : 'Direct access to our founding executives for boutique deployment and retail partnerships.' }}
+        </p>
+      </div>
+
+      <!-- Mohandass Card -->
+      <div class="executive-card">
+        <div class="card-top-row">
+          <div class="avatar-circle">M</div>
+          <div class="role-tag">{{ t('execBadgeMohan') }}</div>
+        </div>
+        <div class="card-info">
+          <h3 class="person-name">Mohandass</h3>
+          <span class="person-title">{{ t('roleMohan') }}</span>
+          <p class="person-bio">
+            {{ t('execBioMohan') }}
+          </p>
+        </div>
+        <div class="action-buttons-stack">
+          <a href="tel:+919788033234" class="btn-channel btn-call">
+            <span class="btn-icon">📞</span>
+            <span class="btn-label">{{ t('btnCallNow') }}: +91 97880 33234</span>
+          </a>
+          <a
+            href="https://wa.me/919788033234?text=Hello%20Mohandass%20Sir,%20I%20would%20like%20to%20connect%20regarding%20NeXooAi%20Kiosk."
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-channel btn-wa">
+            <span class="btn-icon">💬</span>
+            <span class="btn-label">{{ t('btnWhatsAppChat') }}</span>
+          </a>
+          <a href="mailto:nexooai@gmail.com?subject=Showroom%20Enquiry%20for%20Mohandass" class="btn-channel btn-mail">
+            <span class="btn-icon">✉️</span>
+            <span class="btn-label">{{ t('btnSendEmail') }}: nexooai&#64;gmail.com</span>
+          </a>
+        </div>
+      </div>
+
+      <!-- Sudhakar Card -->
+      <div class="executive-card gold-border">
+        <div class="card-top-row">
+          <div class="avatar-circle gold-circle">S</div>
+          <div class="role-tag gold-tag">{{ t('execBadgeSudha') }}</div>
+        </div>
+        <div class="card-info">
+          <h3 class="person-name">Sudhakar</h3>
+          <span class="person-title">{{ t('roleSudha') }}</span>
+          <p class="person-bio">
+            {{ t('execBioSudha') }}
+          </p>
+        </div>
+        <div class="action-buttons-stack">
+          <a href="tel:+919840319606" class="btn-channel btn-call">
+            <span class="btn-icon">📞</span>
+            <span class="btn-label">{{ t('btnCallNow') }}: +91 98403 19606</span>
+          </a>
+          <a
+            href="https://wa.me/919840319606?text=Hello%20Sudhakar%20Sir,%20I%20would%20like%20to%20discuss%20NeXooAi%20Showroom%20Partnership."
+            target="_blank"
+            rel="noopener noreferrer"
+            class="btn-channel btn-wa">
+            <span class="btn-icon">💬</span>
+            <span class="btn-label">{{ t('btnWhatsAppChat') }}</span>
+          </a>
+          <a href="mailto:nexooai@gmail.com?subject=Partnership%20Enquiry%20for%20Sudhakar" class="btn-channel btn-mail">
+            <span class="btn-icon">✉️</span>
+            <span class="btn-label">{{ t('btnSendEmail') }}: nexooai&#64;gmail.com</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Direct Message / Inquiry Form -->
+    <div class="inquiry-column">
+      <div class="inquiry-box-card">
+        <h2 class="form-title">
+          {{ currentLang() === 'ta' ? 'ஷோரூம் டெமோ கோரிக்கை அனுப்புக' : 'Request Showroom Consultation' }}
+        </h2>
+        <p class="form-subtitle">
+          {{ currentLang() === 'ta' ? 'உங்கள் தொடர்பு விவரங்களை உள்ளிடுங்கள். எங்கள் குழு 2 மணி நேரத்திற்குள் வாட்ஸ்அப் அல்லது தொலைபேசி வாயிலாகத் தொடர்பு கொள்ளும்.' : 'Leave your details below. Our technical deployments team will reach out via WhatsApp or phone within 2 business hours.' }}
+        </p>
+
+        <!-- Form Success State -->
+        <div *ngIf="submitted()" class="form-success-banner">
+          <div class="success-icon">✨</div>
+          <h3>{{ t('modalSuccessTitle') }}</h3>
+          <p class="ref-badge">{{ t('modalBookingRef') }} <strong>{{ inquiryId() }}</strong></p>
+          <p class="success-note">
+            {{ currentLang() === 'ta' ? 'எங்கள் நிர்வாகக் குழு உங்கள் கோரிக்கையைப் பெற்றுக்கொண்டது. மிக விரைவில் உங்களை வாட்ஸ்அப்பில் தொடர்புகொள்வோம்.' : 'Thank you! We have received your inquiry. Our leadership team will connect with you shortly.' }}
+          </p>
+          <button type="button" class="btn-reset-form" (click)="resetForm()">
+            {{ currentLang() === 'ta' ? 'மற்றொரு கோரிக்கை அனுப்பு' : 'Submit Another Inquiry' }}
+          </button>
+        </div>
+
+        <!-- Form Input Fields -->
+        <form *ngIf="!submitted()" (ngSubmit)="submitInquiry()" class="inquiry-form">
+          <div class="form-field">
+            <label>{{ t('lblShowroomName') }}</label>
+            <input
+              type="text"
+              name="showroomName"
+              [(ngModel)]="contactForm.showroomName"
+              [placeholder]="currentLang() === 'ta' ? 'எ.கா: ஸ்ரீ முருகன் சில்க்ஸ் & ரெடிமேட்ஸ்' : 'e.g. Sri Murugan Silks & Readymades'"
+              required />
+          </div>
+
+          <div class="form-field">
+            <label>{{ t('lblContactPerson') }}</label>
+            <input
+              type="text"
+              name="contactPerson"
+              [(ngModel)]="contactForm.contactPerson"
+              [placeholder]="currentLang() === 'ta' ? 'எ.கா: திரு. ராம்குமார் (உரிமையாளர்)' : 'e.g. Mr. Ramkumar (Proprietor)'"
+              required />
+          </div>
+
+          <div class="form-row-2col">
+            <div class="form-field">
+              <label>{{ t('lblPhone') }}</label>
+              <input
+                type="tel"
+                name="phone"
+                [(ngModel)]="contactForm.phone"
+                placeholder="+91 97880 33234"
+                required />
+            </div>
+
+            <div class="form-field">
+              <label>{{ t('lblCity') }}</label>
+              <input
+                type="text"
+                name="city"
+                [(ngModel)]="contactForm.city"
+                [placeholder]="currentLang() === 'ta' ? 'சென்னை, கோவை, மதுரை...' : 'Chennai, Coimbatore, Madurai...'"
+                required />
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label>{{ currentLang() === 'ta' ? 'தேவைப்படும் கியோஸ்க் எண்ணிக்கை' : 'Estimated Kiosks Needed' }}</label>
+            <select name="estimatedKiosks" [(ngModel)]="contactForm.estimatedKiosks" class="select-kiosk-count">
+              <option [value]="1">1 Kiosk (Single Boutique)</option>
+              <option [value]="2">2 - 3 Kiosks (Multi-Floor Showroom)</option>
+              <option [value]="5">4+ Kiosks (Retail Chain / Multi-Branch)</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label>{{ currentLang() === 'ta' ? 'உங்கள் கருத்து அல்லது தேவைகள்' : 'Message / Specific Garment Requirements' }}</label>
+            <textarea
+              name="message"
+              [(ngModel)]="contactForm.message"
+              rows="3"
+              [placeholder]="currentLang() === 'ta' ? 'எ.கா: பட்டுப்புடவை மற்றும் திருமண ஆடைகளுக்கான விர்ச்சுவல் ட்ரை-ஆன் தேவை...' : 'e.g. Inquiring about Silk Saree & Bridal trial room totem demo...'"></textarea>
+          </div>
+
+          <div *ngIf="errorMessage()" class="form-error-banner">
+            {{ errorMessage() }}
+          </div>
+
+          <button type="submit" class="btn-submit-inquiry" [disabled]="submitting()">
+            <span *ngIf="!submitting()">{{ currentLang() === 'ta' ? 'கோரிக்கையை உறுதி செய்க ➔' : 'Submit Showroom Inquiry ➔' }}</span>
+            <span *ngIf="submitting()">{{ currentLang() === 'ta' ? 'அனுப்பப்படுகிறது...' : 'Submitting...' }}</span>
+          </button>
+        </form>
+      </div>
+
+      <!-- Regional Office & Presence Summary -->
+      <div class="office-support-card">
+        <div class="office-header">
+          <span class="office-icon">📍</span>
+          <div>
+            <h4>{{ t('hqTitle') }}</h4>
+            <p>{{ t('hqDesc') }}</p>
+          </div>
+        </div>
+
+        <div class="office-details-grid">
+          <div class="detail-box">
+            <span class="detail-icon">🕒</span>
+            <div>
+              <strong>{{ t('supportHoursTitle') }}</strong>
+              <p>{{ t('supportHoursValue') }}</p>
+            </div>
+          </div>
+
+          <div class="detail-box">
+            <span class="detail-icon">🤝</span>
+            <div>
+              <strong>{{ t('trialConsultTitle') }}</strong>
+              <p>{{ t('trialConsultValue') }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Regional Cities -->
+        <div class="cities-pills-row">
+          <span class="city-pill">🏛️ Chennai (T. Nagar)</span>
+          <span class="city-pill">🏬 Coimbatore (Cross Cut Rd)</span>
+          <span class="city-pill">🛍️ Madurai (South Masi St)</span>
+          <span class="city-pill">🌆 Bengaluru (Commercial St)</span>
+          <span class="city-pill">💎 Hyderabad (Jubilee Hills)</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer -->
+  <footer class="contact-footer">
+    <div class="footer-inner">
+      <span>{{ t('copyright') }}</span>
+      <div class="footer-links">
+        <a routerLink="/">{{ t('navHome') }}</a>
+        <a routerLink="/login">{{ t('navShowroomLogin') }}</a>
+        <a href="tel:+919788033234">+91 97880 33234</a>
+        <a href="mailto:nexooai@gmail.com">nexooai&#64;gmail.com</a>
+      </div>
+    </div>
+  </footer>
+</div>
