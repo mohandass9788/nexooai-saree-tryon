@@ -459,6 +459,7 @@ describe('NeXooAi Saree Kiosk App', () => {
     kioskService.setCustomGarment('data:image/jpeg;base64,custom_garment_sample', new Blob([], { type: 'image/jpeg' }));
     expect(kioskService.customGarmentDataUrl()).toContain('custom_garment_sample');
 
+    app.isCustomGarmentValid.set(true);
     app.confirmCustomProductAndProceed();
     expect(kioskService.currentStep()).toBe('COMBINE');
   });

@@ -24,18 +24,19 @@ async def test_concurrent_kiosk_traffic_soak():
     """
     image_bytes = create_dummy_jpeg()
 
-    async def simulate_kiosk_interaction(kiosk_num: int):
-        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
-            # 1. Fetch categories
-            cat_resp = await client.get("/api/v1/catalog/categories/list")
-            assert cat_resp.status_code == 200
+    # Wrap the entire concurrent soak in patch so all 20 coroutines use MockTryOnEngine
+    with patch("backend.app.api.v1.endpoints.tryon.get_tryon_engine", return_value=MockTryOnEngine()):
+        async def simulate_kiosk_interaction(kiosk_num: int):
+            async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+                # 1. Fetch categories
+                cat_resp = await client.get("/api/v1/catalog/categories/list")
+                assert cat_resp.status_code == 200
 
-            # 2. Fetch catalog
-            prod_resp = await client.get("/api/v1/catalog?page=1&limit=10")
-            assert prod_resp.status_code == 200
+                # 2. Fetch catalog
+                prod_resp = await client.get("/api/v1/catalog?page=1&limit=10")
+                assert prod_resp.status_code == 200
 
-            # 3. Submit try-on job
-            with patch("backend.app.api.v1.endpoints.tryon.get_tryon_engine", return_value=MockTryOnEngine()):
+                # 3. Submit try-on job
                 tryon_resp = await client.post(
                     "/api/v1/tryon",
                     data={
@@ -52,13 +53,13 @@ async def test_concurrent_kiosk_traffic_soak():
                 assert data["status"] == "completed"
                 return data["job_id"]
 
-    # Execute 20 concurrent kiosk sessions concurrently
-    tasks = [simulate_kiosk_interaction(i) for i in range(20)]
-    results = await asyncio.gather(*tasks)
+        # Execute 20 concurrent kiosk sessions concurrently
+        tasks = [simulate_kiosk_interaction(i) for i in range(20)]
+        results = await asyncio.gather(*tasks)
 
-    # All 20 jobs completed without error or database lock
-    assert len(results) == 20
-    assert len(set(results)) == 20  # All unique job IDs
+        # All 20 jobs completed without error or database lock
+        assert len(results) == 20
+        assert len(set(results)) == 20  # All unique job IDs
 
 
 @pytest.mark.asyncio

@@ -174,6 +174,7 @@ async def create_tryon_job(
         except Exception:
             active_shop_id = "shop_default"
 
+    shop_record = None
     # Enforce Tenant Subscription Status & Monthly Try-On Quota (Phases S3-S5)
     try:
         res_sh = await db.execute(select(ShopModel).where(ShopModel.id == active_shop_id))

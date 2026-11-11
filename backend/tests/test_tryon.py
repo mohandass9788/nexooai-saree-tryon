@@ -56,9 +56,13 @@ async def test_tryon_success_and_qr_download():
             assert "download_token" in data
             assert "qr_download_url" in data
 
-            # Test download using secure QR token
+            # Test download using secure QR token (mobile landing and raw file)
             token = data["download_token"]
-            download_resp = await client.get(f"/api/v1/tryon/download/{token}")
+            html_resp = await client.get(f"/api/v1/tryon/download/{token}")
+            assert html_resp.status_code == 200
+            assert "text/html" in html_resp.headers["content-type"]
+
+            download_resp = await client.get(f"/api/v1/tryon/download/{token}?raw=1")
             assert download_resp.status_code == 200
             assert download_resp.headers["content-type"] == "image/jpeg"
             assert len(download_resp.content) > 0
