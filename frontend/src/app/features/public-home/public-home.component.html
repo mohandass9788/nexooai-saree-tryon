@@ -15,19 +15,19 @@
         </div>
         <div class="brand-text-block">
           <span class="brand-title">NeXoo<span class="brand-ai">AI</span></span>
-          <span class="brand-slogan">AI FOR A SMARTER TOMORROW</span>
+          <span class="brand-slogan">{{ t('tagline') }}</span>
         </div>
       </a>
 
       <!-- Center Navigation Links (With Smooth Scrolling) -->
       <nav class="center-nav">
-        <a href="#home" class="nav-item active" (click)="scrollToSection('home', $event)">Home</a>
-        <a href="#features" class="nav-item" (click)="scrollToSection('features', $event)">Features</a>
-        <a href="#how-it-works" class="nav-item" (click)="scrollToSection('how-it-works', $event)">How It Works</a>
-        <a href="#collections" class="nav-item" (click)="scrollToSection('collections', $event)">Collections</a>
-        <a href="#for-stores" class="nav-item" (click)="scrollToSection('for-stores', $event)">For Stores</a>
-        <a *ngIf="showPricingSection()" href="#pricing" class="nav-item" (click)="scrollToSection('pricing', $event)">Pricing</a>
-        <a href="#contact" class="nav-item" (click)="scrollToSection('contact', $event)">Contact Us</a>
+        <a href="#home" class="nav-item active" (click)="scrollToSection('home', $event)">{{ t('navHome') }}</a>
+        <a href="#features" class="nav-item" (click)="scrollToSection('features', $event)">{{ t('navFeatures') }}</a>
+        <a href="#how-it-works" class="nav-item" (click)="scrollToSection('how-it-works', $event)">{{ t('navHowItWorks') }}</a>
+        <a href="#collections" class="nav-item" (click)="scrollToSection('collections', $event)">{{ t('navCollections') }}</a>
+        <a href="#for-stores" class="nav-item" (click)="scrollToSection('for-stores', $event)">{{ t('navForStores') }}</a>
+        <a *ngIf="showPricingSection()" href="#pricing" class="nav-item" (click)="scrollToSection('pricing', $event)">{{ t('navPricing') }}</a>
+        <a href="#contact" class="nav-item" (click)="scrollToSection('contact', $event)">{{ t('navContact') }}</a>
       </nav>
 
       <!-- Right Action Items -->
@@ -59,12 +59,12 @@
         <!-- Showroom Login (Sleek Key Icon Pill) -->
         <a routerLink="/login" class="btn-showroom-login" title="Showroom Portal Login">
           <span class="login-key-icon">🔑</span>
-          <span class="login-text">Login</span>
+          <span class="login-text">{{ t('navLogin') }}</span>
         </a>
 
         <!-- Book a Demo Pill Button (Prominent Hero CTA) -->
         <button type="button" class="btn-book-demo-pill desktop-only" (click)="openDemoModal()">
-          Book a Demo <span class="arrow-right">→</span>
+          {{ t('navBookDemo') }} <span class="arrow-right">→</span>
         </button>
 
         <!-- Mobile / Tablet Hamburger Toggle Button -->
@@ -101,22 +101,25 @@
     <div class="mobile-nav-body">
       <nav class="mobile-nav-links">
         <a href="#home" class="mobile-nav-link" (click)="scrollToSection('home', $event)">
-          <span>🏠</span> <span>Home</span>
+          <span>🏠</span> <span>{{ t('navHome') }}</span>
         </a>
         <a href="#features" class="mobile-nav-link" (click)="scrollToSection('features', $event)">
-          <span>✨</span> <span>Features</span>
+          <span>✨</span> <span>{{ t('navFeatures') }}</span>
         </a>
         <a href="#how-it-works" class="mobile-nav-link" (click)="scrollToSection('how-it-works', $event)">
-          <span>🔄</span> <span>How It Works</span>
+          <span>🔄</span> <span>{{ t('navHowItWorks') }}</span>
         </a>
         <a href="#collections" class="mobile-nav-link" (click)="scrollToSection('collections', $event)">
-          <span>👗</span> <span>Collections</span>
+          <span>👗</span> <span>{{ t('navCollections') }}</span>
         </a>
         <a href="#for-stores" class="mobile-nav-link" (click)="scrollToSection('for-stores', $event)">
-          <span>🏬</span> <span>For Stores</span>
+          <span>🏬</span> <span>{{ t('navForStores') }}</span>
         </a>
-        <a href="#pricing" class="mobile-nav-link" (click)="scrollToSection('pricing', $event)">
-          <span>💳</span> <span>Pricing</span>
+        <a *ngIf="showPricingSection()" href="#pricing" class="mobile-nav-link" (click)="scrollToSection('pricing', $event)">
+          <span>💳</span> <span>{{ t('navPricing') }}</span>
+        </a>
+        <a href="#contact" class="mobile-nav-link" (click)="scrollToSection('contact', $event)">
+          <span>📞</span> <span>{{ t('navContact') }}</span>
         </a>
       </nav>
 
@@ -136,11 +139,11 @@
         </div>
 
         <button type="button" class="btn-book-demo-pill mobile-demo-btn" (click)="openDemoModal(); closeMobileNav()">
-          Book a Demo <span class="arrow-right">→</span>
+          {{ t('navBookDemo') }} <span class="arrow-right">→</span>
         </button>
 
         <a routerLink="/login" class="btn-showroom-login mobile-login-btn" (click)="closeMobileNav()">
-          Showroom Portal Login
+          {{ t('navShowroomLogin') }}
         </a>
       </div>
     </div>
@@ -172,11 +175,11 @@
         <!-- CTA Buttons Group -->
         <div class="hero-btn-row">
           <button type="button" class="btn-hero-primary" (click)="openDemoModal()">
-            Book a Free Demo <span class="arrow-icon">→</span>
+            {{ t('heroBookFreeDemo') }} <span class="arrow-icon">→</span>
           </button>
           <button type="button" class="btn-hero-video" (click)="openVideoModal()">
             <span class="play-circle">▶</span>
-            <span class="video-btn-text">Watch Video <small>(1 min)</small></span>
+            <span class="video-btn-text">{{ t('heroWatchVideo') }} <small>{{ t('heroVideoDuration') }}</small></span>
           </button>
         </div>
 
@@ -192,11 +195,11 @@
           </div>
           <div class="feature-pill">
             <span class="pill-icon">🖥️</span>
-            <span class="pill-label">Works on 55" Kiosks</span>
+            <span class="pill-label">{{ t('statKiosks') }}</span>
           </div>
           <div class="feature-pill">
             <span class="pill-icon">👑</span>
-            <span class="pill-label">Men, Women & Bridal</span>
+            <span class="pill-label">{{ t('statApparelSub') }}</span>
           </div>
         </div>
       </div>
@@ -265,8 +268,8 @@
       <div class="metric-item">
         <span class="metric-icon">⚡</span>
         <div class="metric-details">
-          <span class="metric-value">5 SEC</span>
-          <span class="metric-label">Average Try-On Speed</span>
+          <span class="metric-value">{{ t('statSpeedNumber') }}</span>
+          <span class="metric-label">{{ t('statSpeedLabel') }}</span>
         </div>
       </div>
 
@@ -275,8 +278,8 @@
       <div class="metric-item">
         <span class="metric-icon">📈</span>
         <div class="metric-details">
-          <span class="metric-value">3.2X</span>
-          <span class="metric-label">Increase in Showroom Sales</span>
+          <span class="metric-value">{{ t('statConversionNumber') }}</span>
+          <span class="metric-label">{{ t('statConversionLabel') }}</span>
         </div>
       </div>
 
@@ -285,8 +288,8 @@
       <div class="metric-item">
         <span class="metric-icon">👑</span>
         <div class="metric-details">
-          <span class="metric-value">ALL APPAREL</span>
-          <span class="metric-label">Men, Women & Bridal</span>
+          <span class="metric-value">{{ t('statAllApparel') }}</span>
+          <span class="metric-label">{{ t('statApparelSub') }}</span>
         </div>
       </div>
 
@@ -295,8 +298,8 @@
       <div class="metric-item">
         <span class="metric-icon">🌐</span>
         <div class="metric-details">
-          <span class="metric-value">6 LANGUAGES</span>
-          <span class="metric-label">Native Indian Support</span>
+          <span class="metric-value">{{ t('statLanguagesNumber') }}</span>
+          <span class="metric-label">{{ t('statLanguagesLabel') }}</span>
         </div>
       </div>
 
@@ -305,8 +308,8 @@
       <div class="metric-item">
         <span class="metric-icon">🏬</span>
         <div class="metric-details">
-          <span class="metric-value">500+</span>
-          <span class="metric-label">Showrooms Trust Us</span>
+          <span class="metric-value">{{ t('statStoresCount') }}</span>
+          <span class="metric-label">{{ t('statStoresLabel') }}</span>
         </div>
       </div>
     </div>
@@ -316,12 +319,12 @@
   <section id="features" class="section-before-after">
     <div class="section-container">
       <div class="section-header-centered">
-        <span class="section-tag-sub">INSTANT AI VIRTUAL TRY-ON DEMO</span>
+        <span class="section-tag-sub">{{ t('demoBadge') }}</span>
         <h2 class="section-title-large">
-          Experience the AI Transformation <span class="gradient-text-pink">In Real-Time</span>
+          {{ t('demoTitle') }} <span class="gradient-text-pink">{{ t('demoTitleHighlight') }}</span>
         </h2>
         <p class="section-subtitle-muted">
-          See how a showroom customer's photo instantly transforms into authentic photorealistic Sarees, Salwars, or Men's Sherwanis with zero physical dressing trials.
+          {{ t('demoSubtitle') }}
         </p>
 
         <!-- Garment Switcher Toggle Pills -->
@@ -332,7 +335,7 @@
             [class.active]="activeCompareGarment() === 'saree'"
             (click)="setCompareOutfit('saree')">
             <span>👗</span>
-            <span>Royal Saree</span>
+            <span>{{ t('outfitSaree') }}</span>
           </button>
           <button
             type="button"
@@ -340,7 +343,7 @@
             [class.active]="activeCompareGarment() === 'salwar'"
             (click)="setCompareOutfit('salwar')">
             <span>✨</span>
-            <span>Emerald Salwar</span>
+            <span>{{ t('outfitSalwar') }}</span>
           </button>
           <button
             type="button"
@@ -348,7 +351,7 @@
             [class.active]="activeCompareGarment() === 'sherwani'"
             (click)="setCompareOutfit('sherwani')">
             <span>👑</span>
-            <span>Groom Sherwani</span>
+            <span>{{ t('outfitSherwani') }}</span>
           </button>
         </div>
       </div>
@@ -364,7 +367,7 @@
               class="compare-img" />
             <div class="compare-tag tag-after">
               <span class="status-pulse-green"></span>
-              <span>NeXooAI Fitted Try-On Result ({{ activeCompareData().fitTime }})</span>
+              <span>{{ t('fittedResultLabel') }} ({{ activeCompareData().fitTime }})</span>
             </div>
           </div>
 
@@ -375,7 +378,7 @@
               alt="Original Customer Photo"
               class="compare-img" />
             <div class="compare-tag tag-before">
-              <span>Original Customer Photo</span>
+              <span>{{ t('originalPhotoLabel') }}</span>
             </div>
           </div>
 
@@ -400,7 +403,7 @@
 
         <div class="compare-caption-bar">
           <span class="outfit-caption-name">{{ activeCompareData().name[currentLang()] }} ({{ activeCompareData().category }})</span>
-          <span class="drag-hint-pill">👈 Drag Slider to Reveal AI Transformation 👉</span>
+          <span class="drag-hint-pill">{{ t('dragHint') }}</span>
         </div>
       </div>
     </div>
@@ -410,12 +413,12 @@
   <section id="how-it-works" class="section-how-it-works">
     <div class="section-container">
       <div class="section-header-centered">
-        <span class="section-tag-sub">HOW IT WORKS</span>
+        <span class="section-tag-sub">{{ t('hiwBadge') }}</span>
         <h2 class="section-title-large">
-          Try Any Outfit in <span class="gradient-text-pink">4 Simple Steps</span>
+          {{ t('hiwTitle') }} <span class="gradient-text-pink">{{ t('hiwTitleHighlight') }}</span>
         </h2>
         <p class="section-subtitle-muted">
-          Fast, touch-first, and designed for showroom shoppers across Sarees, Salwars, Lehengas, and Men's Wear.
+          {{ t('hiwSubtitle') }}
         </p>
       </div>
 
@@ -429,8 +432,8 @@
           <div class="step-thumb-box">
             <img src="assets/images/step_01.png" alt="Step 1 Take a Photo" class="step-img" />
           </div>
-          <h3 class="step-title">Take a Photo</h3>
-          <p class="step-desc">Stand in front of the kiosk HD camera or upload a customer photo.</p>
+          <h3 class="step-title">{{ t('step1Title') }}</h3>
+          <p class="step-desc">{{ t('step1Desc') }}</p>
         </div>
 
         <div class="step-flow-arrow">→</div>
@@ -443,8 +446,8 @@
           <div class="step-thumb-box">
             <img src="assets/images/step_02.png" alt="Step 2 Choose Outfit" class="step-img" />
           </div>
-          <h3 class="step-title">Choose Any Garment</h3>
-          <p class="step-desc">Browse Silk Sarees, Salwars, Lehengas or Men's Sherwanis & Kurtas.</p>
+          <h3 class="step-title">{{ t('step2Title') }}</h3>
+          <p class="step-desc">{{ t('step2Desc') }}</p>
         </div>
 
         <div class="step-flow-arrow">→</div>
@@ -457,8 +460,8 @@
           <div class="step-thumb-box">
             <img src="assets/images/step_03.png" alt="Step 3 AI Try-On" class="step-img" />
           </div>
-          <h3 class="step-title">Instant AI Fitting</h3>
-          <p class="step-desc">Neural AI renders authentic drape, fit, folds, and fabric sheen in 5 seconds.</p>
+          <h3 class="step-title">{{ t('step3Title') }}</h3>
+          <p class="step-desc">{{ t('step3Desc') }}</p>
         </div>
 
         <div class="step-flow-arrow">→</div>
@@ -471,8 +474,8 @@
           <div class="step-thumb-box">
             <img src="assets/images/step_04.png" alt="Step 4 Save & Share" class="step-img" />
           </div>
-          <h3 class="step-title">QR & POS Slip</h3>
-          <p class="step-desc">Send HD photos to customer WhatsApp or print POS barcode slip for billing.</p>
+          <h3 class="step-title">{{ t('step4Title') }}</h3>
+          <p class="step-desc">{{ t('step4Desc') }}</p>
         </div>
       </div>
     </div>
@@ -483,14 +486,14 @@
     <div class="section-container">
       <div class="section-header-split">
         <div>
-          <span class="section-tag-sub">EXPLORE ALL COLLECTIONS</span>
-          <h2 class="section-title-large">Styles for Every Occasion & Everyone</h2>
+          <span class="section-tag-sub">{{ t('colBadge') }}</span>
+          <h2 class="section-title-large">{{ t('colTitle') }}</h2>
           <p class="section-subtitle-muted">
-            From traditional Kanchipuram silks and designer salwars to royal wedding sherwanis and bridal lehengas.
+            {{ t('colSubtitle') }}
           </p>
         </div>
         <a routerLink="/kiosk" class="link-view-all">
-          Launch Showroom Kiosk <span class="arrow-icon">→</span>
+          {{ t('colLaunchKiosk') }} <span class="arrow-icon">→</span>
         </a>
       </div>
 
@@ -502,7 +505,7 @@
           [class.active]="activeCategory() === 'all'"
           (click)="setCategory('all')">
           <span>✨</span>
-          <span>All Styles ({{ allCollections.length }})</span>
+          <span>{{ t('colFilterAll') }} ({{ allCollections.length }})</span>
         </button>
         <button
           type="button"
@@ -510,7 +513,7 @@
           [class.active]="activeCategory() === 'women'"
           (click)="setCategory('women')">
           <span>👗</span>
-          <span>Women's Sarees & Salwars</span>
+          <span>{{ t('colFilterWomen') }}</span>
         </button>
         <button
           type="button"
@@ -518,7 +521,7 @@
           [class.active]="activeCategory() === 'men'"
           (click)="setCategory('men')">
           <span>👑</span>
-          <span>Men's Sherwanis & Kurtas</span>
+          <span>{{ t('colFilterMen') }}</span>
         </button>
         <button
           type="button"
@@ -526,7 +529,7 @@
           [class.active]="activeCategory() === 'bridal'"
           (click)="setCategory('bridal')">
           <span>💎</span>
-          <span>Bridal & Festive Wear</span>
+          <span>{{ t('colFilterBridal') }}</span>
         </button>
       </div>
 
@@ -564,44 +567,44 @@
 
         <!-- Right: Text & 6 Feature Badges -->
         <div class="showrooms-info">
-          <span class="section-tag-sub">FOR TEXTILE SHOWROOMS</span>
+          <span class="section-tag-sub">{{ t('storesBadge') }}</span>
           <h2 class="section-title-large">
-            Create an <span class="gradient-text-pink">Unforgettable<br />Shopping Experience</span>
+            {{ t('storesTitle') }} <span class="gradient-text-pink">{{ t('storesTitleHighlight') }}<br />{{ t('storesTitleRest') }}</span>
           </h2>
           <p class="section-subtitle-muted">
-            Install NeXooAi in your showroom and let customers explore sarees, salwars and men's wear virtually. Increase engagement, conversions and sales.
+            {{ t('storesSubtitle') }}
           </p>
 
           <div class="features-2col-list">
             <div class="feature-bullet">
               <div class="bullet-icon-box">🖥️</div>
-              <span class="bullet-text">Works on 55-inch portrait kiosks</span>
+              <span class="bullet-text">{{ t('storeFeat1') }}</span>
             </div>
             <div class="feature-bullet">
               <div class="bullet-icon-box">🏷️</div>
-              <span class="bullet-text">Customize with your showroom logo</span>
+              <span class="bullet-text">{{ t('storeFeat2') }}</span>
             </div>
             <div class="feature-bullet">
               <div class="bullet-icon-box">🧾</div>
-              <span class="bullet-text">QR code & POS slip integration</span>
+              <span class="bullet-text">{{ t('storeFeat3') }}</span>
             </div>
             <div class="feature-bullet">
               <div class="bullet-icon-box">📶</div>
-              <span class="bullet-text">Offline resilient caching support</span>
+              <span class="bullet-text">{{ t('storeFeat4') }}</span>
             </div>
             <div class="feature-bullet">
               <div class="bullet-icon-box">👥</div>
-              <span class="bullet-text">Multi-branch & staff account support</span>
+              <span class="bullet-text">{{ t('storeFeat5') }}</span>
             </div>
             <div class="feature-bullet">
               <div class="bullet-icon-box">📊</div>
-              <span class="bullet-text">Real-time analytics & reports</span>
+              <span class="bullet-text">{{ t('storeFeat6') }}</span>
             </div>
           </div>
 
           <div class="showrooms-cta-row">
             <button type="button" class="btn-hero-primary" (click)="openDemoModal()">
-              Book a Showroom Demo <span class="arrow-icon">→</span>
+              {{ t('storeBookBtn') }} <span class="arrow-icon">→</span>
             </button>
           </div>
         </div>
@@ -613,12 +616,12 @@
   <section *ngIf="showPricingSection()" id="pricing" class="section-pricing">
     <div class="section-container">
       <div class="section-header-centered">
-        <span class="section-tag-sub">TRANSPARENT PRICING</span>
+        <span class="section-tag-sub">{{ t('pricingBadge') }}</span>
         <h2 class="section-title-large">
-          Choose the Plan Built for <span class="gradient-text-gold">Your Retail Scale</span>
+          {{ t('pricingTitle') }} <span class="gradient-text-gold">{{ t('pricingTitleHighlight') }}</span>
         </h2>
         <p class="section-subtitle-muted">
-          All plans include enterprise-grade tenant security, multi-language support and regular AI updates.
+          {{ t('pricingSubtitle') }}
         </p>
 
         <!-- Monthly / Yearly Billing Toggle -->
@@ -628,14 +631,14 @@
             class="toggle-opt"
             [class.active]="billingCycle() === 'monthly'"
             (click)="setBillingCycle('monthly')">
-            Monthly
+            {{ t('cycleMonthly') }}
           </button>
           <button
             type="button"
             class="toggle-opt"
             [class.active]="billingCycle() === 'yearly'"
             (click)="setBillingCycle('yearly')">
-            Yearly <small class="yearly-discount">(2 months free)</small>
+            {{ t('cycleYearly') }} <small class="yearly-discount">{{ t('saveTwoMonths') }}</small>
           </button>
         </div>
       </div>
@@ -647,52 +650,52 @@
           <div class="plan-header">
             <div class="plan-icon-square">🏪</div>
             <div>
-              <h3 class="plan-name">Silver Showroom</h3>
-              <p class="plan-caption">Ideal for single boutique showrooms</p>
+              <h3 class="plan-name">{{ t('planSilver') }}</h3>
+              <p class="plan-caption">{{ t('planSilverDesc') }}</p>
             </div>
           </div>
 
           <div class="price-display">
             <span class="currency">₹</span>
             <span class="amount">{{ billingCycle() === 'monthly' ? '9,999' : '99,990' }}</span>
-            <span class="period">/{{ billingCycle() === 'monthly' ? 'month' : 'year' }}</span>
+            <span class="period">{{ billingCycle() === 'monthly' ? t('perMonth') : t('perYear') }}</span>
           </div>
 
           <ul class="plan-features-list">
-            <li><span class="chk">✓</span> 500 virtual try-ons / month</li>
-            <li><span class="chk">✓</span> 1 active floor kiosk</li>
-            <li><span class="chk">✓</span> Sarees, Salwars & Men's suits</li>
-            <li><span class="chk">✓</span> QR & POS integration</li>
+            <li><span class="chk">✓</span> {{ t('silverF1') }}</li>
+            <li><span class="chk">✓</span> {{ t('silverF2') }}</li>
+            <li><span class="chk">✓</span> {{ t('silverF3') }}</li>
+            <li><span class="chk">✓</span> {{ t('silverF4') }}</li>
           </ul>
 
-          <button type="button" class="btn-plan-outline" (click)="openDemoModal()">Choose Silver</button>
+          <button type="button" class="btn-plan-outline" (click)="openDemoModal()">{{ t('chooseSilver') }}</button>
         </div>
 
         <!-- 2. Gold Showroom (Popular) -->
         <div class="pricing-card gold-card featured">
-          <div class="most-popular-banner">MOST POPULAR</div>
+          <div class="most-popular-banner">{{ t('mostPopular') }}</div>
           <div class="plan-header">
             <div class="plan-icon-square gold-sq">👑</div>
             <div>
-              <h3 class="plan-name">Gold Retailer</h3>
-              <p class="plan-caption">For leading retail & multi-floor showrooms</p>
+              <h3 class="plan-name">{{ t('planGold') }}</h3>
+              <p class="plan-caption">{{ t('planGoldDesc') }}</p>
             </div>
           </div>
 
           <div class="price-display">
             <span class="currency">₹</span>
             <span class="amount">{{ billingCycle() === 'monthly' ? '19,999' : '1,99,990' }}</span>
-            <span class="period">/{{ billingCycle() === 'monthly' ? 'month' : 'year' }}</span>
+            <span class="period">{{ billingCycle() === 'monthly' ? t('perMonth') : t('perYear') }}</span>
           </div>
 
           <ul class="plan-features-list">
-            <li><span class="chk gold-chk">✓</span> 2,500 virtual try-ons / month</li>
-            <li><span class="chk gold-chk">✓</span> Up to 3 active floor kiosks</li>
-            <li><span class="chk gold-chk">✓</span> Full bridal & custom catalog upload</li>
-            <li><span class="chk gold-chk">✓</span> Dedicated WhatsApp delivery line</li>
+            <li><span class="chk gold-chk">✓</span> {{ t('goldF1') }}</li>
+            <li><span class="chk gold-chk">✓</span> {{ t('goldF2') }}</li>
+            <li><span class="chk gold-chk">✓</span> {{ t('goldF3') }}</li>
+            <li><span class="chk gold-chk">✓</span> {{ t('goldF4') }}</li>
           </ul>
 
-          <button type="button" class="btn-plan-gold" (click)="openDemoModal()">Choose Gold</button>
+          <button type="button" class="btn-plan-gold" (click)="openDemoModal()">{{ t('chooseGold') }}</button>
         </div>
 
         <!-- 3. Diamond Enterprise -->
@@ -700,25 +703,135 @@
           <div class="plan-header">
             <div class="plan-icon-square">🏛️</div>
             <div>
-              <h3 class="plan-name">Diamond Chain</h3>
-              <p class="plan-caption">For multi-branch textile chains</p>
+              <h3 class="plan-name">{{ t('planDiamond') }}</h3>
+              <p class="plan-caption">{{ t('planDiamondDesc') }}</p>
             </div>
           </div>
 
           <div class="price-display">
             <span class="currency">₹</span>
             <span class="amount">{{ billingCycle() === 'monthly' ? '49,999' : '4,99,990' }}</span>
-            <span class="period">/{{ billingCycle() === 'monthly' ? 'month' : 'year' }}</span>
+            <span class="period">{{ billingCycle() === 'monthly' ? t('perMonth') : t('perYear') }}</span>
           </div>
 
           <ul class="plan-features-list">
-            <li><span class="chk">✓</span> Unlimited virtual try-ons</li>
-            <li><span class="chk">✓</span> Unlimited kiosks across all branches</li>
-            <li><span class="chk">✓</span> Dedicated private AI cluster</li>
-            <li><span class="chk">✓</span> 24/7 dedicated engineering support</li>
+            <li><span class="chk">✓</span> {{ t('diamondF1') }}</li>
+            <li><span class="chk">✓</span> {{ t('diamondF2') }}</li>
+            <li><span class="chk">✓</span> {{ t('diamondF3') }}</li>
+            <li><span class="chk">✓</span> {{ t('diamondF4') }}</li>
           </ul>
 
-          <button type="button" class="btn-plan-outline" (click)="openDemoModal()">Contact Enterprise</button>
+          <button type="button" class="btn-plan-outline" (click)="openDemoModal()">{{ t('chooseDiamond') }}</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Executive Leadership & Direct Showroom Contact Section -->
+  <section id="contact" class="section-contact-us">
+    <div class="section-container">
+      <div class="section-header-centered">
+        <span class="section-tag-sub">{{ t('contactBadge') }}</span>
+        <h2 class="section-title-large">
+          {{ t('contactTitle') }}
+        </h2>
+        <p class="section-subtitle-muted">
+          {{ t('contactSubtitle') }}
+        </p>
+      </div>
+
+      <div class="contact-cards-grid">
+        <!-- Mohandass - Founder & CEO -->
+        <div class="exec-contact-card">
+          <div class="exec-card-badge">FOUNDER & CEO</div>
+          <div class="exec-avatar-wrap">
+            <div class="exec-avatar-initials">M</div>
+          </div>
+          <div class="exec-info">
+            <h3 class="exec-name">Mohandass</h3>
+            <span class="exec-role">{{ t('roleMohan') }}</span>
+            <p class="exec-bio">
+              Architecting NeXooAi's neural fabric rendering engine and 55-inch commercial totem kiosk technology for India's leading retail brands.
+            </p>
+          </div>
+          <div class="exec-contact-channels">
+            <a href="tel:+919788033234" class="exec-channel-btn tel-btn" title="Call Mohandass directly">
+              <span class="ch-icon">📞</span>
+              <span class="ch-label">{{ t('btnCallNow') }}: +91 97880 33234</span>
+            </a>
+            <a
+              href="https://wa.me/919788033234?text=Hello%20Mohandass%20Sir,%20I%20would%20like%20to%20connect%20regarding%20NeXooAi%20Kiosk."
+              target="_blank"
+              rel="noopener noreferrer"
+              class="exec-channel-btn wa-btn"
+              title="Chat on WhatsApp with Mohandass">
+              <span class="ch-icon">💬</span>
+              <span class="ch-label">{{ t('btnWhatsAppChat') }}</span>
+            </a>
+            <a href="mailto:nexooai@gmail.com?subject=Showroom%20Enquiry%20for%20Mohandass" class="exec-channel-btn mail-btn" title="Send Email">
+              <span class="ch-icon">✉️</span>
+              <span class="ch-label">{{ t('btnSendEmail') }}: nexooai&#64;gmail.com</span>
+            </a>
+          </div>
+        </div>
+
+        <!-- Sudhakar - Co-Founder & Head of Showroom Partnerships -->
+        <div class="exec-contact-card">
+          <div class="exec-card-badge gold-badge">HEAD OF PARTNERSHIPS</div>
+          <div class="exec-avatar-wrap">
+            <div class="exec-avatar-initials gold-initials">S</div>
+          </div>
+          <div class="exec-info">
+            <h3 class="exec-name">Sudhakar</h3>
+            <span class="exec-role">{{ t('roleSudha') }}</span>
+            <p class="exec-bio">
+              Managing boutique showroom onboarding, client relations, commercial hardware deployments, and multi-store rollout partnerships.
+            </p>
+          </div>
+          <div class="exec-contact-channels">
+            <a href="tel:+919840319606" class="exec-channel-btn tel-btn" title="Call Sudhakar directly">
+              <span class="ch-icon">📞</span>
+              <span class="ch-label">{{ t('btnCallNow') }}: +91 98403 19606</span>
+            </a>
+            <a
+              href="https://wa.me/919840319606?text=Hello%20Sudhakar%20Sir,%20I%20would%20like%20to%20discuss%20NeXooAi%20Showroom%20Partnership."
+              target="_blank"
+              rel="noopener noreferrer"
+              class="exec-channel-btn wa-btn"
+              title="Chat on WhatsApp with Sudhakar">
+              <span class="ch-icon">💬</span>
+              <span class="ch-label">{{ t('btnWhatsAppChat') }}</span>
+            </a>
+            <a href="mailto:nexooai@gmail.com?subject=Partnership%20Enquiry%20for%20Sudhakar" class="exec-channel-btn mail-btn" title="Send Email">
+              <span class="ch-icon">✉️</span>
+              <span class="ch-label">{{ t('btnSendEmail') }}: nexooai&#64;gmail.com</span>
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <!-- Regional Support Hub Banner -->
+      <div class="office-support-banner">
+        <div class="office-item">
+          <span class="office-icon">📍</span>
+          <div>
+            <strong>{{ t('hqTitle') }}</strong>
+            <p>{{ t('hqDesc') }}</p>
+          </div>
+        </div>
+        <div class="office-item">
+          <span class="office-icon">🕒</span>
+          <div>
+            <strong>Business & Showroom Support Hours</strong>
+            <p>Monday - Saturday: 9:30 AM to 8:30 PM IST</p>
+          </div>
+        </div>
+        <div class="office-item">
+          <span class="office-icon">🤝</span>
+          <div>
+            <strong>Showroom Trial Consultations</strong>
+            <p>Free on-site demonstration across major hubs</p>
+          </div>
         </div>
       </div>
     </div>
@@ -727,17 +840,16 @@
   <!-- Pre-Footer CTA Showcase Banner -->
   <section class="section-prefooter-banner">
     <div class="prefooter-box">
-      <h2 class="prefooter-title">Transform Your Retail Showroom with NeXooAi</h2>
+      <h2 class="prefooter-title">{{ t('ctaTitle') }}</h2>
       <p class="prefooter-subtitle">
-        Join leading textile boutiques and multi-storey showrooms across Tamil Nadu & India.
-        Boost bridal conversions and delight customers with zero trial room wait time.
+        {{ t('ctaSubtitle') }}
       </p>
       <div class="prefooter-actions">
         <button type="button" class="btn-primary-glow" (click)="openDemoModal()">
-          Schedule Showroom Demo ➔
+          {{ t('ctaBookBtn') }}
         </button>
         <a href="tel:+919788033234" class="btn-prefooter-secondary">
-          📞 Speak with Sales Team
+          {{ t('ctaCallBtn') }}
         </a>
       </div>
     </div>
@@ -761,19 +873,19 @@
             </div>
             <div class="brand-text-block">
               <span class="brand-title">NeXoo<span class="brand-ai">AI</span></span>
-              <span class="brand-slogan-small">AI FOR A SMARTER TOMORROW</span>
+              <span class="brand-slogan-small">{{ t('tagline') }}</span>
             </div>
           </a>
         </div>
 
         <div class="footer-links-row">
-          <a href="#home" (click)="scrollToSection('home', $event)">Home</a>
-          <a href="#features" (click)="scrollToSection('features', $event)">Features</a>
-          <a href="#how-it-works" (click)="scrollToSection('how-it-works', $event)">How It Works</a>
-          <a href="#collections" (click)="scrollToSection('collections', $event)">Collections</a>
-          <a *ngIf="showPricingSection()" href="#pricing" (click)="scrollToSection('pricing', $event)">Pricing</a>
-          <a href="#contact" (click)="scrollToSection('contact', $event)">Contact Us</a>
-          <a routerLink="/login">Showroom Portal</a>
+          <a href="#home" (click)="scrollToSection('home', $event)">{{ t('navHome') }}</a>
+          <a href="#features" (click)="scrollToSection('features', $event)">{{ t('navFeatures') }}</a>
+          <a href="#how-it-works" (click)="scrollToSection('how-it-works', $event)">{{ t('navHowItWorks') }}</a>
+          <a href="#collections" (click)="scrollToSection('collections', $event)">{{ t('navCollections') }}</a>
+          <a *ngIf="showPricingSection()" href="#pricing" (click)="scrollToSection('pricing', $event)">{{ t('navPricing') }}</a>
+          <a href="#contact" (click)="scrollToSection('contact', $event)">{{ t('navContact') }}</a>
+          <a routerLink="/login">{{ t('navShowroomLogin') }}</a>
         </div>
 
         <div class="footer-social-icons">
@@ -838,19 +950,19 @@
       <!-- Middle 4-Column Directory Grid -->
       <div class="footer-middle-grid">
         <div class="footer-col">
-          <h4>Showroom Solutions</h4>
+          <h4>{{ t('footerSolutions') }}</h4>
           <ul>
-            <li>Virtual Saree Drape Engine</li>
-            <li>Salwar & Anarkali AI Fitting</li>
-            <li>Bridal Lehenga Studio</li>
-            <li>Men's Sherwani & Suits</li>
-            <li>55-Inch Portrait Floor Kiosk</li>
-            <li>Instant WhatsApp Slip Delivery</li>
+            <li>{{ t('solSaree') }}</li>
+            <li>{{ t('solSalwar') }}</li>
+            <li>{{ t('solBridal') }}</li>
+            <li>{{ t('solMen') }}</li>
+            <li>{{ t('solKiosk') }}</li>
+            <li>{{ t('solSlip') }}</li>
           </ul>
         </div>
 
         <div class="footer-col">
-          <h4>Showroom Presence</h4>
+          <h4>{{ t('footerPresence') }}</h4>
           <ul>
             <li><strong>Chennai:</strong> T. Nagar Retail Hub</li>
             <li><strong>Coimbatore:</strong> Cross Cut Road</li>
@@ -861,20 +973,20 @@
         </div>
 
         <div class="footer-col">
-          <h4>Security & Architecture</h4>
+          <h4>{{ t('footerSecurity') }}</h4>
           <ul>
-            <li>Tenant-Isolated Showroom DB</li>
-            <li>Role-Based Access (Manager/Admin)</li>
-            <li>Zero PII Retained Without Consent</li>
-            <li>Local Edge Kiosk AI Inference</li>
-            <li>99.9% Uptime Showroom SLA</li>
+            <li>{{ t('secIsolated') }}</li>
+            <li>{{ t('secRbac') }}</li>
+            <li>{{ t('secConsent') }}</li>
+            <li>{{ t('secEdge') }}</li>
+            <li>{{ t('secSla') }}</li>
           </ul>
         </div>
 
         <div class="footer-col">
-          <h4>Supported Payment Methods</h4>
+          <h4>{{ t('footerPayment') }}</h4>
           <p style="font-size: 0.82rem; color: var(--text-secondary); margin: 0 0 0.5rem;">
-            Instant billing via Indian payment networks:
+            {{ t('paymentDesc') }}
           </p>
           <div class="payment-badges-wrap">
             <span class="pay-badge">⚡ UPI</span>
@@ -888,12 +1000,12 @@
 
       <!-- Bottom Legal Row -->
       <div class="footer-bottom-row">
-        <span>© 2026 NeXooAi Technologies Private Limited. All rights reserved.</span>
+        <span>{{ t('copyright') }}</span>
         <div class="footer-links-row" style="gap: 1rem; font-size: 0.78rem;">
-          <a href="javascript:void(0)" (click)="openDemoModal()">Privacy Policy</a>
-          <a href="javascript:void(0)" (click)="openDemoModal()">Terms of Service</a>
-          <a href="javascript:void(0)" (click)="openDemoModal()">Showroom Operator Agreement</a>
-          <a href="javascript:void(0)" (click)="openDemoModal()">Security Certifications</a>
+          <a href="javascript:void(0)" (click)="openDemoModal()">{{ t('privacyPolicy') }}</a>
+          <a href="javascript:void(0)" (click)="openDemoModal()">{{ t('termsOfService') }}</a>
+          <a href="javascript:void(0)" (click)="openDemoModal()">{{ t('operatorAgreement') }}</a>
+          <a href="javascript:void(0)" (click)="openDemoModal()">{{ t('securityCerts') }}</a>
         </div>
       </div>
     </div>
@@ -917,7 +1029,7 @@
       <div class="contact-expand-pills" [class.expanded]="showContactHub()">
         <a href="tel:+919788033234" class="contact-pill-link call-pill" title="Call Showroom Sales Desk">
           <span class="cp-icon">📞</span>
-          <span class="cp-text">Call: +91 97880 33234 / +91 98403 19606</span>
+          <span class="cp-text">{{ t('hubQuickCall') }} +91 97880 33234 / +91 98403 19606</span>
         </a>
         <a
           href="https://wa.me/919788033234?text=Hello%20NeXooAI,%20I%20would%20like%20to%20book%20a%20showroom%20demo"
@@ -926,7 +1038,7 @@
           class="contact-pill-link wa-pill"
           title="Chat on WhatsApp">
           <span class="cp-icon">💬</span>
-          <span class="cp-text">WhatsApp Demo</span>
+          <span class="cp-text">{{ t('hubWhatsAppDemo') }}</span>
         </a>
       </div>
 
@@ -947,18 +1059,18 @@
   <div *ngIf="showDemoModal()" class="modal-backdrop" (click)="closeDemoModal()">
     <div class="modal-card" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3 class="modal-title">Schedule an On-Site Showroom Demo</h3>
+        <h3 class="modal-title">{{ t('modalTitle') }}</h3>
         <button type="button" class="modal-close" (click)="closeDemoModal()">✕</button>
       </div>
 
       <div *ngIf="!demoSubmitted()">
         <p class="modal-subtitle">
-          Experience our 55-inch portrait kiosk in your showroom. Fill your contact details below:
+          {{ t('modalDesc') }}
         </p>
 
         <form (ngSubmit)="submitDemo()">
           <div class="form-group">
-            <label>Showroom / Boutique Name *</label>
+            <label>{{ t('lblShowroomName') }}</label>
             <input
               type="text"
               name="showroomName"
@@ -968,7 +1080,7 @@
           </div>
 
           <div class="form-group">
-            <label>Contact Person Name *</label>
+            <label>{{ t('lblContactPerson') }}</label>
             <input
               type="text"
               name="contactPerson"
@@ -978,7 +1090,7 @@
           </div>
 
           <div class="form-group">
-            <label>WhatsApp / Mobile Number *</label>
+            <label>{{ t('lblPhone') }}</label>
             <input
               type="tel"
               name="phone"
@@ -988,7 +1100,7 @@
           </div>
 
           <div class="form-group">
-            <label>City / Location *</label>
+            <label>{{ t('lblCity') }}</label>
             <input
               type="text"
               name="city"
@@ -998,12 +1110,12 @@
           </div>
 
           <div class="modal-footer-btns">
-            <button type="button" class="btn-cancel" (click)="closeDemoModal()">Cancel</button>
+            <button type="button" class="btn-cancel" (click)="closeDemoModal()">{{ t('btnCancel') }}</button>
             <button
               type="submit"
               class="btn-submit-demo"
               [disabled]="!demoForm.phone.trim() || !demoForm.showroomName.trim()">
-              Confirm Showroom Demo
+              {{ t('btnConfirmDemo') }}
             </button>
           </div>
         </form>
@@ -1012,9 +1124,9 @@
       <!-- Confirmed Lead Booking Feedback -->
       <div *ngIf="demoSubmitted()" class="modal-success-state">
         <span class="success-icon">✨</span>
-        <h4>Showroom Demo Confirmed!</h4>
-        <p class="lead-id-pill">Booking Reference: <strong>#{{ confirmedLeadId() }}</strong></p>
-        <p>Our team will contact <strong>{{ demoForm.showroomName }}</strong> on WhatsApp at <strong>{{ demoForm.phone }}</strong> within 2 business hours.</p>
+        <h4>{{ t('modalSuccessTitle') }}</h4>
+        <p class="lead-id-pill">{{ t('modalBookingRef') }} <strong>#{{ confirmedLeadId() }}</strong></p>
+        <p>{{ t('modalTeamContact') }} <strong>{{ demoForm.showroomName }}</strong> {{ t('modalOnWhatsApp') }} <strong>{{ demoForm.phone }}</strong> {{ t('modalWithinHours') }}</p>
       </div>
     </div>
   </div>
@@ -1023,13 +1135,13 @@
   <div *ngIf="showVideoModal()" class="modal-backdrop" (click)="closeVideoModal()">
     <div class="modal-card video-card" (click)="$event.stopPropagation()">
       <div class="modal-header">
-        <h3 class="modal-title">NeXooAi 1-Minute Showroom Experience</h3>
+        <h3 class="modal-title">{{ t('videoTitle') }}</h3>
         <button type="button" class="modal-close" (click)="closeVideoModal()">✕</button>
       </div>
       <div class="modal-video-wrapper">
         <img src="assets/images/showroom_kiosks_showcase.png" alt="Showroom Video Preview" class="video-mockup" />
         <div class="video-overlay-badge">
-          <span>▶ HD Kiosk Experience (55-Inch Portrait Demonstration)</span>
+          <span>{{ t('videoKioskLabel') }}</span>
         </div>
       </div>
     </div>

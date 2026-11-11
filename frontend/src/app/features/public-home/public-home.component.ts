@@ -12,6 +12,7 @@ import { CommonModule } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { HOME_I18N } from './home-i18n';
 
 export type LanguageCode = 'en' | 'ta' | 'hi' | 'te' | 'ml' | 'kn';
 
@@ -72,6 +73,14 @@ export interface DemoLeadRecord {
   styleUrls: ['./public-home.component.css'],
 })
 export class PublicHomeComponent implements OnInit, OnDestroy {
+  readonly i18n = HOME_I18N;
+
+  t(key: string): string {
+    const item = this.i18n[key];
+    if (!item) return key;
+    return item[this.currentLang()] || item['en'] || key;
+  }
+
   private readonly http = inject(HttpClient);
   private ngZone = inject(NgZone);
 
