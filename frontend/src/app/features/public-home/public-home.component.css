@@ -2740,3 +2740,220 @@
     font-size: 0.72rem !important;
   }
 }
+
+
+/* =========================================================================
+   EXECUTIVE DIRECT CONTACT US SECTION
+   ========================================================================= */
+.section-contact-us {
+  padding: 6rem 0;
+  background: radial-gradient(circle at 50% 0%, rgba(212, 175, 55, 0.08) 0%, rgba(15, 8, 20, 0.98) 70%);
+  position: relative;
+  border-top: 1px solid rgba(212, 175, 55, 0.15);
+}
+
+.contact-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  max-width: 1040px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.exec-contact-card {
+  background: rgba(26, 11, 33, 0.7);
+  border: 1px solid rgba(212, 175, 55, 0.3);
+  border-radius: 20px;
+  padding: 2.2rem;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(12px);
+  transition: all 0.3s ease;
+}
+
+.exec-contact-card:hover {
+  transform: translateY(-6px);
+  border-color: #ffd700;
+  box-shadow: 0 20px 45px rgba(212, 175, 55, 0.2);
+}
+
+.exec-card-badge {
+  position: absolute;
+  top: -12px;
+  right: 24px;
+  background: linear-gradient(135deg, #00e676, #00b0ff);
+  color: #0b0711;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  padding: 0.25rem 0.8rem;
+  border-radius: 20px;
+  box-shadow: 0 4px 12px rgba(0, 230, 118, 0.3);
+}
+
+.exec-card-badge.gold-badge {
+  background: linear-gradient(135deg, #ffd700, #ff9100);
+  box-shadow: 0 4px 12px rgba(255, 215, 0, 0.35);
+}
+
+.exec-avatar-wrap {
+  margin-bottom: 1.25rem;
+}
+
+.exec-avatar-initials {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, rgba(0, 230, 118, 0.2), rgba(0, 176, 255, 0.3));
+  border: 2px solid #00e676;
+  color: #ffffff;
+  font-size: 1.75rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 20px rgba(0, 230, 118, 0.25);
+}
+
+.exec-avatar-initials.gold-initials {
+  background: linear-gradient(135deg, rgba(212, 175, 55, 0.25), rgba(255, 145, 0, 0.3));
+  border-color: #ffd700;
+  box-shadow: 0 0 20px rgba(212, 175, 55, 0.3);
+}
+
+.exec-name {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin: 0 0 0.35rem 0;
+  font-family: 'Cinzel', serif, Georgia;
+  letter-spacing: 0.03em;
+}
+
+.exec-role {
+  display: block;
+  font-size: 0.88rem;
+  color: #ffd700;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.exec-bio {
+  font-size: 0.88rem;
+  color: #c9bed0;
+  line-height: 1.55;
+  margin: 0 0 1.5rem 0;
+}
+
+.exec-contact-channels {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-top: auto;
+}
+
+.exec-channel-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.1rem;
+  border-radius: 10px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.exec-channel-btn.tel-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+.exec-channel-btn.tel-btn:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: #ffffff;
+  transform: translateX(4px);
+}
+
+.exec-channel-btn.wa-btn {
+  background: rgba(37, 211, 102, 0.15);
+  border: 1px solid rgba(37, 211, 102, 0.4);
+  color: #25d366;
+}
+.exec-channel-btn.wa-btn:hover {
+  background: rgba(37, 211, 102, 0.3);
+  border-color: #25d366;
+  transform: translateX(4px);
+}
+
+.exec-channel-btn.mail-btn {
+  background: rgba(212, 175, 55, 0.12);
+  border: 1px solid rgba(212, 175, 55, 0.35);
+  color: #fbeea8;
+}
+.exec-channel-btn.mail-btn:hover {
+  background: rgba(212, 175, 55, 0.25);
+  border-color: #ffd700;
+  transform: translateX(4px);
+}
+
+.office-support-banner {
+  max-width: 1040px;
+  margin-left: auto;
+  margin-right: auto;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 1.5rem 2rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+.office-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.office-icon {
+  font-size: 1.6rem;
+  flex-shrink: 0;
+}
+
+.office-item strong {
+  display: block;
+  font-size: 0.9rem;
+  color: #ffffff;
+  margin-bottom: 0.2rem;
+}
+
+.office-item p {
+  font-size: 0.8rem;
+  color: #a89fae;
+  margin: 0;
+}
+
+.office-item a {
+  color: #ffd700;
+  text-decoration: none;
+}
+.office-item a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 768px) {
+  .contact-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  .office-support-banner {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+    padding: 1.25rem;
+  }
+}
