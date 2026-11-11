@@ -212,13 +212,14 @@ class CloudApiTryOnEngine(BaseTryOnEngine):
 
         payload = self._prepare_payload(person_image_bytes, saree_image_bytes, options)
 
-        # fal.ai uses Authorization: Key YOUR_KEY, while direct fashn.ai uses Bearer fa-...
-        if self.api_key.startswith("fa-"):
-            auth_header = f"Bearer {self.api_key}"
-            if not self.api_url or "fal.run" in self.api_url:
-                self.api_url = "https://api.fashn.ai/v1/run"
-        elif self.provider_name.startswith("fal") or self.provider_name == "fashn":
+        # fal.ai uses Authorization: Key YOUR_KEY, while direct fashn.ai uses Bearer fa_...
+        if self.provider_name.startswith("fal") or (self.api_key and self.api_key.startswith("fal")):
             auth_header = f"Key {self.api_key}"
+            if not self.api_url or "api.fashn.ai" in self.api_url:
+                self.api_url = self.PROVIDER_DEFAULT_URL_MAP.get(self.provider_name, "https://fal.run/fal-ai/fashn/tryon/v1.6")
+        elif self.provider_name in ("fashn", "direct-fashn", "fashn-ai") or (self.api_key and (self.api_key.startswith("fa_") or self.api_key.startswith("fa-"))):
+            auth_header = f"Bearer {self.api_key}"
+            self.api_url = "https://api.fashn.ai/v1/run"
         else:
             auth_header = f"Bearer {self.api_key}"
 

@@ -1437,23 +1437,27 @@ export interface HardwareFleetUnit {
 
               <div class="settings-form-grid mt-4">
                 <div class="settings-field">
-                  <label>Google Gemini Vertex / AI Studio API Key</label>
-                  <input type="password" [(ngModel)]="aiProviderSettings.geminiApiKey" class="form-input" placeholder="AIzaSy..." />
+                  <label>🌟 FAL.AI Unified Secret Key (Primary Standard)</label>
+                  <input type="password" [(ngModel)]="aiProviderSettings.falKey" class="form-input" placeholder="fal_sk_..." />
+                  <small style="color: #ffd700; font-size: 0.74rem; margin-top: 0.25rem; display: block;">Powers FASHN v1.6, Kling Kolors, and CatVTON under unified fal.ai billing.</small>
                 </div>
                 <div class="settings-field">
-                  <label>Fashn.ai Enterprise Secret Key</label>
+                  <label>🔄 Direct Fashn.ai Enterprise Key (Hot Standby Failover)</label>
                   <input type="password" [(ngModel)]="aiProviderSettings.fashnApiKey" class="form-input" placeholder="fa_prod_..." />
+                  <small style="color: #a89fae; font-size: 0.74rem; margin-top: 0.25rem; display: block;">Instant direct fallback if fal.ai experiences latency or downtime.</small>
                 </div>
                 <div class="settings-field">
-                  <label>OpenAI Secret Key (Optional Backup)</label>
-                  <input type="password" [(ngModel)]="aiProviderSettings.openaiApiKey" class="form-input" placeholder="sk-..." />
+                  <label>🌐 Google Gemini API Key (Multimodal Backup)</label>
+                  <input type="password" [(ngModel)]="aiProviderSettings.geminiApiKey" class="form-input" placeholder="AIzaSy..." />
+                  <small style="color: #a89fae; font-size: 0.74rem; margin-top: 0.25rem; display: block;">Google AI Studio / Vertex AI multimodal pose guidance.</small>
                 </div>
                 <div class="settings-field">
-                  <label>Super Admin WhatsApp Phone for Low-Balance Alerts</label>
-                  <input type="tel" [(ngModel)]="aiProviderSettings.lowBalancePhone" class="form-input" placeholder="+91 97880 12345" />
+                  <label>📱 Super Admin WhatsApp Phone for Low-Balance Alerts</label>
+                  <input type="tel" [(ngModel)]="aiProviderSettings.lowBalancePhone" class="form-input" placeholder="+91 97880 33234" />
+                  <small style="color: #a89fae; font-size: 0.74rem; margin-top: 0.25rem; display: block;">Automated alert dispatched to Mohandass & Sudhakar when quota is low.</small>
                 </div>
                 <div class="settings-field">
-                  <label>Low Balance WhatsApp Alert Threshold</label>
+                  <label>⚡ Low Balance WhatsApp Alert Threshold</label>
                   <select class="form-input" [(ngModel)]="aiProviderSettings.lowBalanceThreshold">
                     <option [value]="15">Alert when quota falls below 15% (Recommended)</option>
                     <option [value]="10">Alert when quota falls below 10%</option>
@@ -9591,34 +9595,49 @@ export class AppShellComponent implements OnInit {
 
   aiEngines: AiEngineModel[] = [
     {
-      id: 'gemini',
-      name: 'Google Gemini 2.5 Flash / Pro Vision',
-      vendor: 'Google Cloud Vertex AI & AI Studio',
+      id: 'fal',
+      name: 'FAL.AI Neural Cloud (Standard Primary)',
+      vendor: 'fal.ai (Fashn v1.6, Kling Kolors, CatVTON)',
       role: 'primary',
       status: 'live',
-      latencyMs: 215,
-      costInr: 0.85,
-      quotaTotal: 25000,
-      quotaUsed: 6550,
-      successRatePct: 99.7,
+      latencyMs: 340,
+      costInr: 2.10,
+      quotaTotal: 50000,
+      quotaUsed: 1200,
+      successRatePct: 99.8,
       qualityScore: 4.9,
-      apiKeyMasked: 'AIzaSyD-••••••••••••••••••••••••••',
+      apiKeyMasked: 'fal_sk_••••••••••••••••••••••••••',
       lastTested: 'Just now'
     },
     {
       id: 'fashn',
-      name: 'Fashn.ai Enterprise Mirror',
-      vendor: 'Fashn GmbH (High-Precision Saree Draping)',
+      name: 'Direct Fashn.ai Enterprise (Standby Failover)',
+      vendor: 'Fashn GmbH (Direct API v1.6 & Status Poller)',
       role: 'fallback_1',
       status: 'ready',
       latencyMs: 480,
-      costInr: 2.40,
+      costInr: 3.50,
       quotaTotal: 10000,
-      quotaUsed: 2200,
-      successRatePct: 98.9,
+      quotaUsed: 0,
+      successRatePct: 99.2,
       qualityScore: 4.8,
       apiKeyMasked: 'fa_prod_••••••••••••••••••••••••••',
-      lastTested: 'Just now'
+      lastTested: 'Standby Ready'
+    },
+    {
+      id: 'gemini',
+      name: 'Google Gemini Vision & Imagen 3',
+      vendor: 'Google Cloud Vertex AI & AI Studio',
+      role: 'standby',
+      status: 'live',
+      latencyMs: 215,
+      costInr: 0.85,
+      quotaTotal: 25000,
+      quotaUsed: 0,
+      successRatePct: 99.7,
+      qualityScore: 4.7,
+      apiKeyMasked: 'AIzaSyA••••••••••••••••••••••••••',
+      lastTested: 'Ready'
     },
     {
       id: 'local_heuristic',
@@ -9629,7 +9648,7 @@ export class AppShellComponent implements OnInit {
       latencyMs: 12,
       costInr: 0.00,
       quotaTotal: 999999,
-      quotaUsed: 420,
+      quotaUsed: 0,
       successRatePct: 100.0,
       qualityScore: 4.2,
       apiKeyMasked: 'Embedded Local Weights (Zero Cloud)',
@@ -9685,15 +9704,15 @@ export class AppShellComponent implements OnInit {
   }
 
   aiProviderSettings = {
-    primaryProvider: 'gemini',
+    primaryProvider: 'fal',
     fallbackProvider: 'fashn',
-    geminiApiKey: 'AIzaSyD-•••••••••••••••••••••••••••••••••',
+    falKey: 'fal_sk_•••••••••••••••••••••••••••••••••',
     fashnApiKey: 'fa_prod_••••••••••••••••••••••••••••••',
-    openaiApiKey: 'sk-•••••••••••••••••••••••••••••••••',
-    lowBalancePhone: '+91 97880 12345',
+    geminiApiKey: 'AIzaSyA•••••••••••••••••••••••••••••••••',
+    lowBalancePhone: '+91 97880 33234',
     lowBalanceThreshold: 15,
-    avgLatencyMs: 215,
-    costPerGenerationUsd: 0.010,
+    avgLatencyMs: 340,
+    costPerGenerationUsd: 0.025,
     todayTokensGenerated: 1840,
     activeClusterStatus: 'Healthy & Online (99.98% uptime)',
   };
@@ -11065,7 +11084,7 @@ export class AppShellComponent implements OnInit {
     this.aiProviderSettings.avgLatencyMs = engine.latencyMs;
 
     // Automatically sync live provider to backend settings
-    const backendProvider = engine.id === 'local_heuristic' ? 'mock' : engine.id;
+    const backendProvider = engine.id === 'fal' ? 'fal-fashn' : (engine.id === 'local_heuristic' ? 'mock' : engine.id);
     const token = sessionStorage.getItem('nexooai_auth_token') || localStorage.getItem('nexooai_session_token') || '';
     const headers: Record<string, string> = token ? { Authorization: 'Bearer ' + token } : {};
     this.http.post<any>(`${this.apiBase}/admin/settings`, { active_ai_provider: backendProvider }, { headers }).subscribe({
@@ -11506,32 +11525,47 @@ export class AppShellComponent implements OnInit {
   }
 
   saveAiSettings() {
-    const backendProvider = this.aiProviderSettings.primaryProvider === 'local_heuristic' ? 'mock' : this.aiProviderSettings.primaryProvider;
+    const backendProvider = this.aiProviderSettings.primaryProvider === 'fal' ? 'fal-fashn' : (this.aiProviderSettings.primaryProvider === 'local_heuristic' ? 'mock' : this.aiProviderSettings.primaryProvider);
     const backendFallback = this.aiProviderSettings.fallbackProvider === 'local_heuristic' ? 'mock' : this.aiProviderSettings.fallbackProvider;
     const payload: any = {
       active_ai_provider: backendProvider,
       fallback_ai_provider: backendFallback,
       low_balance_threshold_pct: Number(this.aiProviderSettings.lowBalanceThreshold) || 15,
-      low_balance_alert_phone: this.aiProviderSettings.lowBalancePhone || ''
+      low_balance_alert_phone: this.aiProviderSettings.lowBalancePhone || '+91 97880 33234'
     };
-    if (this.aiProviderSettings.geminiApiKey && !this.aiProviderSettings.geminiApiKey.includes('••••')) {
-      payload.gemini_api_key = this.aiProviderSettings.geminiApiKey;
+    if (this.aiProviderSettings.falKey && !this.aiProviderSettings.falKey.includes('••••')) {
+      payload.fal_key = this.aiProviderSettings.falKey.trim();
     }
     if (this.aiProviderSettings.fashnApiKey && !this.aiProviderSettings.fashnApiKey.includes('••••')) {
-      payload.fashn_api_key = this.aiProviderSettings.fashnApiKey;
+      payload.fashn_api_key = this.aiProviderSettings.fashnApiKey.trim();
     }
-    if (this.aiProviderSettings.openaiApiKey && !this.aiProviderSettings.openaiApiKey.includes('••••')) {
-      payload.openai_api_key = this.aiProviderSettings.openaiApiKey;
+    if (this.aiProviderSettings.geminiApiKey && !this.aiProviderSettings.geminiApiKey.includes('••••')) {
+      payload.gemini_api_key = this.aiProviderSettings.geminiApiKey.trim();
     }
 
     const token = sessionStorage.getItem('nexooai_auth_token') || localStorage.getItem('nexooai_session_token') || '';
     const headers: Record<string, string> = token ? { Authorization: 'Bearer ' + token } : {};
     this.http.post<any>(`${this.apiBase}/admin/settings`, payload, { headers }).subscribe({
-      next: () => {
-        this.notify.showSuccess(`✓ AI routing (${this.getPrimaryEngine().name} Primary / ${this.getFallbackEngine().name} Standby) & WhatsApp alert settings saved to backend database!`);
+      next: (res) => {
+        this.notify.showSuccess(`✓ AI routing (${this.getPrimaryEngine().name} Primary / ${this.getFallbackEngine().name} Standby) & credentials saved to database!`);
+        if (res?.fal_key_masked) {
+          const falEngine = this.aiEngines.find(e => e.id === 'fal');
+          if (falEngine) falEngine.apiKeyMasked = res.fal_key_masked;
+          this.aiProviderSettings.falKey = res.fal_key_masked;
+        }
+        if (res?.fashn_api_key_masked) {
+          const fashnEngine = this.aiEngines.find(e => e.id === 'fashn');
+          if (fashnEngine) fashnEngine.apiKeyMasked = res.fashn_api_key_masked;
+          this.aiProviderSettings.fashnApiKey = res.fashn_api_key_masked;
+        }
+        if (res?.gemini_api_key_masked) {
+          const geminiEngine = this.aiEngines.find(e => e.id === 'gemini');
+          if (geminiEngine) geminiEngine.apiKeyMasked = res.gemini_api_key_masked;
+          this.aiProviderSettings.geminiApiKey = res.gemini_api_key_masked;
+        }
       },
       error: () => {
-        this.notify.showSuccess('✓ AI Provider Settings and WhatsApp threshold updated locally.');
+        this.notify.showSuccess('✓ AI Provider Settings updated locally.');
       }
     });
   }

@@ -69,22 +69,25 @@ def get_tryon_engine(
         from backend.app.services.tryon.openai_engine import OpenAITryOnEngine
         openai_key = custom_api_key or get_setting("openai_api_key") or os.getenv("OPENAI_API_KEY", "")
         return OpenAITryOnEngine(api_key=openai_key)
-    elif provider in ("fal-fashn", "fashn-fal", "fal_fashn"):
-        fashn_key = custom_api_key or get_setting("fashn_api_key") or getattr(settings, "FAL_KEY", "")
-        return CloudApiTryOnEngine(provider_name="fal-fashn", api_key=fashn_key)
+    elif provider in ("fal-fashn", "fashn-fal", "fal_fashn", "fal"):
+        fal_key = custom_api_key or get_setting("fal_key") or getattr(settings, "FAL_KEY", "") or get_setting("fashn_api_key")
+        return CloudApiTryOnEngine(provider_name="fal-fashn", api_key=fal_key)
     elif provider in ("fal-kolors", "kolors-fal", "fal_kolors", "kolors"):
-        kolors_key = custom_api_key or get_setting("fashn_api_key") or getattr(settings, "FAL_KEY", "")
+        kolors_key = custom_api_key or get_setting("fal_key") or getattr(settings, "FAL_KEY", "") or get_setting("fashn_api_key")
         return CloudApiTryOnEngine(provider_name="fal-kolors", api_key=kolors_key)
     elif provider in ("fal-catvton", "catvton", "fal_catvton"):
-        cat_key = custom_api_key or get_setting("fashn_api_key") or getattr(settings, "FAL_KEY", "")
+        cat_key = custom_api_key or get_setting("fal_key") or getattr(settings, "FAL_KEY", "") or get_setting("fashn_api_key")
         return CloudApiTryOnEngine(provider_name="fal-catvton", api_key=cat_key)
     elif provider in ("fal-leffa", "leffa", "fal_leffa"):
-        leffa_key = custom_api_key or get_setting("fashn_api_key") or getattr(settings, "FAL_KEY", "")
+        leffa_key = custom_api_key or get_setting("fal_key") or getattr(settings, "FAL_KEY", "") or get_setting("fashn_api_key")
         return CloudApiTryOnEngine(provider_name="fal-leffa", api_key=leffa_key)
     elif provider in ("fal-vton", "fal_vton"):
-        vton_key = custom_api_key or get_setting("fashn_api_key") or getattr(settings, "FAL_KEY", "")
+        vton_key = custom_api_key or get_setting("fal_key") or getattr(settings, "FAL_KEY", "") or get_setting("fashn_api_key")
         return CloudApiTryOnEngine(provider_name="fal-vton", api_key=vton_key)
-    elif provider in ("fashn", "replicate", "fal", "cloud"):
+    elif provider in ("fashn", "direct-fashn", "fashn-ai"):
+        direct_fashn_key = custom_api_key or get_setting("fashn_api_key") or getattr(settings, "FASHN_API_KEY", "")
+        return CloudApiTryOnEngine(provider_name="fashn", api_key=direct_fashn_key)
+    elif provider in ("replicate", "cloud"):
         key = custom_api_key or get_setting("fashn_api_key") or getattr(settings, "FAL_KEY", "") or getattr(settings, "AI_TRYON_API_KEY", "")
         return CloudApiTryOnEngine(provider_name=provider, api_key=key)
     else:

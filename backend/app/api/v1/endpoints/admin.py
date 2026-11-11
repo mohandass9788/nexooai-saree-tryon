@@ -99,6 +99,7 @@ class CustomerTodayResponse(BaseModel):
 class SystemSettingsDTO(BaseModel):
     active_ai_provider: str
     available_providers: List[Dict[str, Any]]
+    fal_key_masked: Optional[str] = None
     fashn_api_key_masked: str
     gemini_api_key_masked: str
     openai_api_key_masked: str
@@ -152,6 +153,7 @@ class UpdateSettingsRequest(BaseModel):
     fallback_ai_provider: Optional[str] = None
     low_balance_threshold_pct: Optional[int] = None
     low_balance_alert_phone: Optional[str] = None
+    fal_key: Optional[str] = None
     fashn_api_key: Optional[str] = None
     gemini_api_key: Optional[str] = None
     openai_api_key: Optional[str] = None
@@ -721,8 +723,9 @@ async def get_system_settings(
     db: AsyncSession = Depends(get_db),
     current_user: AuthenticatedUser = Depends(require_super_admin),
 ):
-    provider = str(get_setting("ai_provider", settings.AI_TRYON_PROVIDER or "mock"))
-    fashn_key = str(get_setting("fashn_api_key", getattr(settings, "FAL_KEY", "") or getattr(settings, "AI_TRYON_API_KEY", "")))
+    provider = str(get_setting("ai_provider", settings.AI_TRYON_PROVIDER or "fal-fashn"))
+    fal_key = str(get_setting("fal_key", getattr(settings, "FAL_KEY", "") or ""))
+    fashn_key = str(get_setting("fashn_api_key", getattr(settings, "FASHN_API_KEY", "") or ""))
     gemini_key = str(get_setting("gemini_api_key", getattr(settings, "GEMINI_API_KEY", "")))
     openai_key = str(get_setting("openai_api_key", os.getenv("OPENAI_API_KEY", "")))
     retention_mins = int(get_setting("photo_retention_minutes", settings.MEDIA_RETENTION_HOURS * 60))
@@ -783,6 +786,7 @@ async def get_system_settings(
     return SystemSettingsDTO(
         active_ai_provider=provider,
         available_providers=available,
+        fal_key_masked=mask_key(fal_key),
         fashn_api_key_masked=mask_key(fashn_key),
         gemini_api_key_masked=mask_key(gemini_key),
         openai_api_key_masked=mask_key(openai_key),
@@ -845,6 +849,8 @@ async def update_system_settings(
         await set_setting("low_balance_threshold_pct", str(req.low_balance_threshold_pct), db)
     if req.low_balance_alert_phone is not None:
         await set_setting("low_balance_alert_phone", req.low_balance_alert_phone.strip(), db)
+    if req.fal_key is not None and req.fal_key.strip():
+        await set_setting("fal_key", req.fal_key.strip(), db)
     if req.fashn_api_key is not None and req.fashn_api_key.strip():
         await set_setting("fashn_api_key", req.fashn_api_key.strip(), db)
     if req.gemini_api_key is not None and req.gemini_api_key.strip():
@@ -1005,6 +1011,65 @@ async def ping_ai_engine(
             "sla": 100.0,
             "message": "NeXooAi Local Neural Shield edge runtime verified online (Zero-cloud offline fallback active).",
         }
+
+    # Real network probe for FAL.AI Neural Cloud Hub
+    elif engine in ("fal", "fal-fashn", "fal-kolors", "fal_ai"):
+        fal_key = str(get_setting("fal_key", getattr(settings, "FAL_KEY", "") or "")).strip()
+        try:
+            async with httpx.AsyncClient(timeout=8.0) as client:
+                if fal_key:
+                    headers = {"Authorization": f"Key {fal_key}", "User-Agent": "NeXooAI"}
+                    resp = await client.get("https://rest.alpha.fal.ai/users/current", headers=headers)
+                    elapsed_ms = int((time.time() - start_time) * 1000)
+                    if resp.status_code == 200:
+                        data = resp.json()
+                        lock_reason = data.get("lock_reason")
+                        if lock_reason:
+                            return {
+                                "success": True,
+                                "engine": "fal",
+                                "status": "online",
+                                "latency_ms": elapsed_ms,
+                                "sla": 99.8,
+                                "message": f"FAL.AI Neural Cloud connected ({elapsed_ms}ms, HTTP 200 OK). Account: {data.get('email', '')}. Note: {lock_reason}",
+                            }
+                        return {
+                            "success": True,
+                            "engine": "fal",
+                            "status": "online",
+                            "latency_ms": elapsed_ms,
+                            "sla": 99.8,
+                            "message": f"FAL.AI Neural Cloud online & ready ({elapsed_ms}ms, HTTP 200 OK). Account: {data.get('email', '')}",
+                        }
+                    else:
+                        return {
+                            "success": False,
+                            "engine": "fal",
+                            "status": "degraded",
+                            "latency_ms": elapsed_ms,
+                            "sla": 92.0,
+                            "message": f"FAL.AI reachable ({elapsed_ms}ms) but HTTP {resp.status_code}: Check API key.",
+                        }
+                else:
+                    elapsed_ms = int((time.time() - start_time) * 1000)
+                    return {
+                        "success": False,
+                        "engine": "fal",
+                        "status": "degraded",
+                        "latency_ms": elapsed_ms,
+                        "sla": 80.0,
+                        "message": "FAL.AI Key not configured. Enter FAL_KEY in settings to activate.",
+                    }
+        except Exception as e:
+            elapsed_ms = int((time.time() - start_time) * 1000)
+            return {
+                "success": False,
+                "engine": "fal",
+                "status": "error",
+                "latency_ms": elapsed_ms,
+                "sla": 70.0,
+                "message": f"FAL.AI connection failed: {str(e)}",
+            }
 
     # Real network probe for Google Gemini Vertex / AI Studio
     elif engine == "gemini":
