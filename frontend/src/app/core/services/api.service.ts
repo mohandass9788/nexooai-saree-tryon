@@ -181,6 +181,26 @@ export interface PublicKioskFeatures {
   custom_store_name?: string;
   custom_store_logo_url?: string;
   custom_store_ad_video_url?: string;
+
+  // Global Website Feature Flags
+  feature_home_pricing?: boolean;
+  feature_home_demo?: boolean;
+  feature_home_roi?: boolean;
+  feature_home_testimonials?: boolean;
+
+  // Showroom Dashboard & Kiosk Feature Flags
+  feature_dash_custom_upload?: boolean;
+  feature_dash_split_slider?: boolean;
+  feature_dash_runway_video?: boolean;
+  feature_dash_qr_download?: boolean;
+  feature_dash_buy_slip?: boolean;
+  feature_dash_whatsapp?: boolean;
+  feature_dash_subscription?: boolean;
+  feature_dash_staff_team?: boolean;
+  feature_dash_inventory?: boolean;
+  feature_dash_kiosks?: boolean;
+  feature_kiosk_attract_mode?: boolean;
+  feature_kiosk_privacy_mode?: boolean;
 }
 
 export interface ShowroomSettingsItem {

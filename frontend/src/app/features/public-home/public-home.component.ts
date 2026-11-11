@@ -86,6 +86,12 @@ export class PublicHomeComponent implements OnInit, OnDestroy {
   showContactHub = signal<boolean>(false);
   isScrolled = signal<boolean>(false);
 
+  // Platform Global Feature Visibility (Managed by Super Admin)
+  showPricingSection = signal<boolean>(true);
+  showWebDemoSection = signal<boolean>(true);
+  showRoiSection = signal<boolean>(true);
+  showTestimonialsSection = signal<boolean>(true);
+
   // Modals & Lead Form
   showDemoModal = signal<boolean>(false);
   showVideoModal = signal<boolean>(false);
@@ -732,6 +738,27 @@ export class PublicHomeComponent implements OnInit, OnDestroy {
     }
 
     this.startAutoSlide();
+
+    // Load Super Admin Feature Visibility Flags
+    this.http.get<any>('/api/v1/admin/features-public').subscribe({
+      next: (features) => {
+        if (features) {
+          if (features.feature_home_pricing !== undefined) {
+            this.showPricingSection.set(features.feature_home_pricing);
+          }
+          if (features.feature_home_demo !== undefined) {
+            this.showWebDemoSection.set(features.feature_home_demo);
+          }
+          if (features.feature_home_roi !== undefined) {
+            this.showRoiSection.set(features.feature_home_roi);
+          }
+          if (features.feature_home_testimonials !== undefined) {
+            this.showTestimonialsSection.set(features.feature_home_testimonials);
+          }
+        }
+      },
+      error: () => {}
+    });
   }
 
   ngOnDestroy() {

@@ -26,7 +26,7 @@
         <a href="#how-it-works" class="nav-item" (click)="scrollToSection('how-it-works', $event)">How It Works</a>
         <a href="#collections" class="nav-item" (click)="scrollToSection('collections', $event)">Collections</a>
         <a href="#for-stores" class="nav-item" (click)="scrollToSection('for-stores', $event)">For Stores</a>
-        <a href="#pricing" class="nav-item" (click)="scrollToSection('pricing', $event)">Pricing</a>
+        <a *ngIf="showPricingSection()" href="#pricing" class="nav-item" (click)="scrollToSection('pricing', $event)">Pricing</a>
       </nav>
 
       <!-- Right Action Items -->
@@ -609,7 +609,7 @@
   </section>
 
   <!-- Transparent Pricing Section -->
-  <section id="pricing" class="section-pricing">
+  <section *ngIf="showPricingSection()" id="pricing" class="section-pricing">
     <div class="section-container">
       <div class="section-header-centered">
         <span class="section-tag-sub">TRANSPARENT PRICING</span>
@@ -770,7 +770,7 @@
           <a href="#features" (click)="scrollToSection('features', $event)">Features</a>
           <a href="#how-it-works" (click)="scrollToSection('how-it-works', $event)">How It Works</a>
           <a href="#collections" (click)="scrollToSection('collections', $event)">Collections</a>
-          <a href="#pricing" (click)="scrollToSection('pricing', $event)">Pricing</a>
+          <a *ngIf="showPricingSection()" href="#pricing" (click)="scrollToSection('pricing', $event)">Pricing</a>
           <a routerLink="/login">Showroom Portal</a>
         </div>
 

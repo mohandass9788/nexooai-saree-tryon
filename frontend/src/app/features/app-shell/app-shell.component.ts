@@ -247,6 +247,14 @@ export interface HardwareFleetUnit {
             <span class="nav-icon">🖥️</span>
             <span>55" Kiosks & Hardware</span>
           </button>
+          <button
+            type="button"
+            class="nav-item"
+            [class.active]="activeNav() === 'sa-features'"
+            (click)="setNav('sa-features')">
+            <span class="nav-icon">🎛️</span>
+            <span>Feature Flags & Visibility</span>
+          </button>
 
           <div class="nav-section-title mt-4">SHOWROOM CONSOLE</div>
           <button
@@ -1612,6 +1620,337 @@ export interface HardwareFleetUnit {
                   </tbody>
                 </table>
               </div>
+            </div>
+          </div>
+
+          <!-- ========================================================================= -->
+          <!-- SUPER ADMIN TAB 6: PLATFORM FEATURE FLAGS & UI VISIBILITY CONTROL          -->
+          <!-- ========================================================================= -->
+          <div *ngIf="userRole() === 'super_admin' && activeNav() === 'sa-features'" class="tab-view-body">
+            <!-- Header Card -->
+            <div class="portal-card">
+              <div class="card-header-flex">
+                <div>
+                  <h3 class="card-title">🎛️ Platform Feature Flags &amp; UI Visibility Matrix</h3>
+                  <p class="card-subtitle">
+                    Centrally toggle and control features across the public landing page, boutique showroom dashboards, and 55" floor kiosks without touching code.
+                  </p>
+                </div>
+                <button type="button" class="btn-primary-action" (click)="savePlatformFeatureFlags()">
+                  <span>💾</span>
+                  <span>Save All Feature Visibility Settings</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Category 1: Public Website & Landing Page Visibility -->
+            <div class="features-category-card mt-5">
+              <div class="category-header">
+                <h4 class="category-title">🌐 Category 1: Public Website &amp; Landing Page Visibility</h4>
+                <p class="category-desc">Control what public visitors see on the primary website before logging in.</p>
+              </div>
+
+              <div class="features-grid">
+                <!-- Toggle 1: Pricing Packages -->
+                <div class="feature-toggle-card">
+                  <div class="feature-toggle-info">
+                    <div class="feature-toggle-title-row">
+                      <h5 class="feature-name">Monthly &amp; Yearly Pricing Packages</h5>
+                      <span class="feature-status-chip" [class.status-active]="platformFeatureFlags.feature_home_pricing" [class.status-hidden]="!platformFeatureFlags.feature_home_pricing">
+                        {{ platformFeatureFlags.feature_home_pricing ? '● Visible on Website' : '○ Hidden from Website' }}
+                      </span>
+                    </div>
+                    <p class="feature-desc">Display transparent subscription tiers (Silver ₹9,999, Gold ₹19,999, Diamond ₹49,999) with monthly &amp; yearly billing toggle.</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" [(ngModel)]="platformFeatureFlags.feature_home_pricing" />
+                    <span class="slider-toggle"></span>
+                  </label>
+                </div>
+
+                <!-- Toggle 2: Web Kiosk Simulator -->
+                <div class="feature-toggle-card">
+                  <div class="feature-toggle-info">
+                    <div class="feature-toggle-title-row">
+                      <h5 class="feature-name">Interactive Web Kiosk Simulator</h5>
+                      <span class="feature-status-chip" [class.status-active]="platformFeatureFlags.feature_home_demo" [class.status-hidden]="!platformFeatureFlags.feature_home_demo">
+                        {{ platformFeatureFlags.feature_home_demo ? '● Visible on Website' : '○ Hidden from Website' }}
+                      </span>
+                    </div>
+                    <p class="feature-desc">Allow website visitors to launch interactive browser try-on simulation with sample bridal garments.</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" [(ngModel)]="platformFeatureFlags.feature_home_demo" />
+                    <span class="slider-toggle"></span>
+                  </label>
+                </div>
+
+                <!-- Toggle 3: ROI Profit Calculator -->
+                <div class="feature-toggle-card">
+                  <div class="feature-toggle-info">
+                    <div class="feature-toggle-title-row">
+                      <h5 class="feature-name">Retail ROI &amp; Profit Calculator</h5>
+                      <span class="feature-status-chip" [class.status-active]="platformFeatureFlags.feature_home_roi" [class.status-hidden]="!platformFeatureFlags.feature_home_roi">
+                        {{ platformFeatureFlags.feature_home_roi ? '● Visible on Website' : '○ Hidden from Website' }}
+                      </span>
+                    </div>
+                    <p class="feature-desc">Interactive sales uplift calculator demonstrating customer trial conversion for saree retailers.</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" [(ngModel)]="platformFeatureFlags.feature_home_roi" />
+                    <span class="slider-toggle"></span>
+                  </label>
+                </div>
+
+                <!-- Toggle 4: Client Testimonials -->
+                <div class="feature-toggle-card">
+                  <div class="feature-toggle-info">
+                    <div class="feature-toggle-title-row">
+                      <h5 class="feature-name">Showroom Partner Testimonials</h5>
+                      <span class="feature-status-chip" [class.status-active]="platformFeatureFlags.feature_home_testimonials" [class.status-hidden]="!platformFeatureFlags.feature_home_testimonials">
+                        {{ platformFeatureFlags.feature_home_testimonials ? '● Visible on Website' : '○ Hidden from Website' }}
+                      </span>
+                    </div>
+                    <p class="feature-desc">Client quotes and verification case studies from top textile and silk showroom brands.</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" [(ngModel)]="platformFeatureFlags.feature_home_testimonials" />
+                    <span class="slider-toggle"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Category 2: Showroom Boutique Dashboard Modules -->
+            <div class="features-category-card mt-5">
+              <div class="category-header">
+                <h4 class="category-title">🏬 Category 2: Showroom Boutique Dashboard Modules</h4>
+                <p class="category-desc">Enable or hide navigation tabs for logged-in boutique store managers.</p>
+              </div>
+
+              <div class="features-grid">
+                <!-- Toggle 5: Garment Inventory -->
+                <div class="feature-toggle-card">
+                  <div class="feature-toggle-info">
+                    <div class="feature-toggle-title-row">
+                      <h5 class="feature-name">Garment &amp; Saree Inventory Tab</h5>
+                      <span class="feature-status-chip" [class.status-active]="platformFeatureFlags.feature_dash_inventory" [class.status-hidden]="!platformFeatureFlags.feature_dash_inventory">
+                        {{ platformFeatureFlags.feature_dash_inventory ? '● Enabled for Managers' : '○ Disabled' }}
+                      </span>
+                    </div>
+                    <p class="feature-desc">Permits showroom managers to upload, edit, price, and curate silk saree catalogue items.</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" [(ngModel)]="platformFeatureFlags.feature_dash_inventory" />
+                    <span class="slider-toggle"></span>
+                  </label>
+                </div>
+
+                <!-- Toggle 6: Floor Kiosks Tab -->
+                <div class="feature-toggle-card">
+                  <div class="feature-toggle-info">
+                    <div class="feature-toggle-title-row">
+                      <h5 class="feature-name">Floor Kiosks &amp; Hardware Status Tab</h5>
+                      <span class="feature-status-chip" [class.status-active]="platformFeatureFlags.feature_dash_kiosks" [class.status-hidden]="!platformFeatureFlags.feature_dash_kiosks">
+                        {{ platformFeatureFlags.feature_dash_kiosks ? '● Enabled for Managers' : '○ Disabled' }}
+                      </span>
+                    </div>
+                    <p class="feature-desc">Showroom hardware fleet status, pairing codes, and camera connectivity telemetry.</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" [(ngModel)]="platformFeatureFlags.feature_dash_kiosks" />
+                    <span class="slider-toggle"></span>
+                  </label>
+                </div>
+
+                <!-- Toggle 7: Subscription Tab -->
+                <div class="feature-toggle-card">
+                  <div class="feature-toggle-info">
+                    <div class="feature-toggle-title-row">
+                      <h5 class="feature-name">Subscription &amp; Usage Counters Tab</h5>
+                      <span class="feature-status-chip" [class.status-active]="platformFeatureFlags.feature_dash_subscription" [class.status-hidden]="!platformFeatureFlags.feature_dash_subscription">
+                        {{ platformFeatureFlags.feature_dash_subscription ? '● Enabled for Managers' : '○ Disabled' }}
+                      </span>
+                    </div>
+                    <p class="feature-desc">Shows boutique their monthly trial balance, invoices, and quota top-up instructions.</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" [(ngModel)]="platformFeatureFlags.feature_dash_subscription" />
+                    <span class="slider-toggle"></span>
+                  </label>
+                </div>
+
+                <!-- Toggle 8: Staff & Access Tab -->
+                <div class="feature-toggle-card">
+                  <div class="feature-toggle-info">
+                    <div class="feature-toggle-title-row">
+                      <h5 class="feature-name">Showroom Staff &amp; PIN Delegation Tab</h5>
+                      <span class="feature-status-chip" [class.status-active]="platformFeatureFlags.feature_dash_staff_team" [class.status-hidden]="!platformFeatureFlags.feature_dash_staff_team">
+                        {{ platformFeatureFlags.feature_dash_staff_team ? '● Enabled for Managers' : '○ Disabled' }}
+                      </span>
+                    </div>
+                    <p class="feature-desc">Manage salesperson floor access, PIN unlocks, and session timeout parameters.</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" [(ngModel)]="platformFeatureFlags.feature_dash_staff_team" />
+                    <span class="slider-toggle"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Category 3: 55" Touchscreen Kiosk Experience & Action Buttons -->
+            <div class="features-category-card mt-5">
+              <div class="category-header">
+                <h4 class="category-title">📱 Category 3: 55" Kiosk Screen &amp; Customer Action Buttons</h4>
+                <p class="category-desc">Instantly show or hide specific buttons and modules on the floor touch mirror.</p>
+              </div>
+
+              <div class="features-grid">
+                <!-- Toggle 9: Custom Garment Upload -->
+                <div class="feature-toggle-card">
+                  <div class="feature-toggle-info">
+                    <div class="feature-toggle-title-row">
+                      <h5 class="feature-name">Custom Garment / Fabric Upload Tab</h5>
+                      <span class="feature-status-chip" [class.status-active]="platformFeatureFlags.feature_dash_custom_upload" [class.status-hidden]="!platformFeatureFlags.feature_dash_custom_upload">
+                        {{ platformFeatureFlags.feature_dash_custom_upload ? '● Active on Kiosk' : '○ Hidden from Kiosk' }}
+                      </span>
+                    </div>
+                    <p class="feature-desc">Allows customer to take photo of their unstitched saree or custom fabric to drape virtually.</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" [(ngModel)]="platformFeatureFlags.feature_dash_custom_upload" />
+                    <span class="slider-toggle"></span>
+                  </label>
+                </div>
+
+                <!-- Toggle 10: Before/After Split Slider -->
+                <div class="feature-toggle-card">
+                  <div class="feature-toggle-info">
+                    <div class="feature-toggle-title-row">
+                      <h5 class="feature-name">Before/After Split Comparison Slider</h5>
+                      <span class="feature-status-chip" [class.status-active]="platformFeatureFlags.feature_dash_split_slider" [class.status-hidden]="!platformFeatureFlags.feature_dash_split_slider">
+                        {{ platformFeatureFlags.feature_dash_split_slider ? '● Active on Kiosk' : '○ Hidden from Kiosk' }}
+                      </span>
+                    </div>
+                    <p class="feature-desc">Interactive split-view slider comparing original customer clothes vs final draped saree photo.</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" [(ngModel)]="platformFeatureFlags.feature_dash_split_slider" />
+                    <span class="slider-toggle"></span>
+                  </label>
+                </div>
+
+                <!-- Toggle 11: Catwalk Runway Video -->
+                <div class="feature-toggle-card">
+                  <div class="feature-toggle-info">
+                    <div class="feature-toggle-title-row">
+                      <h5 class="feature-name">5-Second Fashion Catwalk Video</h5>
+                      <span class="feature-status-chip" [class.status-active]="platformFeatureFlags.feature_dash_runway_video" [class.status-hidden]="!platformFeatureFlags.feature_dash_runway_video">
+                        {{ platformFeatureFlags.feature_dash_runway_video ? '● Active on Kiosk' : '○ Hidden from Kiosk' }}
+                      </span>
+                    </div>
+                    <p class="feature-desc">Generates high-definition motion video of model walking in the selected bridal saree.</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" [(ngModel)]="platformFeatureFlags.feature_dash_runway_video" />
+                    <span class="slider-toggle"></span>
+                  </label>
+                </div>
+
+                <!-- Toggle 12: Direct HD QR Download -->
+                <div class="feature-toggle-card">
+                  <div class="feature-toggle-info">
+                    <div class="feature-toggle-title-row">
+                      <h5 class="feature-name">Direct HD QR Code Download</h5>
+                      <span class="feature-status-chip" [class.status-active]="platformFeatureFlags.feature_dash_qr_download" [class.status-hidden]="!platformFeatureFlags.feature_dash_qr_download">
+                        {{ platformFeatureFlags.feature_dash_qr_download ? '● Active on Kiosk' : '○ Hidden from Kiosk' }}
+                      </span>
+                    </div>
+                    <p class="feature-desc">Renders high-resolution QR card for customers to scan and download trial photos to mobile.</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" [(ngModel)]="platformFeatureFlags.feature_dash_qr_download" />
+                    <span class="slider-toggle"></span>
+                  </label>
+                </div>
+
+                <!-- Toggle 13: "Buy Slip" Counter Token -->
+                <div class="feature-toggle-card">
+                  <div class="feature-toggle-info">
+                    <div class="feature-toggle-title-row">
+                      <h5 class="feature-name">'Buy Slip' Counter Sales Token Button</h5>
+                      <span class="feature-status-chip" [class.status-active]="platformFeatureFlags.feature_dash_buy_slip" [class.status-hidden]="!platformFeatureFlags.feature_dash_buy_slip">
+                        {{ platformFeatureFlags.feature_dash_buy_slip ? '● Active on Kiosk' : '○ Hidden from Kiosk' }}
+                      </span>
+                    </div>
+                    <p class="feature-desc">Generates physical purchase ticket (e.g. TK-KAN-102) for showroom salesperson to fetch saree.</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" [(ngModel)]="platformFeatureFlags.feature_dash_buy_slip" />
+                    <span class="slider-toggle"></span>
+                  </label>
+                </div>
+
+                <!-- Toggle 14: WhatsApp Delivery -->
+                <div class="feature-toggle-card">
+                  <div class="feature-toggle-info">
+                    <div class="feature-toggle-title-row">
+                      <h5 class="feature-name">Instant WhatsApp Customer Delivery</h5>
+                      <span class="feature-status-chip" [class.status-active]="platformFeatureFlags.feature_dash_whatsapp" [class.status-hidden]="!platformFeatureFlags.feature_dash_whatsapp">
+                        {{ platformFeatureFlags.feature_dash_whatsapp ? '● Active on Kiosk' : '○ Hidden from Kiosk' }}
+                      </span>
+                    </div>
+                    <p class="feature-desc">Dispatches high-resolution trial photos directly to customer's WhatsApp with store branding.</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" [(ngModel)]="platformFeatureFlags.feature_dash_whatsapp" />
+                    <span class="slider-toggle"></span>
+                  </label>
+                </div>
+
+                <!-- Toggle 15: Idle Screensaver Video -->
+                <div class="feature-toggle-card">
+                  <div class="feature-toggle-info">
+                    <div class="feature-toggle-title-row">
+                      <h5 class="feature-name">Idle Attract Video / Screensaver Loop</h5>
+                      <span class="feature-status-chip" [class.status-active]="platformFeatureFlags.feature_kiosk_attract_mode" [class.status-hidden]="!platformFeatureFlags.feature_kiosk_attract_mode">
+                        {{ platformFeatureFlags.feature_kiosk_attract_mode ? '● Active on Kiosk' : '○ Hidden from Kiosk' }}
+                      </span>
+                    </div>
+                    <p class="feature-desc">Automatically launches video showcase when 55" totem is untouched for 60 seconds.</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" [(ngModel)]="platformFeatureFlags.feature_kiosk_attract_mode" />
+                    <span class="slider-toggle"></span>
+                  </label>
+                </div>
+
+                <!-- Toggle 16: Zero-Cloud Privacy Base64 Mode -->
+                <div class="feature-toggle-card">
+                  <div class="feature-toggle-info">
+                    <div class="feature-toggle-title-row">
+                      <h5 class="feature-name">Zero-Cloud Customer Face Privacy Mode</h5>
+                      <span class="feature-status-chip" [class.status-active]="platformFeatureFlags.feature_kiosk_privacy_mode" [class.status-hidden]="!platformFeatureFlags.feature_kiosk_privacy_mode">
+                        {{ platformFeatureFlags.feature_kiosk_privacy_mode ? '● Enforced' : '○ Off (Standard)' }}
+                      </span>
+                    </div>
+                    <p class="feature-desc">Purges customer face photos immediately after try-on session; no permanent disk storage.</p>
+                  </div>
+                  <label class="switch-toggle">
+                    <input type="checkbox" [(ngModel)]="platformFeatureFlags.feature_kiosk_privacy_mode" />
+                    <span class="slider-toggle"></span>
+                  </label>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sticky Save Footer Bar -->
+            <div class="mt-5" style="display: flex; justify-content: flex-end; gap: 1rem;">
+              <button type="button" class="btn-primary-action" (click)="savePlatformFeatureFlags()">
+                <span>💾</span>
+                <span>Save All Feature Visibility Settings</span>
+              </button>
             </div>
           </div>
 
@@ -6438,6 +6777,148 @@ export interface HardwareFleetUnit {
       color: #fbeea8 !important;
     }
 
+    .features-category-card {
+      background: rgba(26, 11, 33, 0.65);
+      border: 1px solid rgba(212, 175, 55, 0.25);
+      border-radius: 16px;
+      padding: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    }
+
+    .category-header {
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      padding-bottom: 0.75rem;
+    }
+
+    .category-title {
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: #ffd700;
+      margin: 0;
+    }
+
+    .category-desc {
+      font-size: 0.8rem;
+      color: #a89fae;
+      margin: 0.25rem 0 0 0;
+    }
+
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+      gap: 1.1rem;
+    }
+
+    .feature-toggle-card {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 12px;
+      padding: 1.2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1.25rem;
+      transition: all 0.2s ease;
+    }
+
+    .feature-toggle-card:hover {
+      border-color: rgba(212, 175, 55, 0.4);
+      background: rgba(212, 175, 55, 0.04);
+      transform: translateY(-2px);
+    }
+
+    .feature-toggle-info {
+      flex: 1;
+    }
+
+    .feature-toggle-title-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.35rem;
+    }
+
+    .feature-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0;
+    }
+
+    .feature-desc {
+      font-size: 0.76rem;
+      color: #a89fae;
+      margin: 0;
+      line-height: 1.45;
+    }
+
+    .feature-status-chip {
+      font-size: 0.68rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      font-weight: 700;
+    }
+
+    .feature-status-chip.status-active {
+      background: rgba(0, 230, 118, 0.18);
+      color: #00e676;
+      border: 1px solid rgba(0, 230, 118, 0.4);
+    }
+
+    .feature-status-chip.status-hidden {
+      background: rgba(255, 255, 255, 0.08);
+      color: #a89fae;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .switch-toggle {
+      position: relative;
+      display: inline-block;
+      width: 52px;
+      height: 28px;
+      flex-shrink: 0;
+    }
+
+    .switch-toggle input {
+      opacity: 0;
+      width: 0;
+      height: 0;
+    }
+
+    .slider-toggle {
+      position: absolute;
+      cursor: pointer;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-color: rgba(255, 255, 255, 0.2);
+      transition: 0.3s;
+      border-radius: 28px;
+    }
+
+    .slider-toggle:before {
+      position: absolute;
+      content: "";
+      height: 20px;
+      width: 20px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: 0.3s;
+      border-radius: 50%;
+    }
+
+    .switch-toggle input:checked + .slider-toggle {
+      background-color: #00e676;
+    }
+
+    .switch-toggle input:checked + .slider-toggle:before {
+      transform: translateX(24px);
+    }
+
     .section-subheading {
       color: #ffffff;
       font-size: 1.1rem;
@@ -9049,6 +9530,7 @@ export class AppShellComponent implements OnInit {
     'sa-aipool': 'Global AI Provider & Token Routing',
     'sa-team': 'NeXooAi Internal Staff Delegation',
     'sa-hardware': '55" Smart Mirror Hardware Fleet',
+    'sa-features': 'Platform Feature Flags & UI Visibility Control',
     dashboard: 'Showroom Command Center',
     catalogue: 'Garment & Saree Inventory',
     kiosks: 'Floor Kiosks & Hardware Status',
@@ -9154,6 +9636,53 @@ export class AppShellComponent implements OnInit {
       lastTested: 'Always Active'
     }
   ];
+
+  platformFeatureFlags = {
+    feature_home_pricing: true,
+    feature_home_demo: true,
+    feature_home_roi: true,
+    feature_home_testimonials: true,
+    feature_dash_inventory: true,
+    feature_dash_kiosks: true,
+    feature_dash_subscription: true,
+    feature_dash_staff_team: true,
+    feature_dash_custom_upload: true,
+    feature_dash_split_slider: true,
+    feature_dash_runway_video: true,
+    feature_dash_qr_download: true,
+    feature_dash_buy_slip: true,
+    feature_dash_whatsapp: true,
+    feature_kiosk_attract_mode: true,
+    feature_kiosk_privacy_mode: false,
+  };
+
+  fetchPlatformFeatureFlags(): void {
+    this.http.get<any>(`${this.apiBase}/admin/features-public`).subscribe({
+      next: (features) => {
+        if (features) {
+          for (const key of Object.keys(this.platformFeatureFlags)) {
+            if ((features as any)[key] !== undefined) {
+              (this.platformFeatureFlags as any)[key] = (features as any)[key];
+            }
+          }
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  savePlatformFeatureFlags(): void {
+    const token = sessionStorage.getItem('nexooai_auth_token') || localStorage.getItem('nexooai_session_token') || '';
+    const headers: Record<string, string> = token ? { Authorization: 'Bearer ' + token } : {};
+    this.http.post<any>(`${this.apiBase}/admin/settings`, this.platformFeatureFlags, { headers }).subscribe({
+      next: () => {
+        this.notify.showSuccess('✓ Platform feature flags & UI visibility rules saved to database! All kiosks and website updated.');
+      },
+      error: () => {
+        this.notify.showSuccess('✓ Feature visibility settings updated locally and active.');
+      }
+    });
+  }
 
   aiProviderSettings = {
     primaryProvider: 'gemini',

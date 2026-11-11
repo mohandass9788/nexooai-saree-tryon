@@ -130,7 +130,22 @@ class SystemSettingsDTO(BaseModel):
     custom_store_name: str = "NeXooAi Luxury Silks"
     custom_store_logo_url: str = ""
     custom_store_ad_video_url: str = ""
-
+    feature_home_pricing: bool = True
+    feature_home_demo: bool = True
+    feature_home_roi: bool = True
+    feature_home_testimonials: bool = True
+    feature_dash_custom_upload: bool = True
+    feature_dash_split_slider: bool = True
+    feature_dash_runway_video: bool = True
+    feature_dash_qr_download: bool = True
+    feature_dash_buy_slip: bool = True
+    feature_dash_whatsapp: bool = True
+    feature_dash_subscription: bool = True
+    feature_dash_staff_team: bool = True
+    feature_dash_inventory: bool = True
+    feature_dash_kiosks: bool = True
+    feature_kiosk_attract_mode: bool = True
+    feature_kiosk_privacy_mode: bool = False
 
 class UpdateSettingsRequest(BaseModel):
     active_ai_provider: Optional[str] = None
@@ -166,6 +181,22 @@ class UpdateSettingsRequest(BaseModel):
     custom_store_name: Optional[str] = None
     custom_store_logo_url: Optional[str] = None
     custom_store_ad_video_url: Optional[str] = None
+    feature_home_pricing: Optional[bool] = None
+    feature_home_demo: Optional[bool] = None
+    feature_home_roi: Optional[bool] = None
+    feature_home_testimonials: Optional[bool] = None
+    feature_dash_custom_upload: Optional[bool] = None
+    feature_dash_split_slider: Optional[bool] = None
+    feature_dash_runway_video: Optional[bool] = None
+    feature_dash_qr_download: Optional[bool] = None
+    feature_dash_buy_slip: Optional[bool] = None
+    feature_dash_whatsapp: Optional[bool] = None
+    feature_dash_subscription: Optional[bool] = None
+    feature_dash_staff_team: Optional[bool] = None
+    feature_dash_inventory: Optional[bool] = None
+    feature_dash_kiosks: Optional[bool] = None
+    feature_kiosk_attract_mode: Optional[bool] = None
+    feature_kiosk_privacy_mode: Optional[bool] = None
 
 
 class TestProviderRequest(BaseModel):
@@ -781,6 +812,22 @@ async def get_system_settings(
         custom_store_name=str(get_setting("custom_store_name", "NeXooAi Luxury Silks")),
         custom_store_logo_url=str(get_setting("custom_store_logo_url", "")),
         custom_store_ad_video_url=str(get_setting("custom_store_ad_video_url", "")),
+        feature_home_pricing=str(get_setting("feature_home_pricing", "true")).lower() == "true",
+        feature_home_demo=str(get_setting("feature_home_demo", "true")).lower() == "true",
+        feature_home_roi=str(get_setting("feature_home_roi", "true")).lower() == "true",
+        feature_home_testimonials=str(get_setting("feature_home_testimonials", "true")).lower() == "true",
+        feature_dash_custom_upload=str(get_setting("feature_dash_custom_upload", "true")).lower() == "true",
+        feature_dash_split_slider=str(get_setting("feature_dash_split_slider", "true")).lower() == "true",
+        feature_dash_runway_video=str(get_setting("feature_dash_runway_video", "true")).lower() == "true",
+        feature_dash_qr_download=str(get_setting("feature_dash_qr_download", "true")).lower() == "true",
+        feature_dash_buy_slip=str(get_setting("feature_dash_buy_slip", "true")).lower() == "true",
+        feature_dash_whatsapp=str(get_setting("feature_dash_whatsapp", "true")).lower() == "true",
+        feature_dash_subscription=str(get_setting("feature_dash_subscription", "true")).lower() == "true",
+        feature_dash_staff_team=str(get_setting("feature_dash_staff_team", "true")).lower() == "true",
+        feature_dash_inventory=str(get_setting("feature_dash_inventory", "true")).lower() == "true",
+        feature_dash_kiosks=str(get_setting("feature_dash_kiosks", "true")).lower() == "true",
+        feature_kiosk_attract_mode=str(get_setting("feature_kiosk_attract_mode", "true")).lower() == "true",
+        feature_kiosk_privacy_mode=str(get_setting("feature_kiosk_privacy_mode", "false")).lower() == "true",
     )
 
 
@@ -857,6 +904,18 @@ async def update_system_settings(
     if req.custom_store_ad_video_url is not None:
         await set_setting("custom_store_ad_video_url", req.custom_store_ad_video_url.strip(), db)
 
+    # Save Platform Global Feature Visibility Toggles
+    for feat_name in [
+        "feature_home_pricing", "feature_home_demo", "feature_home_roi", "feature_home_testimonials",
+        "feature_dash_custom_upload", "feature_dash_split_slider", "feature_dash_runway_video",
+        "feature_dash_qr_download", "feature_dash_buy_slip", "feature_dash_whatsapp",
+        "feature_dash_subscription", "feature_dash_staff_team", "feature_dash_inventory", "feature_dash_kiosks",
+        "feature_kiosk_attract_mode", "feature_kiosk_privacy_mode"
+    ]:
+        val = getattr(req, feat_name, None)
+        if val is not None:
+            await set_setting(feat_name, "true" if val else "false", db)
+
     return await get_system_settings()
 
 
@@ -874,6 +933,22 @@ async def get_public_kiosk_features():
         "custom_store_name": str(get_setting("custom_store_name", "NeXooAi Luxury Silks")),
         "custom_store_logo_url": str(get_setting("custom_store_logo_url", "")),
         "custom_store_ad_video_url": str(get_setting("custom_store_ad_video_url", "")),
+        "feature_home_pricing": str(get_setting("feature_home_pricing", "true")).lower() == "true",
+        "feature_home_demo": str(get_setting("feature_home_demo", "true")).lower() == "true",
+        "feature_home_roi": str(get_setting("feature_home_roi", "true")).lower() == "true",
+        "feature_home_testimonials": str(get_setting("feature_home_testimonials", "true")).lower() == "true",
+        "feature_dash_custom_upload": str(get_setting("feature_dash_custom_upload", "true")).lower() == "true",
+        "feature_dash_split_slider": str(get_setting("feature_dash_split_slider", "true")).lower() == "true",
+        "feature_dash_runway_video": str(get_setting("feature_dash_runway_video", "true")).lower() == "true",
+        "feature_dash_qr_download": str(get_setting("feature_dash_qr_download", "true")).lower() == "true",
+        "feature_dash_buy_slip": str(get_setting("feature_dash_buy_slip", "true")).lower() == "true",
+        "feature_dash_whatsapp": str(get_setting("feature_dash_whatsapp", "true")).lower() == "true",
+        "feature_dash_subscription": str(get_setting("feature_dash_subscription", "true")).lower() == "true",
+        "feature_dash_staff_team": str(get_setting("feature_dash_staff_team", "true")).lower() == "true",
+        "feature_dash_inventory": str(get_setting("feature_dash_inventory", "true")).lower() == "true",
+        "feature_dash_kiosks": str(get_setting("feature_dash_kiosks", "true")).lower() == "true",
+        "feature_kiosk_attract_mode": str(get_setting("feature_kiosk_attract_mode", "true")).lower() == "true",
+        "feature_kiosk_privacy_mode": str(get_setting("feature_kiosk_privacy_mode", "false")).lower() == "true",
     }
 
 
