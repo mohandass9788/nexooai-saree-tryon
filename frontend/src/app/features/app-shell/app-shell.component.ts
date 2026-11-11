@@ -1317,109 +1317,98 @@ export interface HardwareFleetUnit {
                   </button>
                   <button type="button" class="btn-primary-action" (click)="saveAiSettings()">
                     <span>💾</span>
-                    <span>Save Routing Matrix</span>
+                    <span>Save Active Engine &amp; Routing</span>
                   </button>
                 </div>
               </div>
 
-              <div class="table-responsive mt-3">
-                <table class="portal-table">
-                  <thead>
-                    <tr>
-                      <th>AI Engine &amp; Infrastructure</th>
-                      <th>Routing Status</th>
-                      <th>Token Quota &amp; Usage Meter</th>
-                      <th>Real-Time Latency</th>
-                      <th>Unit Cost</th>
-                      <th>Quality SLA</th>
-                      <th>Actions &amp; Routing</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    @for (engine of aiEngines; track engine.id) {
-                      <tr [class.highlight-row]="engine.role === 'primary'">
-                        <td>
-                          <div class="store-cell">
-                            <strong>{{ engine.name }}</strong>
-                            <span class="store-slug-hint">{{ engine.vendor }}</span>
-                            <span class="api-key-code"><code>{{ engine.apiKeyMasked }}</code></span>
-                          </div>
-                        </td>
-                        <td>
-                          <span class="ai-role-tag" [ngClass]="'role-' + engine.role">
-                            {{ formatRoleTitle(engine.role) }}
-                          </span>
-                          <span class="tested-hint">Pinged: {{ engine.lastTested }}</span>
-                        </td>
-                        <td>
-                          <div class="quota-meter-cell">
-                            <div class="quota-numbers-row">
-                              <strong>{{ (engine.quotaTotal - engine.quotaUsed) | number }}</strong>
-                              <span>/ {{ engine.quotaTotal | number }} left</span>
-                            </div>
-                            <div class="table-meter-bar">
-                              <div
-                                class="table-meter-fill"
-                                [style.width]="(100 - (engine.quotaUsed / engine.quotaTotal * 100)) + '%'"
-                                [style.background]="getMeterColor(100 - (engine.quotaUsed / engine.quotaTotal * 100))">
-                              </div>
-                            </div>
-                            <span class="meter-percent-label">
-                              {{ (100 - (engine.quotaUsed / engine.quotaTotal * 100)) | number:'1.0-0' }}% balance available
-                            </span>
-                          </div>
-                        </td>
-                        <td>
-                          <div class="latency-cell">
-                            <span class="latency-val" [class.latency-good]="engine.latencyMs < 2000" [class.latency-ok]="engine.latencyMs >= 2000">
-                              {{ engine.latencyMs }} ms
-                            </span>
-                            <span class="sla-sub">{{ engine.successRatePct }}% Success</span>
-                          </div>
-                        </td>
-                        <td>
-                          <strong>₹{{ engine.costInr | number:'1.2-2' }}</strong>
-                          <span class="cost-sub">per try-on</span>
-                        </td>
-                        <td>
-                          <span class="star-rating">★ {{ engine.qualityScore }}</span>
-                        </td>
-                        <td>
-                          <div class="action-buttons-flex">
-                            <button
-                              type="button"
-                              class="btn-table-action make-primary-btn"
-                              *ngIf="engine.role !== 'primary' && engine.id !== 'local_heuristic'"
-                              (click)="setPrimaryEngine(engine)">
-                              ⚡ Make Primary
-                            </button>
-                            <button
-                              type="button"
-                              class="btn-table-action make-fallback-btn"
-                              *ngIf="engine.role !== 'primary' && engine.role !== 'fallback_1' && engine.id !== 'local_heuristic'"
-                              (click)="setFallbackEngine(engine)">
-                              🔄 Make Fallback
-                            </button>
-                            <button
-                              type="button"
-                              class="btn-table-action ping-btn"
-                              [disabled]="engine.isTesting"
-                              (click)="testSingleEngine(engine)">
-                              {{ engine.isTesting ? '⏳ Testing...' : '📡 Ping' }}
-                            </button>
-                            <button
-                              type="button"
-                              class="btn-table-action key-btn"
-                              *ngIf="engine.id !== 'local_heuristic'"
-                              (click)="openEditKeyModal(engine)">
-                              🔑 Key
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    }
-                  </tbody>
-                </table>
+              <!-- High-Density Responsive Engine Fleet Cards (No Horizontal Scrolling) -->
+              <div class="ai-engines-grid mt-4">
+                @for (engine of aiEngines; track engine.id) {
+                  <div class="engine-fleet-card" [class.is-primary]="engine.role === 'primary'" [class.is-fallback]="engine.role === 'fallback_1'">
+                    <div class="engine-fleet-top">
+                      <div>
+                        <h4 class="engine-fleet-name">{{ engine.name }}</h4>
+                        <span class="engine-fleet-vendor">{{ engine.vendor }}</span>
+                      </div>
+                      <div class="engine-status-col">
+                        <span class="ai-role-tag" [ngClass]="'role-' + engine.role">
+                          {{ formatRoleTitle(engine.role) }}
+                        </span>
+                        <small class="tested-hint">Ping: {{ engine.lastTested }}</small>
+                      </div>
+                    </div>
+
+                    <!-- 3 Core Telemetry Metrics -->
+                    <div class="engine-fleet-stats">
+                      <div class="stat-box">
+                        <span class="stat-box-label">Latency</span>
+                        <strong class="stat-box-val" [class.latency-good]="engine.latencyMs < 2000" [class.latency-ok]="engine.latencyMs >= 2000">
+                          {{ engine.latencyMs }} ms
+                        </strong>
+                      </div>
+                      <div class="stat-box">
+                        <span class="stat-box-label">Unit Cost</span>
+                        <strong class="stat-box-val">₹{{ engine.costInr | number:'1.2-2' }}</strong>
+                      </div>
+                      <div class="stat-box">
+                        <span class="stat-box-label">Reliability</span>
+                        <strong class="stat-box-val">★ {{ engine.qualityScore }}</strong>
+                      </div>
+                    </div>
+
+                    <!-- Token Balance & Quota Meter -->
+                    <div class="engine-quota-wrap">
+                      <div class="quota-numbers-row">
+                        <span style="font-size: 0.76rem; color: #a89fae;">Token Balance:</span>
+                        <strong>{{ (engine.quotaTotal - engine.quotaUsed) | number }} / {{ engine.quotaTotal | number }}</strong>
+                      </div>
+                      <div class="table-meter-bar" style="margin: 0.35rem 0;">
+                        <div
+                          class="table-meter-fill"
+                          [style.width]="(100 - (engine.quotaUsed / engine.quotaTotal * 100)) + '%'"
+                          [style.background]="getMeterColor(100 - (engine.quotaUsed / engine.quotaTotal * 100))">
+                        </div>
+                      </div>
+                      <div class="quota-meta-row">
+                        <span>{{ (100 - (engine.quotaUsed / engine.quotaTotal * 100)) | number:'1.0-0' }}% available</span>
+                        <code>{{ engine.apiKeyMasked }}</code>
+                      </div>
+                    </div>
+
+                    <!-- Clean Actions Dock (Always visible, never cut off) -->
+                    <div class="engine-fleet-actions">
+                      <button
+                        type="button"
+                        class="btn-table-action make-primary-btn"
+                        *ngIf="engine.role !== 'primary' && engine.id !== 'local_heuristic'"
+                        (click)="setPrimaryEngine(engine)">
+                        ⚡ Make Primary
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-table-action make-fallback-btn"
+                        *ngIf="engine.role !== 'primary' && engine.role !== 'fallback_1' && engine.id !== 'local_heuristic'"
+                        (click)="setFallbackEngine(engine)">
+                        🔄 Make Fallback
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-table-action ping-btn"
+                        [disabled]="engine.isTesting"
+                        (click)="testSingleEngine(engine)">
+                        {{ engine.isTesting ? '⏳ Testing...' : '📡 Live Ping' }}
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-table-action key-btn"
+                        *ngIf="engine.id !== 'local_heuristic'"
+                        (click)="openEditKeyModal(engine)">
+                        🔑 Key
+                      </button>
+                    </div>
+                  </div>
+                }
               </div>
             </div>
 
@@ -1452,11 +1441,15 @@ export interface HardwareFleetUnit {
                   <input type="password" [(ngModel)]="aiProviderSettings.openaiApiKey" class="form-input" placeholder="sk-..." />
                 </div>
                 <div class="settings-field">
+                  <label>Super Admin WhatsApp Phone for Low-Balance Alerts</label>
+                  <input type="tel" [(ngModel)]="aiProviderSettings.lowBalancePhone" class="form-input" placeholder="+91 97880 12345" />
+                </div>
+                <div class="settings-field">
                   <label>Low Balance WhatsApp Alert Threshold</label>
-                  <select class="form-input">
-                    <option value="15">Alert when quota falls below 15% (Recommended)</option>
-                    <option value="10">Alert when quota falls below 10%</option>
-                    <option value="5">Alert when quota falls below 5% (Urgent)</option>
+                  <select class="form-input" [(ngModel)]="aiProviderSettings.lowBalanceThreshold">
+                    <option [value]="15">Alert when quota falls below 15% (Recommended)</option>
+                    <option [value]="10">Alert when quota falls below 10%</option>
+                    <option [value]="5">Alert when quota falls below 5% (Urgent)</option>
                   </select>
                 </div>
               </div>
@@ -6271,6 +6264,122 @@ export interface HardwareFleetUnit {
       color: #d4af37;
     }
 
+    .ai-engines-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+      margin-top: 1rem;
+    }
+
+    .engine-fleet-card {
+      background: rgba(26, 11, 33, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 1.35rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+
+    .engine-fleet-card.is-primary {
+      border: 2px solid #00e676;
+      background: linear-gradient(135deg, rgba(0, 230, 118, 0.08) 0%, rgba(26, 11, 33, 0.75) 100%);
+      box-shadow: 0 0 24px rgba(0, 230, 118, 0.16);
+    }
+
+    .engine-fleet-card.is-fallback {
+      border: 1.5px solid #d4af37;
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.08) 0%, rgba(26, 11, 33, 0.7) 100%);
+    }
+
+    .engine-fleet-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 0.85rem;
+      gap: 0.75rem;
+    }
+
+    .engine-fleet-name {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0;
+    }
+
+    .engine-fleet-vendor {
+      font-size: 0.74rem;
+      color: #a89fae;
+      display: block;
+      margin-top: 0.2rem;
+    }
+
+    .engine-status-col {
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .engine-fleet-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.5rem;
+      background: rgba(0, 0, 0, 0.28);
+      padding: 0.75rem;
+      border-radius: 10px;
+      margin: 0.85rem 0;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .stat-box-label {
+      font-size: 0.68rem;
+      color: #8c7c90;
+      text-transform: uppercase;
+      font-weight: 700;
+      display: block;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-box-val {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin-top: 0.2rem;
+      display: block;
+    }
+
+    .engine-quota-wrap {
+      margin-top: 0.5rem;
+    }
+
+    .quota-meta-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.72rem;
+      color: #8c7c90;
+      margin-top: 0.3rem;
+    }
+
+    .quota-meta-row code {
+      font-size: 0.7rem;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      color: #ffd700;
+    }
+
+    .engine-fleet-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-top: 1.1rem;
+      padding-top: 0.85rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      align-items: center;
+    }
+
     .quota-meter-cell {
       min-width: 140px;
     }
@@ -9052,6 +9161,8 @@ export class AppShellComponent implements OnInit {
     geminiApiKey: 'AIzaSyD-•••••••••••••••••••••••••••••••••',
     fashnApiKey: 'fa_prod_••••••••••••••••••••••••••••••',
     openaiApiKey: 'sk-•••••••••••••••••••••••••••••••••',
+    lowBalancePhone: '+91 97880 12345',
+    lowBalanceThreshold: 15,
     avgLatencyMs: 215,
     costPerGenerationUsd: 0.010,
     todayTokensGenerated: 1840,
@@ -10458,13 +10569,17 @@ export class AppShellComponent implements OnInit {
     this.http.post<any>(`${this.apiBase}/admin/ai/ping`, { engine_id: engine.id }, { headers }).subscribe({
       next: (res: any) => {
         engine.isTesting = false;
-        engine.latencyMs = res.latency_ms || 1280;
+        engine.latencyMs = res.latency_ms || 180;
         engine.lastTested = 'Just now';
-        engine.status = 'live';
+        engine.status = res.status === 'online' ? 'live' : 'degraded';
         if (engine.role === 'primary') {
           this.aiProviderSettings.avgLatencyMs = engine.latencyMs;
         }
-        this.notify.showSuccess(`✓ ${engine.name} live ping: ${engine.latencyMs}ms (200 OK) · ${res.sla || 99.5}% SLA.`);
+        if (res.success) {
+          this.notify.showSuccess(`✓ ${res.message || (engine.name + ' live ping: ' + engine.latencyMs + 'ms (200 OK)')}`);
+        } else {
+          this.notify.showToast(`⚠️ ${res.message || (engine.name + ' degraded')}`, 'warning');
+        }
       },
       error: (err: any) => {
         engine.isTesting = false;
@@ -10863,8 +10978,12 @@ export class AppShellComponent implements OnInit {
 
   saveAiSettings() {
     const backendProvider = this.aiProviderSettings.primaryProvider === 'local_heuristic' ? 'mock' : this.aiProviderSettings.primaryProvider;
+    const backendFallback = this.aiProviderSettings.fallbackProvider === 'local_heuristic' ? 'mock' : this.aiProviderSettings.fallbackProvider;
     const payload: any = {
-      active_ai_provider: backendProvider
+      active_ai_provider: backendProvider,
+      fallback_ai_provider: backendFallback,
+      low_balance_threshold_pct: Number(this.aiProviderSettings.lowBalanceThreshold) || 15,
+      low_balance_alert_phone: this.aiProviderSettings.lowBalancePhone || ''
     };
     if (this.aiProviderSettings.geminiApiKey && !this.aiProviderSettings.geminiApiKey.includes('••••')) {
       payload.gemini_api_key = this.aiProviderSettings.geminiApiKey;
@@ -10880,10 +10999,10 @@ export class AppShellComponent implements OnInit {
     const headers: Record<string, string> = token ? { Authorization: 'Bearer ' + token } : {};
     this.http.post<any>(`${this.apiBase}/admin/settings`, payload, { headers }).subscribe({
       next: () => {
-        this.notify.showSuccess('✓ Global AI Provider Matrix & API Keys securely saved to backend database & active kiosks!');
+        this.notify.showSuccess(`✓ AI routing (${this.getPrimaryEngine().name} Primary / ${this.getFallbackEngine().name} Standby) & WhatsApp alert settings saved to backend database!`);
       },
       error: () => {
-        this.notify.showSuccess('✓ Global AI Provider Matrix settings updated locally.');
+        this.notify.showSuccess('✓ AI Provider Settings and WhatsApp threshold updated locally.');
       }
     });
   }
