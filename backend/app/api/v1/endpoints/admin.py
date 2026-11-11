@@ -98,6 +98,9 @@ class CustomerTodayResponse(BaseModel):
 
 class SystemSettingsDTO(BaseModel):
     active_ai_provider: str
+    fallback_ai_provider: Optional[str] = "fashn"
+    low_balance_threshold_pct: Optional[int] = 15
+    low_balance_alert_phone: Optional[str] = "+91 97880 33234"
     available_providers: List[Dict[str, Any]]
     fal_key_masked: Optional[str] = None
     fashn_api_key_masked: str
@@ -724,6 +727,9 @@ async def get_system_settings(
     current_user: AuthenticatedUser = Depends(require_super_admin),
 ):
     provider = str(get_setting("ai_provider", settings.AI_TRYON_PROVIDER or "fal-fashn"))
+    fallback_provider = str(get_setting("fallback_ai_provider", "fashn"))
+    low_thresh = int(get_setting("low_balance_threshold_pct", 15))
+    low_phone = str(get_setting("low_balance_alert_phone", "+91 97880 33234"))
     fal_key = str(get_setting("fal_key", getattr(settings, "FAL_KEY", "") or ""))
     fashn_key = str(get_setting("fashn_api_key", getattr(settings, "FASHN_API_KEY", "") or ""))
     gemini_key = str(get_setting("gemini_api_key", getattr(settings, "GEMINI_API_KEY", "")))
@@ -754,37 +760,40 @@ async def get_system_settings(
 
     available = [
         {
+            "id": "fal-fashn",
+            "name": "FAL.AI Neural Cloud (Standard Primary)",
+            "description": "Unified Fal.ai inference powering Fashn v1.6, Kling Kolors, and CatVTON under unified single billing.",
+            "is_ready": bool(fal_key),
+            "tier": "Unified Primary Standard",
+        },
+        {
             "id": "fashn",
-            "name": "FASHN.ai (v1.6 & TryOn-Max Ultra)",
-            "description": "Photorealistic apparel draping with authentic drape folds and zari alignment. Works with direct fa-... key or fal.ai.",
+            "name": "Direct FASHN.ai (Hot Standby Failover)",
+            "description": "Direct Fashn API v1.6 with automated polling fallback if primary fal.ai is degraded.",
             "is_ready": bool(fashn_key),
-            "tier": "Commercial Premium",
+            "tier": "Direct Hot Standby",
         },
         {
             "id": "gemini",
             "name": "Google Gemini Vision & Multimodal",
-            "description": "Google Gemini 2.5 Flash / Flash-Lite multimodal Indian saree synthesis with pose guidance.",
+            "description": "Google Gemini 2.5 Flash / Pro multimodal saree synthesis with pose guidance.",
             "is_ready": bool(gemini_key),
-            "tier": "High Speed / Cost-Effective",
-        },
-        {
-            "id": "openai",
-            "name": "OpenAI (GPT-4o & DALL-E)",
-            "description": "OpenAI multimodal saree & apparel synthesis with photorealistic prompt generation.",
-            "is_ready": bool(openai_key),
-            "tier": "Alternative Cloud Provider",
+            "tier": "High Speed Multimodal",
         },
         {
             "id": "mock",
-            "name": "Offline High-Speed Mock Engine",
+            "name": "NeXooAi Offline Edge Shield",
             "description": "Zero cost, instant 1-second response for offline testing and hardware demos without burning API tokens.",
             "is_ready": True,
-            "tier": "Zero-Cost Demo Mode",
+            "tier": "Offline Emergency Shield",
         },
     ]
 
     return SystemSettingsDTO(
         active_ai_provider=provider,
+        fallback_ai_provider=fallback_provider,
+        low_balance_threshold_pct=low_thresh,
+        low_balance_alert_phone=low_phone,
         available_providers=available,
         fal_key_masked=mask_key(fal_key),
         fashn_api_key_masked=mask_key(fashn_key),

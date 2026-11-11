@@ -1330,6 +1330,37 @@ export interface HardwareFleetUnit {
                 </div>
               </div>
 
+              <!-- 1-Click Fast Primary Engine Switch Bar -->
+              <div class="primary-fast-switch-bar mt-3">
+                <span class="pfs-label">⚡ 1-Click Primary Route Switch:</span>
+                <div class="pfs-buttons">
+                  <button
+                    type="button"
+                    class="pfs-btn"
+                    [class.is-active]="getPrimaryEngine().id === 'fal'"
+                    (click)="setPrimaryEngineById('fal')">
+                    <span class="pfs-dot"></span>
+                    🌟 FAL.AI Neural Cloud (Primary Standard)
+                  </button>
+                  <button
+                    type="button"
+                    class="pfs-btn"
+                    [class.is-active]="getPrimaryEngine().id === 'fashn'"
+                    (click)="setPrimaryEngineById('fashn')">
+                    <span class="pfs-dot"></span>
+                    🔄 Direct Fashn.ai (Hot Standby)
+                  </button>
+                  <button
+                    type="button"
+                    class="pfs-btn"
+                    [class.is-active]="getPrimaryEngine().id === 'gemini'"
+                    (click)="setPrimaryEngineById('gemini')">
+                    <span class="pfs-dot"></span>
+                    🌐 Google Gemini (Multimodal)
+                  </button>
+                </div>
+              </div>
+
               <!-- High-Density Responsive Engine Fleet Cards (No Horizontal Scrolling) -->
               <div class="ai-engines-grid mt-4">
                 @for (engine of aiEngines; track engine.id) {
@@ -1386,6 +1417,9 @@ export interface HardwareFleetUnit {
 
                     <!-- Clean Actions Dock (Always visible, never cut off) -->
                     <div class="engine-fleet-actions">
+                      <div class="primary-active-pill" *ngIf="engine.role === 'primary'">
+                        <span>🟢 LIVE PRIMARY (ACTIVE)</span>
+                      </div>
                       <button
                         type="button"
                         class="btn-table-action make-primary-btn"
@@ -6614,6 +6648,83 @@ export interface HardwareFleetUnit {
       margin-top: 1rem;
     }
 
+    /* 1-Click Fast Primary Switcher Bar */
+    .primary-fast-switch-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.85rem;
+      background: rgba(26, 11, 33, 0.55);
+      border: 1px solid rgba(212, 175, 55, 0.25);
+      border-radius: 12px;
+      padding: 0.75rem 1.1rem;
+      flex-wrap: wrap;
+    }
+
+    .pfs-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #ffd700;
+      letter-spacing: 0.03em;
+    }
+
+    .pfs-buttons {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .pfs-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0.45rem 0.95rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e2d9cc;
+      transition: all 0.2s ease;
+    }
+
+    .pfs-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+    }
+
+    .pfs-btn.is-active {
+      background: rgba(0, 230, 118, 0.22);
+      border: 1.5px solid #00e676;
+      color: #00e676;
+      box-shadow: 0 0 14px rgba(0, 230, 118, 0.2);
+    }
+
+    .pfs-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #8c7c90;
+    }
+
+    .pfs-btn.is-active .pfs-dot {
+      background: #00e676;
+      box-shadow: 0 0 8px #00e676;
+    }
+
+    .primary-active-pill {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.4rem 0.85rem;
+      border-radius: 8px;
+      background: rgba(0, 230, 118, 0.18);
+      border: 1.5px solid #00e676;
+      color: #00e676;
+      font-size: 0.76rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+    }
+
     .engine-fleet-card {
       background: rgba(26, 11, 33, 0.65);
       border: 1px solid rgba(255, 255, 255, 0.1);
@@ -6945,6 +7056,214 @@ export interface HardwareFleetUnit {
 
     .app-shell-wrapper.light-theme .circuit-desc {
       color: #5d4a65;
+    }
+
+    /* AI Fleet Engine Cards & Metrics - Light Theme High-Contrast Overrides */
+    .app-shell-wrapper.light-theme .primary-fast-switch-bar {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+    }
+
+    .app-shell-wrapper.light-theme .pfs-label {
+      color: #b45309;
+    }
+
+    .app-shell-wrapper.light-theme .pfs-btn {
+      background: #ffffff;
+      border: 1px solid #cbd5e1;
+      color: #334155;
+    }
+
+    .app-shell-wrapper.light-theme .pfs-btn:hover {
+      background: #f1f5f9;
+      color: #0f172a;
+    }
+
+    .app-shell-wrapper.light-theme .pfs-btn.is-active {
+      background: #ecfdf5;
+      border: 2px solid #16a34a;
+      color: #15803d;
+      box-shadow: 0 2px 10px rgba(22, 163, 74, 0.15);
+    }
+
+    .app-shell-wrapper.light-theme .pfs-btn.is-active .pfs-dot {
+      background: #16a34a;
+      box-shadow: 0 0 6px #16a34a;
+    }
+
+    .app-shell-wrapper.light-theme .primary-active-pill {
+      background: #dcfce7;
+      border: 1.5px solid #86efac;
+      color: #15803d;
+    }
+
+    .app-shell-wrapper.light-theme .engine-fleet-card {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+    }
+
+    .app-shell-wrapper.light-theme .engine-fleet-card.is-primary {
+      background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%) !important;
+      border: 2px solid #16a34a !important;
+      box-shadow: 0 6px 24px rgba(22, 163, 74, 0.16) !important;
+    }
+
+    .app-shell-wrapper.light-theme .engine-fleet-card.is-fallback {
+      background: linear-gradient(135deg, #fffbeb 0%, #ffffff 100%) !important;
+      border: 2px solid #d97706 !important;
+      box-shadow: 0 6px 24px rgba(217, 119, 6, 0.12) !important;
+    }
+
+    .app-shell-wrapper.light-theme .engine-fleet-name {
+      color: #0f172a !important;
+    }
+
+    .app-shell-wrapper.light-theme .engine-fleet-vendor {
+      color: #64748b !important;
+    }
+
+    .app-shell-wrapper.light-theme .engine-fleet-stats {
+      background: #f8fafc !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+
+    .app-shell-wrapper.light-theme .stat-box-label {
+      color: #64748b !important;
+    }
+
+    .app-shell-wrapper.light-theme .stat-box-val {
+      color: #0f172a !important;
+    }
+
+    .app-shell-wrapper.light-theme .stat-box-val.latency-good {
+      color: #16a34a !important;
+    }
+
+    .app-shell-wrapper.light-theme .stat-box-val.latency-ok {
+      color: #d97706 !important;
+    }
+
+    .app-shell-wrapper.light-theme .quota-numbers-row {
+      color: #0f172a !important;
+    }
+
+    .app-shell-wrapper.light-theme .quota-meta-row {
+      color: #64748b !important;
+    }
+
+    .app-shell-wrapper.light-theme .quota-meta-row code {
+      background: #f1f5f9 !important;
+      color: #b45309 !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+
+    .app-shell-wrapper.light-theme .engine-fleet-actions {
+      border-top: 1px solid #e2e8f0 !important;
+    }
+
+    .app-shell-wrapper.light-theme .btn-table-action {
+      background: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #334155 !important;
+    }
+
+    .app-shell-wrapper.light-theme .btn-table-action:hover {
+      background: #f1f5f9 !important;
+      color: #0f172a !important;
+    }
+
+    .app-shell-wrapper.light-theme .make-primary-btn {
+      background: #dcfce7 !important;
+      border: 1.5px solid #86efac !important;
+      color: #15803d !important;
+    }
+
+    .app-shell-wrapper.light-theme .make-primary-btn:hover {
+      background: #bbf7d0 !important;
+    }
+
+    .app-shell-wrapper.light-theme .make-fallback-btn {
+      background: #fef3c7 !important;
+      border: 1.5px solid #fde68a !important;
+      color: #b45309 !important;
+    }
+
+    .app-shell-wrapper.light-theme .make-fallback-btn:hover {
+      background: #fde68a !important;
+    }
+
+    .app-shell-wrapper.light-theme .ping-btn {
+      background: #f0fdf4 !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #0f766e !important;
+    }
+
+    .app-shell-wrapper.light-theme .key-btn {
+      background: #fffbeb !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #b45309 !important;
+    }
+
+    .app-shell-wrapper.light-theme .ai-role-tag.role-primary {
+      background: #dcfce7 !important;
+      border: 1px solid #86efac !important;
+      color: #15803d !important;
+    }
+
+    .app-shell-wrapper.light-theme .ai-role-tag.role-fallback_1 {
+      background: #fef3c7 !important;
+      border: 1px solid #fde68a !important;
+      color: #b45309 !important;
+    }
+
+    .app-shell-wrapper.light-theme .ai-role-tag.role-standby {
+      background: #f1f5f9 !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #475569 !important;
+    }
+
+    .app-shell-wrapper.light-theme .ai-role-tag.role-emergency {
+      background: #e0f2fe !important;
+      border: 1px solid #bae6fd !important;
+      color: #0369a1 !important;
+    }
+
+    .app-shell-wrapper.light-theme .settings-field label {
+      color: #1e293b !important;
+    }
+
+    .app-shell-wrapper.light-theme .settings-field .form-input {
+      background: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+
+    .app-shell-wrapper.light-theme .settings-field select {
+      background: #ffffff !important;
+      border: 1px solid #cbd5e1 !important;
+      color: #0f172a !important;
+    }
+
+    .app-shell-wrapper.light-theme .settings-field small {
+      color: #64748b !important;
+    }
+
+    .app-shell-wrapper.light-theme .kpi-card {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+
+    .app-shell-wrapper.light-theme .kpi-card.gold-border {
+      border: 1.5px solid #f59e0b !important;
+    }
+
+    .app-shell-wrapper.light-theme .kpi-meta .kpi-label {
+      color: #64748b !important;
+    }
+
+    .app-shell-wrapper.light-theme .kpi-meta .kpi-val {
+      color: #0f172a !important;
     }
 
     .app-shell-wrapper.light-theme .circuit-status-chip {
@@ -9691,8 +10010,7 @@ export class AppShellComponent implements OnInit {
   }
 
   savePlatformFeatureFlags(): void {
-    const token = sessionStorage.getItem('nexooai_auth_token') || localStorage.getItem('nexooai_session_token') || '';
-    const headers: Record<string, string> = token ? { Authorization: 'Bearer ' + token } : {};
+    const headers = this.getAuthHeader();
     this.http.post<any>(`${this.apiBase}/admin/settings`, this.platformFeatureFlags, { headers }).subscribe({
       next: () => {
         this.notify.showSuccess('✓ Platform feature flags & UI visibility rules saved to database! All kiosks and website updated.');
@@ -10048,6 +10366,7 @@ export class AppShellComponent implements OnInit {
       // 2. Fetch Live Database Records via Backend APIs (role-scoped)
       if (isSuper) {
         this.fetchSaasShowroomsFromApi();
+        this.fetchSystemSettingsFromApi();
       } else {
         this.saasShowrooms = [];
       }
@@ -10603,6 +10922,9 @@ export class AppShellComponent implements OnInit {
       tab = 'dashboard';
     }
     this.activeNav.set(tab);
+    if (tab === 'sa-aipool' && this.userRole() === 'super_admin') {
+      this.fetchSystemSettingsFromApi();
+    }
     this.closeMobileMenu();
     try {
       localStorage.setItem('nexooai_active_tab', tab);
@@ -11073,6 +11395,77 @@ export class AppShellComponent implements OnInit {
     return '#ff5252';
   }
 
+  private getAuthHeader(): Record<string, string> {
+    const token =
+      sessionStorage.getItem('nexooai_admin_token') ||
+      sessionStorage.getItem('nexooai_auth_token') ||
+      localStorage.getItem('nexooai_session_token') ||
+      localStorage.getItem('nexooai_token') ||
+      '';
+    return token ? { Authorization: 'Bearer ' + token } : {};
+  }
+
+  fetchSystemSettingsFromApi(): void {
+    const headers = this.getAuthHeader();
+    this.http.get<any>(`${this.apiBase}/admin/settings`, { headers }).subscribe({
+      next: (res) => {
+        if (!res) return;
+        const active = res.active_ai_provider || 'fal-fashn';
+        const fallback = res.fallback_ai_provider || 'fashn';
+
+        const activeId = active.includes('fal') ? 'fal' : (active === 'mock' ? 'local_heuristic' : active);
+        const fallbackId = fallback.includes('fal') ? 'fal' : (fallback === 'mock' ? 'local_heuristic' : fallback);
+
+        this.aiProviderSettings.primaryProvider = activeId;
+        this.aiProviderSettings.fallbackProvider = fallbackId;
+
+        if (res.fal_key_masked) {
+          this.aiProviderSettings.falKey = res.fal_key_masked;
+          const falE = this.aiEngines.find((e) => e.id === 'fal');
+          if (falE) falE.apiKeyMasked = res.fal_key_masked;
+        }
+        if (res.fashn_api_key_masked) {
+          this.aiProviderSettings.fashnApiKey = res.fashn_api_key_masked;
+          const fashnE = this.aiEngines.find((e) => e.id === 'fashn');
+          if (fashnE) fashnE.apiKeyMasked = res.fashn_api_key_masked;
+        }
+        if (res.gemini_api_key_masked) {
+          this.aiProviderSettings.geminiApiKey = res.gemini_api_key_masked;
+          const gemE = this.aiEngines.find((e) => e.id === 'gemini');
+          if (gemE) gemE.apiKeyMasked = res.gemini_api_key_masked;
+        }
+        if (res.low_balance_threshold_pct) {
+          this.aiProviderSettings.lowBalanceThreshold = res.low_balance_threshold_pct;
+        }
+        if (res.low_balance_alert_phone) {
+          this.aiProviderSettings.lowBalancePhone = res.low_balance_alert_phone;
+        }
+
+        // Synchronize roles across engine fleet
+        for (const engine of this.aiEngines) {
+          if (engine.id === activeId) {
+            engine.role = 'primary';
+            engine.status = 'live';
+          } else if (engine.id === fallbackId) {
+            engine.role = 'fallback_1';
+          } else if (engine.id === 'local_heuristic') {
+            engine.role = 'emergency';
+          } else {
+            engine.role = 'standby';
+          }
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  setPrimaryEngineById(id: string): void {
+    const engine = this.aiEngines.find((e) => e.id === id);
+    if (engine) {
+      this.setPrimaryEngine(engine);
+    }
+  }
+
   setPrimaryEngine(engine: AiEngineModel): void {
     const prevPrimary = this.getPrimaryEngine();
     if (prevPrimary && prevPrimary.id !== engine.id) {
@@ -11084,9 +11477,16 @@ export class AppShellComponent implements OnInit {
     this.aiProviderSettings.avgLatencyMs = engine.latencyMs;
 
     // Automatically sync live provider to backend settings
+    for (const e of this.aiEngines) {
+      if (e.id === engine.id) {
+        e.role = 'primary';
+        e.status = 'live';
+      } else if (e.role === 'primary') {
+        e.role = 'fallback_1';
+      }
+    }
     const backendProvider = engine.id === 'fal' ? 'fal-fashn' : (engine.id === 'local_heuristic' ? 'mock' : engine.id);
-    const token = sessionStorage.getItem('nexooai_auth_token') || localStorage.getItem('nexooai_session_token') || '';
-    const headers: Record<string, string> = token ? { Authorization: 'Bearer ' + token } : {};
+    const headers = this.getAuthHeader();
     this.http.post<any>(`${this.apiBase}/admin/settings`, { active_ai_provider: backendProvider }, { headers }).subscribe({
       next: () => {
         this.notify.showSuccess(`⚡ ${engine.name} is now LIVE PRIMARY and synced across all showroom kiosks!`);
@@ -11543,8 +11943,7 @@ export class AppShellComponent implements OnInit {
       payload.gemini_api_key = this.aiProviderSettings.geminiApiKey.trim();
     }
 
-    const token = sessionStorage.getItem('nexooai_auth_token') || localStorage.getItem('nexooai_session_token') || '';
-    const headers: Record<string, string> = token ? { Authorization: 'Bearer ' + token } : {};
+    const headers = this.getAuthHeader();
     this.http.post<any>(`${this.apiBase}/admin/settings`, payload, { headers }).subscribe({
       next: (res) => {
         this.notify.showSuccess(`✓ AI routing (${this.getPrimaryEngine().name} Primary / ${this.getFallbackEngine().name} Standby) & credentials saved to database!`);
