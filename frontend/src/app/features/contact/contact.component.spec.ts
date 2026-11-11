@@ -8,6 +8,10 @@ describe('ContactComponent', () => {
   let component: ContactComponent;
 
   beforeEach(async () => {
+    try {
+      localStorage.clear();
+    } catch {}
+
     await TestBed.configureTestingModule({
       imports: [ContactComponent],
       providers: [provideRouter([]), provideHttpClient()],
