@@ -96,3 +96,56 @@ async def list_sales_inquiries(
             for inq in inquiries
         ],
     }
+
+
+class SalesInquiryStatusUpdateRequest(BaseModel):
+    status: str
+
+
+@router.patch("/inquiries/{inquiry_id}/status", summary="Update Inbound Sales Inquiry Status (Super Admin Only)")
+async def update_sales_inquiry_status(
+    inquiry_id: str,
+    req: SalesInquiryStatusUpdateRequest,
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_super_admin),
+):
+    """
+    Updates the follow-up status of an inbound showroom sales inquiry.
+    """
+    stmt = select(SalesInquiryModel).where(SalesInquiryModel.id == inquiry_id)
+    res = await db.execute(stmt)
+    inquiry = res.scalar_one_or_none()
+    if not inquiry:
+        raise HTTPException(status_code=404, detail="Inquiry not found")
+
+    inquiry.status = req.status.strip().lower()
+    await db.commit()
+    await db.refresh(inquiry)
+
+    return {
+        "status": "success",
+        "inquiry_id": inquiry.id,
+        "updated_status": inquiry.status,
+    }
+
+
+@router.delete("/inquiries/{inquiry_id}", summary="Delete Inbound Sales Inquiry (Super Admin Only)")
+async def delete_sales_inquiry(
+    inquiry_id: str,
+    db: AsyncSession = Depends(get_db),
+    current_user: AuthenticatedUser = Depends(require_super_admin),
+):
+    """
+    Deletes an invalid or spam inquiry record.
+    """
+    stmt = select(SalesInquiryModel).where(SalesInquiryModel.id == inquiry_id)
+    res = await db.execute(stmt)
+    inquiry = res.scalar_one_or_none()
+    if not inquiry:
+        raise HTTPException(status_code=404, detail="Inquiry not found")
+
+    await db.delete(inquiry)
+    await db.commit()
+
+    return {"status": "success", "message": f"Inquiry {inquiry_id} removed"}
+

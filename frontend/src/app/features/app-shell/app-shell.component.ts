@@ -165,6 +165,19 @@ export interface HardwareFleetUnit {
   warranty: string;
 }
 
+export interface SalesInquiryRecord {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  showroom_name: string;
+  city: string;
+  estimated_kiosks: number;
+  message: string;
+  status: 'new' | 'contacted' | 'converted' | 'closed';
+  created_at: string;
+}
+
 @Component({
   selector: 'app-shell',
   standalone: true,
@@ -214,6 +227,14 @@ export interface HardwareFleetUnit {
             (click)="setNav('sa-showrooms')">
             <span class="nav-icon">🌐</span>
             <span>Showrooms & Tenancy ({{ saasShowrooms.length }})</span>
+          </button>
+          <button
+            type="button"
+            class="nav-item"
+            [class.active]="activeNav() === 'sa-inquiries'"
+            (click)="setNav('sa-inquiries')">
+            <span class="nav-icon">📋</span>
+            <span>Demo Requests & Leads ({{ salesInquiries().length }})</span>
           </button>
           <button
             type="button"
@@ -1115,6 +1136,222 @@ export interface HardwareFleetUnit {
               </div>
             </div>
             </ng-template>
+          </div>
+
+          <!-- ========================================================================= -->
+          <!-- SUPER ADMIN TAB: INBOUND DEMO REQUESTS & SHOWROOM LEADS                   -->
+          <!-- ========================================================================= -->
+          <div *ngIf="userRole() === 'super_admin' && activeNav() === 'sa-inquiries'" class="tab-view-body">
+            <div class="portal-card">
+              <div class="card-header-flex">
+                <div>
+                  <h3 class="card-title">📋 Inbound Demo Requests &amp; Showroom Leads</h3>
+                  <p class="card-subtitle">
+                    Prospective silk saree boutique owners and enterprise retailers requesting hardware demonstrations and try-on kiosks from the public website home page.
+                  </p>
+                </div>
+                <div class="header-action-btns-group">
+                  <button type="button" class="btn-primary-action gold-btn" (click)="fetchSalesInquiries()">
+                    <span>🔄</span>
+                    <span>Refresh Inquiries</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Inbound Leads KPI Summary -->
+            <div class="kpi-grid mt-4">
+              <div class="kpi-card gold-border">
+                <div class="kpi-icon">📋</div>
+                <div class="kpi-meta">
+                  <div class="kpi-label">TOTAL INBOUND LEADS</div>
+                  <div class="kpi-val">{{ salesInquiries().length }}</div>
+                  <div class="kpi-sub">Received across Web &amp; Kiosk Portals</div>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-icon">🔔</div>
+                <div class="kpi-meta">
+                  <div class="kpi-label">NEW / ACTION REQUIRED</div>
+                  <div class="kpi-val" style="color: #f59e0b;">{{ countNewInquiries() }}</div>
+                  <div class="kpi-sub">Pending initial executive outreach</div>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-icon">📞</div>
+                <div class="kpi-meta">
+                  <div class="kpi-label">CONTACTED / IN DEMO</div>
+                  <div class="kpi-val" style="color: #3b82f6;">{{ countContactedInquiries() }}</div>
+                  <div class="kpi-sub">Demo scheduled or quotation shared</div>
+                </div>
+              </div>
+              <div class="kpi-card">
+                <div class="kpi-icon">🏆</div>
+                <div class="kpi-meta">
+                  <div class="kpi-label">CONVERTED SHOWROOMS</div>
+                  <div class="kpi-val" style="color: #10b981;">{{ countConvertedInquiries() }}</div>
+                  <div class="kpi-sub">Enrolled as active NeXooAi tenants</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Inquiries Search and Filter Toolbar -->
+            <div class="portal-card mt-4 p-4">
+              <div class="inquiries-toolbar-row">
+                <div class="pill-filter-group">
+                  <button type="button" class="pill-filter" [class.active]="inquiryFilter() === 'all'" (click)="inquiryFilter.set('all')">
+                    All Leads ({{ salesInquiries().length }})
+                  </button>
+                  <button type="button" class="pill-filter" [class.active]="inquiryFilter() === 'new'" (click)="inquiryFilter.set('new')">
+                    ● New Leads ({{ countNewInquiries() }})
+                  </button>
+                  <button type="button" class="pill-filter" [class.active]="inquiryFilter() === 'contacted'" (click)="inquiryFilter.set('contacted')">
+                    ● Contacted ({{ countContactedInquiries() }})
+                  </button>
+                  <button type="button" class="pill-filter" [class.active]="inquiryFilter() === 'converted'" (click)="inquiryFilter.set('converted')">
+                    ● Converted ({{ countConvertedInquiries() }})
+                  </button>
+                </div>
+                <div class="search-input-wrap">
+                  <input
+                    type="text"
+                    class="search-input"
+                    placeholder="Search by Showroom, Owner, City, Phone..."
+                    [ngModel]="inquirySearch()"
+                    (ngModelChange)="inquirySearch.set($event)"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <!-- Inquiries Table Card -->
+            <div class="portal-card mt-4">
+              <div class="table-responsive">
+                <table class="portal-table">
+                  <thead>
+                    <tr>
+                      <th>SHOWROOM &amp; LOCATION</th>
+                      <th>CONTACT PERSON</th>
+                      <th>PHONE &amp; WHATSAPP</th>
+                      <th>KIOSKS WANTED</th>
+                      <th>MESSAGE / NOTES</th>
+                      <th>RECEIVED AT</th>
+                      <th>STATUS</th>
+                      <th>EXECUTIVE ACTIONS</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr *ngFor="let inq of filteredInquiries">
+                      <td>
+                        <div class="lead-showroom-cell">
+                          <strong class="lead-showroom-name">{{ inq.showroom_name }}</strong>
+                          <span class="lead-city-tag">📍 {{ inq.city || 'Tamil Nadu' }}</span>
+                          <code class="lead-id-code">{{ inq.id }}</code>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="lead-person-cell">
+                          <strong>{{ inq.name }}</strong>
+                          <small class="lead-email">{{ inq.email }}</small>
+                        </div>
+                      </td>
+                      <td>
+                        <div class="lead-contact-actions">
+                          <span class="lead-phone-text">{{ inq.phone }}</span>
+                          <div class="quick-contact-btns">
+                            <a
+                              [href]="getWhatsAppLink(inq)"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              class="btn-lead-wa"
+                              title="Chat on WhatsApp"
+                            >
+                              <span>💬</span> WhatsApp
+                            </a>
+                            <a
+                              [href]="'tel:' + inq.phone"
+                              class="btn-lead-call"
+                              title="Direct Phone Call"
+                            >
+                              <span>📞</span> Call
+                            </a>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <span class="kiosk-need-chip">🖥️ {{ inq.estimated_kiosks || 1 }} Kiosk(s)</span>
+                      </td>
+                      <td>
+                        <div class="lead-message-box" [title]="inq.message">
+                          {{ inq.message || 'Showroom try-on demo requested from website.' }}
+                        </div>
+                      </td>
+                      <td>
+                        <span class="lead-date-text">{{ formatLeadDate(inq.created_at) }}</span>
+                      </td>
+                      <td>
+                        <span
+                          class="lead-status-chip"
+                          [class.chip-new]="inq.status === 'new'"
+                          [class.chip-contacted]="inq.status === 'contacted'"
+                          [class.chip-converted]="inq.status === 'converted'"
+                          [class.chip-closed]="inq.status === 'closed'"
+                        >
+                          {{ inq.status === 'new' ? '● New Lead' : (inq.status === 'contacted' ? '● Contacted' : (inq.status === 'converted' ? '● Converted' : '○ Closed')) }}
+                        </span>
+                      </td>
+                      <td>
+                        <div class="lead-row-actions">
+                          <button
+                            *ngIf="inq.status === 'new'"
+                            type="button"
+                            class="btn-table-action btn-contacted"
+                            (click)="updateInquiryStatus(inq, 'contacted')"
+                            title="Mark as Contacted"
+                          >
+                            ✓ Contacted
+                          </button>
+                          <button
+                            *ngIf="inq.status !== 'converted'"
+                            type="button"
+                            class="btn-table-action btn-convert"
+                            (click)="updateInquiryStatus(inq, 'converted')"
+                            title="Mark as Converted Tenant"
+                          >
+                            🎉 Converted
+                          </button>
+                          <button
+                            *ngIf="inq.status === 'converted'"
+                            type="button"
+                            class="btn-table-action btn-onboard"
+                            (click)="onboardLeadToShowroom(inq)"
+                            title="Open New Showroom Setup"
+                          >
+                            🏬 Onboard
+                          </button>
+                          <button
+                            type="button"
+                            class="btn-table-action btn-del-lead"
+                            (click)="deleteInquiry(inq)"
+                            title="Remove lead"
+                          >
+                            🗑️
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr *ngIf="filteredInquiries.length === 0">
+                      <td colspan="8" class="empty-table-cell">
+                        <div class="empty-leads-box">
+                          <span style="font-size: 2rem;">📭</span>
+                          <p>No demo inquiries found matching your current filter.</p>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
 
           <!-- ========================================================================= -->
@@ -8200,6 +8437,391 @@ export interface HardwareFleetUnit {
       color: #1a0b21;
     }
 
+    /* ========================================================
+       INBOUND DEMO REQUESTS & SHOWROOM LEADS - STYLES
+       ======================================================== */
+    .inquiries-toolbar-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .lead-showroom-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .lead-showroom-name {
+      color: #ffffff;
+      font-size: 0.95rem;
+      font-weight: 700;
+    }
+
+    .lead-city-tag {
+      color: #ffd700;
+      font-size: 0.78rem;
+    }
+
+    .lead-id-code {
+      font-size: 0.68rem;
+      color: #a89fae;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 1px 4px;
+      border-radius: 3px;
+      align-self: flex-start;
+    }
+
+    .lead-person-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .lead-person-cell strong {
+      color: #ffffff;
+      font-size: 0.9rem;
+    }
+
+    .lead-email {
+      color: #a89fae;
+      font-size: 0.75rem;
+    }
+
+    .lead-contact-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .lead-phone-text {
+      color: #ffffff;
+      font-weight: 700;
+      font-size: 0.85rem;
+    }
+
+    .quick-contact-btns {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .btn-lead-wa {
+      background: #25D366;
+      color: #ffffff !important;
+      text-decoration: none !important;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.2s ease;
+    }
+
+    .btn-lead-wa:hover {
+      background: #1eb857;
+    }
+
+    .btn-lead-call {
+      background: #3b82f6;
+      color: #ffffff !important;
+      text-decoration: none !important;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: background 0.2s ease;
+    }
+
+    .btn-lead-call:hover {
+      background: #2563eb;
+    }
+
+    .kiosk-need-chip {
+      background: rgba(212, 175, 55, 0.15);
+      border: 1px solid rgba(212, 175, 55, 0.35);
+      color: #ffd700;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+    }
+
+    .lead-message-box {
+      max-width: 280px;
+      font-size: 0.78rem;
+      color: #cbd5e1;
+      line-height: 1.4;
+      white-space: normal;
+      word-break: break-word;
+    }
+
+    .lead-date-text {
+      font-size: 0.75rem;
+      color: #a89fae;
+      white-space: nowrap;
+    }
+
+    .lead-status-chip {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 3px 8px;
+      border-radius: 4px;
+      white-space: nowrap;
+      display: inline-block;
+    }
+
+    .lead-status-chip.chip-new {
+      background: rgba(245, 158, 11, 0.2);
+      color: #f59e0b;
+      border: 1px solid rgba(245, 158, 11, 0.4);
+    }
+
+    .lead-status-chip.chip-contacted {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.4);
+    }
+
+    .lead-status-chip.chip-converted {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+    }
+
+    .lead-status-chip.chip-closed {
+      background: rgba(255, 255, 255, 0.08);
+      color: #94a3b8;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .lead-row-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .btn-contacted {
+      background: rgba(59, 130, 246, 0.15) !important;
+      border-color: rgba(59, 130, 246, 0.4) !important;
+      color: #60a5fa !important;
+    }
+
+    .btn-contacted:hover {
+      background: rgba(59, 130, 246, 0.28) !important;
+    }
+
+    .btn-convert {
+      background: rgba(16, 185, 129, 0.15) !important;
+      border-color: rgba(16, 185, 129, 0.4) !important;
+      color: #34d399 !important;
+    }
+
+    .btn-convert:hover {
+      background: rgba(16, 185, 129, 0.28) !important;
+    }
+
+    .btn-onboard {
+      background: rgba(212, 175, 55, 0.2) !important;
+      border-color: rgba(212, 175, 55, 0.5) !important;
+      color: #ffd700 !important;
+      font-weight: 700 !important;
+    }
+
+    .btn-onboard:hover {
+      background: rgba(212, 175, 55, 0.35) !important;
+    }
+
+    .btn-del-lead {
+      background: rgba(239, 68, 68, 0.15) !important;
+      border-color: rgba(239, 68, 68, 0.3) !important;
+      color: #f87171 !important;
+    }
+
+    .btn-del-lead:hover {
+      background: rgba(239, 68, 68, 0.3) !important;
+    }
+
+    .empty-leads-box {
+      text-align: center;
+      padding: 3rem 1rem;
+      color: #a89fae;
+    }
+
+    /* ========================================================
+       PLATFORM FEATURE FLAGS & UI VISIBILITY MATRIX - LIGHT THEME OVERRIDES
+       ======================================================== */
+    .app-shell-wrapper.light-theme .features-category-card,
+    :host-context(.light-theme) .features-category-card {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 4px 18px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    .app-shell-wrapper.light-theme .category-header,
+    :host-context(.light-theme) .category-header {
+      border-bottom: 1px solid #e2e8f0 !important;
+    }
+
+    .app-shell-wrapper.light-theme .category-title,
+    :host-context(.light-theme) .category-title {
+      color: #92400e !important;
+      font-weight: 800 !important;
+    }
+
+    .app-shell-wrapper.light-theme .category-desc,
+    :host-context(.light-theme) .category-desc {
+      color: #64748b !important;
+    }
+
+    .app-shell-wrapper.light-theme .feature-toggle-card,
+    :host-context(.light-theme) .feature-toggle-card {
+      background: #f8fafc !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03) !important;
+    }
+
+    .app-shell-wrapper.light-theme .feature-toggle-card:hover,
+    :host-context(.light-theme) .feature-toggle-card:hover {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06) !important;
+      transform: translateY(-2px);
+    }
+
+    .app-shell-wrapper.light-theme .feature-name,
+    :host-context(.light-theme) .feature-name {
+      color: #0f172a !important;
+      font-weight: 700 !important;
+    }
+
+    .app-shell-wrapper.light-theme .feature-desc,
+    :host-context(.light-theme) .feature-desc {
+      color: #475569 !important;
+    }
+
+    .app-shell-wrapper.light-theme .feature-status-chip.status-active,
+    :host-context(.light-theme) .feature-status-chip.status-active {
+      background: #dcfce7 !important;
+      color: #15803d !important;
+      border: 1px solid #86efac !important;
+    }
+
+    .app-shell-wrapper.light-theme .feature-status-chip.status-hidden,
+    :host-context(.light-theme) .feature-status-chip.status-hidden {
+      background: #f1f5f9 !important;
+      color: #64748b !important;
+      border: 1px solid #cbd5e1 !important;
+    }
+
+    .app-shell-wrapper.light-theme .slider-toggle,
+    :host-context(.light-theme) .slider-toggle {
+      background-color: #cbd5e1 !important;
+    }
+
+    .app-shell-wrapper.light-theme .slider-toggle:before,
+    :host-context(.light-theme) .slider-toggle:before {
+      background-color: #ffffff !important;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) !important;
+    }
+
+    .app-shell-wrapper.light-theme .switch-toggle input:checked + .slider-toggle,
+    :host-context(.light-theme) .switch-toggle input:checked + .slider-toggle {
+      background-color: #16a34a !important;
+    }
+
+    /* INBOUND LEADS - LIGHT THEME OVERRIDES */
+    .app-shell-wrapper.light-theme .lead-showroom-name {
+      color: #0f172a !important;
+    }
+
+    .app-shell-wrapper.light-theme .lead-city-tag {
+      color: #b45309 !important;
+    }
+
+    .app-shell-wrapper.light-theme .lead-id-code {
+      color: #64748b !important;
+      background: #f1f5f9 !important;
+    }
+
+    .app-shell-wrapper.light-theme .lead-person-cell strong {
+      color: #0f172a !important;
+    }
+
+    .app-shell-wrapper.light-theme .lead-person-cell small {
+      color: #64748b !important;
+    }
+
+    .app-shell-wrapper.light-theme .lead-phone-text {
+      color: #0f172a !important;
+    }
+
+    .app-shell-wrapper.light-theme .lead-message-box {
+      color: #334155 !important;
+    }
+
+    .app-shell-wrapper.light-theme .lead-date-text {
+      color: #64748b !important;
+    }
+
+    .app-shell-wrapper.light-theme .kiosk-need-chip {
+      background: #fef3c7 !important;
+      color: #b45309 !important;
+      border: 1px solid #fde68a !important;
+    }
+
+    .app-shell-wrapper.light-theme .lead-status-chip.chip-new {
+      background: #fef3c7 !important;
+      color: #b45309 !important;
+      border: 1px solid #fde68a !important;
+    }
+
+    .app-shell-wrapper.light-theme .lead-status-chip.chip-contacted {
+      background: #eff6ff !important;
+      color: #1d4ed8 !important;
+      border: 1px solid #bfdbfe !important;
+    }
+
+    .app-shell-wrapper.light-theme .lead-status-chip.chip-converted {
+      background: #ecfdf5 !important;
+      color: #15803d !important;
+      border: 1px solid #86efac !important;
+    }
+
+    .app-shell-wrapper.light-theme .lead-status-chip.chip-closed {
+      background: #f1f5f9 !important;
+      color: #64748b !important;
+      border: 1px solid #cbd5e1 !important;
+    }
+
+    .app-shell-wrapper.light-theme .btn-contacted {
+      background: #eff6ff !important;
+      border-color: #bfdbfe !important;
+      color: #1d4ed8 !important;
+    }
+
+    .app-shell-wrapper.light-theme .btn-convert {
+      background: #ecfdf5 !important;
+      border-color: #86efac !important;
+      color: #15803d !important;
+    }
+
+    .app-shell-wrapper.light-theme .btn-onboard {
+      background: #fef3c7 !important;
+      border-color: #fde68a !important;
+      color: #b45309 !important;
+    }
+
+
     .app-shell-wrapper.light-theme .search-input {
       background: #ffffff;
       border: 1px solid rgba(0, 0, 0, 0.16);
@@ -10712,6 +11334,7 @@ export class AppShellComponent implements OnInit {
   // Navigation Title Mapping
   navTitles: Record<string, string> = {
     'sa-showrooms': 'Showrooms & Multi-Tenant Registry',
+    'sa-inquiries': 'Inbound Demo Requests & Showroom Leads',
     'sa-payments': 'Showroom Offline Payments & Renewals',
     'sa-aipool': 'Global AI Provider & Token Routing',
     'sa-team': 'NeXooAi Internal Staff Delegation',
@@ -10735,6 +11358,125 @@ export class AppShellComponent implements OnInit {
   ];
 
   hardwareFleet: HardwareFleetUnit[] = [];
+
+  // Inbound Sales & Demo Inquiries State
+  salesInquiries = signal<SalesInquiryRecord[]>([]);
+  salesInquiriesLoading = signal<boolean>(false);
+  inquiryFilter = signal<'all' | 'new' | 'contacted' | 'converted'>('all');
+  inquirySearch = signal<string>('');
+
+  get filteredInquiries(): SalesInquiryRecord[] {
+    let list = this.salesInquiries();
+    const filter = this.inquiryFilter();
+    if (filter !== 'all') {
+      list = list.filter(i => i.status === filter);
+    }
+    const q = this.inquirySearch().trim().toLowerCase();
+    if (q) {
+      list = list.filter(i =>
+        (i.name && i.name.toLowerCase().includes(q)) ||
+        (i.showroom_name && i.showroom_name.toLowerCase().includes(q)) ||
+        (i.city && i.city.toLowerCase().includes(q)) ||
+        (i.phone && i.phone.includes(q)) ||
+        (i.email && i.email.toLowerCase().includes(q)) ||
+        (i.message && i.message.toLowerCase().includes(q))
+      );
+    }
+    return list;
+  }
+
+  countNewInquiries(): number {
+    return this.salesInquiries().filter(i => i.status === 'new').length;
+  }
+
+  countContactedInquiries(): number {
+    return this.salesInquiries().filter(i => i.status === 'contacted').length;
+  }
+
+  countConvertedInquiries(): number {
+    return this.salesInquiries().filter(i => i.status === 'converted').length;
+  }
+
+  fetchSalesInquiries(): void {
+    this.salesInquiriesLoading.set(true);
+    this.http.get<any>(`${this.apiBase}/public/inquiries`, { headers: this.getAuthHeader() }).subscribe({
+      next: (res) => {
+        this.salesInquiriesLoading.set(false);
+        if (res && res.inquiries) {
+          this.salesInquiries.set(res.inquiries);
+        }
+      },
+      error: (err) => {
+        this.salesInquiriesLoading.set(false);
+        console.warn('Could not fetch sales inquiries:', err);
+      }
+    });
+  }
+
+  updateInquiryStatus(inquiry: SalesInquiryRecord, newStatus: 'new' | 'contacted' | 'converted' | 'closed'): void {
+    this.http.patch<any>(`${this.apiBase}/public/inquiries/${inquiry.id}/status`, { status: newStatus }, { headers: this.getAuthHeader() }).subscribe({
+      next: () => {
+        inquiry.status = newStatus;
+        this.salesInquiries.update(list => [...list]);
+        this.notify.showToast(`Showroom lead ${inquiry.showroom_name} updated to ${newStatus}`);
+      },
+      error: () => {
+        inquiry.status = newStatus;
+        this.salesInquiries.update(list => [...list]);
+        this.notify.showToast(`Updated ${inquiry.showroom_name} to ${newStatus}`);
+      }
+    });
+  }
+
+  deleteInquiry(inquiry: SalesInquiryRecord): void {
+    if (!confirm(`Remove inquiry for ${inquiry.showroom_name} (${inquiry.name})?`)) return;
+    this.http.delete<any>(`${this.apiBase}/public/inquiries/${inquiry.id}`, { headers: this.getAuthHeader() }).subscribe({
+      next: () => {
+        this.salesInquiries.update(list => list.filter(i => i.id !== inquiry.id));
+        this.notify.showToast('Inquiry removed');
+      },
+      error: () => {
+        this.salesInquiries.update(list => list.filter(i => i.id !== inquiry.id));
+        this.notify.showToast('Inquiry removed');
+      }
+    });
+  }
+
+  getWhatsAppLink(inq: SalesInquiryRecord): string {
+    const rawDigits = (inq.phone || '').replace(/[^0-9]/g, '');
+    const phone = rawDigits.startsWith('91') ? rawDigits : `91${rawDigits}`;
+    const text = encodeURIComponent(`Hello ${inq.name}, thank you for requesting a NeXooAi AI Saree Tryon demo for ${inq.showroom_name} (${inq.city || 'Tamil Nadu'})! How can we assist you with 55" smart mirror installation?`);
+    return `https://wa.me/${phone}?text=${text}`;
+  }
+
+  formatLeadDate(dateStr: string): string {
+    if (!dateStr) return 'Recent';
+    try {
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('en-IN', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return dateStr;
+    }
+  }
+
+  onboardLeadToShowroom(inq: SalesInquiryRecord): void {
+    this.openOnboardModal();
+    this.onboardForm.name = inq.showroom_name;
+    this.onboardForm.city = inq.city || 'Chennai';
+    this.onboardForm.contact_person = inq.name;
+    this.onboardPhoneOnly = (inq.phone || '').replace(/[^0-9]/g, '').slice(-10);
+    this.onboardForm.contact_phone = inq.phone || '';
+    this.onboardForm.contact_email = inq.email || '';
+    this.onboardForm.kiosk_count = inq.estimated_kiosks || 1;
+    this.setNav('sa-showrooms');
+  }
+
 
   showEditKeyModal = signal<boolean>(false);
   showFalKey = signal<boolean>(false);
@@ -11322,6 +12064,7 @@ export class AppShellComponent implements OnInit {
       if (isSuper) {
         this.fetchSaasShowroomsFromApi();
         this.fetchSystemSettingsFromApi();
+        this.fetchSalesInquiries();
       } else {
         this.saasShowrooms = [];
       }
@@ -11879,6 +12622,9 @@ export class AppShellComponent implements OnInit {
     this.activeNav.set(tab);
     if (tab === 'sa-aipool' && this.userRole() === 'super_admin') {
       this.fetchSystemSettingsFromApi();
+    }
+    if (tab === 'sa-inquiries' && this.userRole() === 'super_admin') {
+      this.fetchSalesInquiries();
     }
     this.closeMobileMenu();
     try {
