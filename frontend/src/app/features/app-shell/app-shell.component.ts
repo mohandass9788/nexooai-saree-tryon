@@ -1454,51 +1454,331 @@ export interface HardwareFleetUnit {
               </div>
             </div>
 
-            <!-- Provider Configuration & Alert Thresholds -->
+            <!-- Centralized AI Provider Keyring & Low-Balance Alert Controls -->
             <div class="portal-card mt-6">
               <div class="card-header-flex">
                 <div>
-                  <h3 class="card-title">Centralized API Keys &amp; Low-Balance Threshold Alerts</h3>
+                  <h3 class="card-title">🔐 Centralized AI Provider Keyring &amp; Low-Balance Alert Controls</h3>
                   <p class="card-subtitle">
-                    Platform credentials sync securely across all kiosks. When token quota drops below the threshold, NeXooAi sends automated WhatsApp alerts to Super Admin.
+                    Live production credentials configured and active. Inspect keys, toggle visibility, change credentials instantly, and configure executive WhatsApp quota warnings.
                   </p>
                 </div>
-                <button type="button" class="btn-primary-action" (click)="saveAiSettings()">
-                  <span>💾</span>
-                  <span>Save AI Credentials</span>
-                </button>
+                <div class="action-btns-gap">
+                  <button type="button" class="btn-primary-action" (click)="saveAiSettings()">
+                    <span>💾</span>
+                    <span>Save All AI Settings</span>
+                  </button>
+                </div>
               </div>
 
-              <div class="settings-form-grid mt-4">
-                <div class="settings-field">
-                  <label>🌟 FAL.AI Unified Secret Key (Primary Standard)</label>
-                  <input type="password" [(ngModel)]="aiProviderSettings.falKey" class="form-input" placeholder="fal_sk_..." />
-                  <small style="color: #ffd700; font-size: 0.74rem; margin-top: 0.25rem; display: block;">Powers FASHN v1.6, Kling Kolors, and CatVTON under unified fal.ai billing.</small>
+              <!-- 3 Keyring Cards Grid -->
+              <div class="keyring-cards-grid mt-4">
+
+                <!-- 1. FAL.AI Keyring Card -->
+                <div class="keyring-card" [class.is-primary-card]="getPrimaryEngine().id === 'fal'">
+                  <div class="keyring-card-header">
+                    <div class="keyring-title-col">
+                      <div class="keyring-name-row">
+                        <span class="keyring-icon">🌟</span>
+                        <h4>FAL.AI Neural Cloud Key</h4>
+                      </div>
+                      <span class="keyring-badge" [class.badge-primary]="getPrimaryEngine().id === 'fal'">
+                        {{ getPrimaryEngine().id === 'fal' ? '🟢 ACTIVE LIVE PRIMARY' : 'READY STANDBY' }}
+                      </span>
+                    </div>
+                    <div class="keyring-switch-action">
+                      <button
+                        type="button"
+                        class="btn-make-route"
+                        *ngIf="getPrimaryEngine().id !== 'fal'"
+                        (click)="setPrimaryEngineById('fal')">
+                        ⚡ Make Primary
+                      </button>
+                    </div>
+                  </div>
+
+                  <p class="keyring-meta-desc">
+                    Unified Fal.ai inference powering FASHN v1.6, Kling Kolors, and CatVTON under single wallet billing.
+                  </p>
+
+                  <!-- Key Display & Action Box -->
+                  <div class="key-preview-box">
+                    <div class="key-display-inner" *ngIf="!editingFalKey()">
+                      <span class="key-prefix-label">Configured Key:</span>
+                      <code class="key-code-val">
+                        {{ showFalKey() ? aiProviderSettings.falKey : (aiProviderSettings.falKey | slice:0:12) + '••••••••••••••••••••' + (aiProviderSettings.falKey | slice:-6) }}
+                      </code>
+                    </div>
+
+                    <!-- Inline Edit Field -->
+                    <div class="key-inline-edit" *ngIf="editingFalKey()">
+                      <label class="edit-label">Paste New FAL.AI Key (fal_sk_...):</label>
+                      <input
+                        type="text"
+                        [(ngModel)]="newFalKeyInput"
+                        placeholder="fal_sk_4775..."
+                        class="form-input key-edit-input" />
+                      <div class="edit-action-row">
+                        <button type="button" class="btn-save-inline" (click)="saveIndividualKey('fal')">
+                          <span>💾 Save Key to DB</span>
+                        </button>
+                        <button type="button" class="btn-cancel-inline" (click)="cancelEditKey('fal')">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Buttons Row -->
+                    <div class="key-tools-row" *ngIf="!editingFalKey()">
+                      <button type="button" class="btn-key-tool" (click)="toggleKeyVisibility('fal')">
+                        <span>{{ showFalKey() ? '🙈 Hide' : '👁️ View' }}</span>
+                      </button>
+                      <button type="button" class="btn-key-tool" (click)="copyApiKey('fal')">
+                        <span>📋 Copy</span>
+                      </button>
+                      <button type="button" class="btn-key-tool btn-change-highlight" (click)="startEditKey('fal')">
+                        <span>✏️ Change Key</span>
+                      </button>
+                      <button type="button" class="btn-key-tool" (click)="testSingleEngine(aiEngines[0])">
+                        <span>📡 Live Ping</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div class="settings-field">
-                  <label>🔄 Direct Fashn.ai Enterprise Key (Hot Standby Failover)</label>
-                  <input type="password" [(ngModel)]="aiProviderSettings.fashnApiKey" class="form-input" placeholder="fa_prod_..." />
-                  <small style="color: #a89fae; font-size: 0.74rem; margin-top: 0.25rem; display: block;">Instant direct fallback if fal.ai experiences latency or downtime.</small>
+
+                <!-- 2. Direct FASHN.ai Keyring Card -->
+                <div class="keyring-card" [class.is-primary-card]="getPrimaryEngine().id === 'fashn'">
+                  <div class="keyring-card-header">
+                    <div class="keyring-title-col">
+                      <div class="keyring-name-row">
+                        <span class="keyring-icon">🔄</span>
+                        <h4>Direct FASHN.ai Enterprise Key</h4>
+                      </div>
+                      <span class="keyring-badge" [class.badge-primary]="getPrimaryEngine().id === 'fashn'">
+                        {{ getPrimaryEngine().id === 'fashn' ? '🟢 ACTIVE LIVE PRIMARY' : '🟡 HOT STANDBY (FAILOVER 1)' }}
+                      </span>
+                    </div>
+                    <div class="keyring-switch-action">
+                      <button
+                        type="button"
+                        class="btn-make-route"
+                        *ngIf="getPrimaryEngine().id !== 'fashn'"
+                        (click)="setPrimaryEngineById('fashn')">
+                        ⚡ Make Primary
+                      </button>
+                    </div>
+                  </div>
+
+                  <p class="keyring-meta-desc">
+                    Direct API v1.6 with automated polling. Hot standby failover if primary fal.ai experiences latency.
+                  </p>
+
+                  <!-- Key Display & Action Box -->
+                  <div class="key-preview-box">
+                    <div class="key-display-inner" *ngIf="!editingFashnKey()">
+                      <span class="key-prefix-label">Configured Key:</span>
+                      <code class="key-code-val">
+                        {{ showFashnKey() ? aiProviderSettings.fashnApiKey : (aiProviderSettings.fashnApiKey | slice:0:10) + '••••••••••••••••••••' + (aiProviderSettings.fashnApiKey | slice:-4) }}
+                      </code>
+                    </div>
+
+                    <!-- Inline Edit Field -->
+                    <div class="key-inline-edit" *ngIf="editingFashnKey()">
+                      <label class="edit-label">Paste New Direct FASHN Key (fa_prod_...):</label>
+                      <input
+                        type="text"
+                        [(ngModel)]="newFashnKeyInput"
+                        placeholder="fa_prod_..."
+                        class="form-input key-edit-input" />
+                      <div class="edit-action-row">
+                        <button type="button" class="btn-save-inline" (click)="saveIndividualKey('fashn')">
+                          <span>💾 Save Key to DB</span>
+                        </button>
+                        <button type="button" class="btn-cancel-inline" (click)="cancelEditKey('fashn')">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Buttons Row -->
+                    <div class="key-tools-row" *ngIf="!editingFashnKey()">
+                      <button type="button" class="btn-key-tool" (click)="toggleKeyVisibility('fashn')">
+                        <span>{{ showFashnKey() ? '🙈 Hide' : '👁️ View' }}</span>
+                      </button>
+                      <button type="button" class="btn-key-tool" (click)="copyApiKey('fashn')">
+                        <span>📋 Copy</span>
+                      </button>
+                      <button type="button" class="btn-key-tool btn-change-highlight" (click)="startEditKey('fashn')">
+                        <span>✏️ Change Key</span>
+                      </button>
+                      <button type="button" class="btn-key-tool" (click)="testSingleEngine(aiEngines[1])">
+                        <span>📡 Live Ping</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div class="settings-field">
-                  <label>🌐 Google Gemini API Key (Multimodal Backup)</label>
-                  <input type="password" [(ngModel)]="aiProviderSettings.geminiApiKey" class="form-input" placeholder="AIzaSy..." />
-                  <small style="color: #a89fae; font-size: 0.74rem; margin-top: 0.25rem; display: block;">Google AI Studio / Vertex AI multimodal pose guidance.</small>
+
+                <!-- 3. Google Gemini Keyring Card -->
+                <div class="keyring-card" [class.is-primary-card]="getPrimaryEngine().id === 'gemini'">
+                  <div class="keyring-card-header">
+                    <div class="keyring-title-col">
+                      <div class="keyring-name-row">
+                        <span class="keyring-icon">🌐</span>
+                        <h4>Google Gemini API Key</h4>
+                      </div>
+                      <span class="keyring-badge" [class.badge-primary]="getPrimaryEngine().id === 'gemini'">
+                        {{ getPrimaryEngine().id === 'gemini' ? '🟢 ACTIVE LIVE PRIMARY' : '🔵 MULTIMODAL BACKUP' }}
+                      </span>
+                    </div>
+                    <div class="keyring-switch-action">
+                      <button
+                        type="button"
+                        class="btn-make-route"
+                        *ngIf="getPrimaryEngine().id !== 'gemini'"
+                        (click)="setPrimaryEngineById('gemini')">
+                        ⚡ Make Primary
+                      </button>
+                    </div>
+                  </div>
+
+                  <p class="keyring-meta-desc">
+                    Google AI Studio / Vertex AI multimodal pose guidance &amp; saree draping verification.
+                  </p>
+
+                  <!-- Key Display & Action Box -->
+                  <div class="key-preview-box">
+                    <div class="key-display-inner" *ngIf="!editingGeminiKey()">
+                      <span class="key-prefix-label">Configured Key:</span>
+                      <code class="key-code-val">
+                        {{ showGeminiKey() ? aiProviderSettings.geminiApiKey : (aiProviderSettings.geminiApiKey | slice:0:10) + '••••••••••••••••••••' + (aiProviderSettings.geminiApiKey | slice:-4) }}
+                      </code>
+                    </div>
+
+                    <!-- Inline Edit Field -->
+                    <div class="key-inline-edit" *ngIf="editingGeminiKey()">
+                      <label class="edit-label">Paste New Google Gemini Key (AIzaSy...):</label>
+                      <input
+                        type="text"
+                        [(ngModel)]="newGeminiKeyInput"
+                        placeholder="AIzaSy..."
+                        class="form-input key-edit-input" />
+                      <div class="edit-action-row">
+                        <button type="button" class="btn-save-inline" (click)="saveIndividualKey('gemini')">
+                          <span>💾 Save Key to DB</span>
+                        </button>
+                        <button type="button" class="btn-cancel-inline" (click)="cancelEditKey('gemini')">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Buttons Row -->
+                    <div class="key-tools-row" *ngIf="!editingGeminiKey()">
+                      <button type="button" class="btn-key-tool" (click)="toggleKeyVisibility('gemini')">
+                        <span>{{ showGeminiKey() ? '🙈 Hide' : '👁️ View' }}</span>
+                      </button>
+                      <button type="button" class="btn-key-tool" (click)="copyApiKey('gemini')">
+                        <span>📋 Copy</span>
+                      </button>
+                      <button type="button" class="btn-key-tool btn-change-highlight" (click)="startEditKey('gemini')">
+                        <span>✏️ Change Key</span>
+                      </button>
+                      <button type="button" class="btn-key-tool" (click)="testSingleEngine(aiEngines[2])">
+                        <span>📡 Live Ping</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <div class="settings-field">
-                  <label>📱 Super Admin WhatsApp Phone for Low-Balance Alerts</label>
-                  <input type="tel" [(ngModel)]="aiProviderSettings.lowBalancePhone" class="form-input" placeholder="+91 97880 33234" />
-                  <small style="color: #a89fae; font-size: 0.74rem; margin-top: 0.25rem; display: block;">Automated alert dispatched to Mohandass & Sudhakar when quota is low.</small>
+
+              </div>
+
+              <!-- Automated WhatsApp Low-Balance Guardian Banner -->
+              <div class="alert-guardian-box mt-5">
+                <div class="guardian-header">
+                  <div class="guardian-title-wrap">
+                    <span class="guardian-icon">📱</span>
+                    <div>
+                      <h4 class="guardian-heading">Automated Low-Balance WhatsApp Alerts (Super Admin)</h4>
+                      <p class="guardian-sub">
+                        Real-time automated WhatsApp notifications sent to executive management when token pool drops below safe threshold.
+                      </p>
+                    </div>
+                  </div>
+                  <span class="guardian-status-chip">
+                    <span class="pulse-dot"></span>
+                    WhatsApp Gateway Armed
+                  </span>
                 </div>
-                <div class="settings-field">
-                  <label>⚡ Low Balance WhatsApp Alert Threshold</label>
-                  <select class="form-input" [(ngModel)]="aiProviderSettings.lowBalanceThreshold">
-                    <option [value]="15">Alert when quota falls below 15% (Recommended)</option>
-                    <option [value]="10">Alert when quota falls below 10%</option>
-                    <option [value]="5">Alert when quota falls below 5% (Urgent)</option>
-                  </select>
+
+                <div class="guardian-body mt-4">
+                  <!-- Executive Numbers -->
+                  <div class="guardian-field-col">
+                    <label class="guardian-label">Executive Alert Contacts:</label>
+                    <div class="executive-phones-row">
+                      <div class="exec-phone-chip">
+                        <span class="exec-badge">Lead Admin</span>
+                        <strong>Mohandass</strong>
+                        <code>+91 97880 33234</code>
+                      </div>
+                      <div class="exec-phone-chip">
+                        <span class="exec-badge">Executive</span>
+                        <strong>Sudhakar</strong>
+                        <code>+91 98403 19606</code>
+                      </div>
+                    </div>
+                    <div class="phone-input-wrap mt-2">
+                      <span class="phone-prefix-tag">Primary Alert WhatsApp:</span>
+                      <input
+                        type="tel"
+                        [(ngModel)]="aiProviderSettings.lowBalancePhone"
+                        class="form-input phone-input"
+                        placeholder="+91 97880 33234" />
+                    </div>
+                  </div>
+
+                  <!-- Alert Threshold Selector -->
+                  <div class="guardian-field-col mt-3">
+                    <label class="guardian-label">Low Balance Trigger Threshold:</label>
+                    <div class="threshold-selector-row">
+                      <button
+                        type="button"
+                        class="threshold-pill-btn"
+                        [class.active]="aiProviderSettings.lowBalanceThreshold == 15"
+                        (click)="setThreshold(15)">
+                        <span class="pill-dot"></span>
+                        15% Remaining (Recommended Safe Buffer)
+                      </button>
+                      <button
+                        type="button"
+                        class="threshold-pill-btn"
+                        [class.active]="aiProviderSettings.lowBalanceThreshold == 10"
+                        (click)="setThreshold(10)">
+                        <span class="pill-dot"></span>
+                        10% Remaining (Urgent Alert)
+                      </button>
+                      <button
+                        type="button"
+                        class="threshold-pill-btn"
+                        [class.active]="aiProviderSettings.lowBalanceThreshold == 5"
+                        (click)="setThreshold(5)">
+                        <span class="pill-dot"></span>
+                        5% Remaining (Critical Outage Shield)
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="guardian-footer-row mt-4">
+                  <small class="guardian-note">
+                    ✓ Alerts are broadcast directly via WhatsApp Cloud API to Mohandass &amp; Sudhakar with 1-click token top-up links.
+                  </small>
+                  <button type="button" class="btn-primary-action" (click)="saveAiSettings()">
+                    <span>💾</span>
+                    <span>Save Alert Settings &amp; Routing</span>
+                  </button>
                 </div>
               </div>
+
             </div>
 
             <!-- Showrooms AI Consumption & Quota Allocation Table -->
@@ -1528,8 +1808,16 @@ export interface HardwareFleetUnit {
                     @for (s of saasShowrooms; track s.id) {
                       <tr>
                         <td>
-                          <strong>{{ s.name }}</strong>
-                          <span class="store-slug-hint">{{ s.city }} · {{ s.kiosk_count || 1 }} Kiosk(s)</span>
+                          <div class="showroom-identity-cell">
+                            <strong>{{ s.name === 'demo' ? 'NeXooAi Demo Experience Centre' : s.name }}</strong>
+                            <div class="showroom-addr-line">
+                              <span class="addr-pin">📍</span>
+                              <span>{{ s.address || (s.name === 'demo' ? 'Chennai HQ Experience Centre, T. Nagar, Chennai' : (s.city + ' Showroom')) }}</span>
+                            </div>
+                            <small class="showroom-contact-meta">
+                              📞 {{ s.contact_phone || (s.name === 'demo' ? 'Mohandass (+91 97880 33234) · Sudhakar (+91 98403 19606)' : s.contact_person) }} · 🖥️ {{ s.kiosk_count || 1 }} Kiosk(s)
+                            </small>
+                          </div>
                         </td>
                         <td><span class="tier-badge">{{ s.plan_tier | uppercase }}</span></td>
                         <td>{{ s.monthly_token_quota | number }} try-ons</td>
@@ -6649,6 +6937,403 @@ export interface HardwareFleetUnit {
     }
 
     /* 1-Click Fast Primary Switcher Bar */
+    /* Keyring Cards Grid & Controls */
+    .keyring-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .keyring-card {
+      background: rgba(26, 11, 33, 0.65);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 14px;
+      padding: 1.35rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s ease;
+    }
+
+    .keyring-card.is-primary-card {
+      border: 2px solid #00e676;
+      background: linear-gradient(135deg, rgba(0, 230, 118, 0.08) 0%, rgba(26, 11, 33, 0.75) 100%);
+      box-shadow: 0 0 20px rgba(0, 230, 118, 0.15);
+    }
+
+    .keyring-card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .keyring-name-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .keyring-icon {
+      font-size: 1.25rem;
+    }
+
+    .keyring-name-row h4 {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffffff;
+      margin: 0;
+    }
+
+    .keyring-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      padding: 0.2rem 0.55rem;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #c9bed0;
+      margin-top: 0.35rem;
+    }
+
+    .keyring-badge.badge-primary {
+      background: rgba(0, 230, 118, 0.18);
+      border-color: #00e676;
+      color: #00e676;
+    }
+
+    .btn-make-route {
+      background: rgba(0, 230, 118, 0.15);
+      border: 1px solid #00e676;
+      color: #00e676;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-make-route:hover {
+      background: rgba(0, 230, 118, 0.3);
+    }
+
+    .keyring-meta-desc {
+      font-size: 0.78rem;
+      color: #a89fae;
+      margin: 0 0 1rem 0;
+      line-height: 1.4;
+    }
+
+    .key-preview-box {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 10px;
+      padding: 0.85rem;
+    }
+
+    .key-display-inner {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .key-prefix-label {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #8c7c90;
+      letter-spacing: 0.04em;
+    }
+
+    .key-code-val {
+      font-size: 0.78rem;
+      color: #ffd700;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 0.25rem 0.5rem;
+      border-radius: 6px;
+      word-break: break-all;
+    }
+
+    .key-tools-row {
+      display: flex;
+      gap: 0.45rem;
+      margin-top: 0.75rem;
+      padding-top: 0.65rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.06);
+      flex-wrap: wrap;
+    }
+
+    .btn-key-tool {
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e2d9cc;
+      font-size: 0.74rem;
+      font-weight: 700;
+      padding: 0.3rem 0.65rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .btn-key-tool:hover {
+      background: rgba(255, 255, 255, 0.14);
+      color: #ffffff;
+    }
+
+    .btn-change-highlight {
+      background: rgba(212, 175, 55, 0.18) !important;
+      border-color: rgba(212, 175, 55, 0.4) !important;
+      color: #ffd700 !important;
+    }
+
+    .btn-change-highlight:hover {
+      background: rgba(212, 175, 55, 0.3) !important;
+    }
+
+    .key-inline-edit {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+
+    .edit-label {
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: #ffd700;
+    }
+
+    .key-edit-input {
+      font-size: 0.8rem;
+      padding: 0.45rem 0.75rem;
+    }
+
+    .edit-action-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.35rem;
+    }
+
+    .btn-save-inline {
+      background: #00e676;
+      color: #120715;
+      border: none;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 0.35rem 0.8rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn-cancel-inline {
+      background: rgba(255, 255, 255, 0.1);
+      color: #e2d9cc;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      font-size: 0.75rem;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    /* Automated WhatsApp Low-Balance Guardian Banner */
+    .alert-guardian-box {
+      background: rgba(26, 11, 33, 0.75);
+      border: 1px solid rgba(212, 175, 55, 0.3);
+      border-radius: 14px;
+      padding: 1.4rem;
+    }
+
+    .guardian-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .guardian-title-wrap {
+      display: flex;
+      gap: 0.75rem;
+      align-items: flex-start;
+    }
+
+    .guardian-icon {
+      font-size: 1.4rem;
+    }
+
+    .guardian-heading {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: #ffd700;
+      margin: 0;
+    }
+
+    .guardian-sub {
+      font-size: 0.78rem;
+      color: #a89fae;
+      margin: 0.2rem 0 0 0;
+    }
+
+    .guardian-status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: rgba(0, 230, 118, 0.15);
+      border: 1px solid rgba(0, 230, 118, 0.4);
+      color: #00e676;
+      font-size: 0.74rem;
+      font-weight: 800;
+      padding: 0.25rem 0.7rem;
+      border-radius: 20px;
+    }
+
+    .guardian-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #ffd700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    .executive-phones-row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .exec-phone-chip {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 10px;
+      padding: 0.55rem 0.95rem;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .exec-badge {
+      font-size: 0.68rem;
+      font-weight: 800;
+      background: rgba(212, 175, 55, 0.2);
+      border: 1px solid #d4af37;
+      color: #ffd700;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+    }
+
+    .exec-phone-chip strong {
+      font-size: 0.85rem;
+      color: #ffffff;
+    }
+
+    .exec-phone-chip code {
+      font-size: 0.82rem;
+      color: #00e676;
+    }
+
+    .phone-input-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .phone-prefix-tag {
+      font-size: 0.78rem;
+      color: #a89fae;
+      font-weight: 600;
+    }
+
+    .phone-input {
+      max-width: 280px;
+    }
+
+    .threshold-selector-row {
+      display: flex;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+
+    .threshold-pill-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #e2d9cc;
+      font-size: 0.8rem;
+      font-weight: 700;
+      padding: 0.45rem 0.9rem;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .threshold-pill-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+    }
+
+    .threshold-pill-btn.active {
+      background: rgba(212, 175, 55, 0.2);
+      border: 1.5px solid #d4af37;
+      color: #ffd700;
+      box-shadow: 0 0 12px rgba(212, 175, 55, 0.2);
+    }
+
+    .pill-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #8c7c90;
+    }
+
+    .threshold-pill-btn.active .pill-dot {
+      background: #ffd700;
+      box-shadow: 0 0 6px #ffd700;
+    }
+
+    .guardian-footer-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      padding-top: 0.85rem;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .guardian-note {
+      font-size: 0.74rem;
+      color: #a89fae;
+    }
+
+    /* Showroom Cell with Address */
+    .showroom-identity-cell {
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .showroom-addr-line {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.76rem;
+      color: #ffd700;
+      font-weight: 600;
+    }
+
+    .showroom-contact-meta {
+      font-size: 0.72rem;
+      color: #a89fae;
+    }
+
     .primary-fast-switch-bar {
       display: flex;
       align-items: center;
@@ -7059,6 +7744,184 @@ export interface HardwareFleetUnit {
     }
 
     /* AI Fleet Engine Cards & Metrics - Light Theme High-Contrast Overrides */
+    /* Light Theme Overrides for Keyring Cards & Guardian Box */
+    .app-shell-wrapper.light-theme .keyring-card {
+      background: #ffffff !important;
+      border: 1px solid #e2e8f0 !important;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    .app-shell-wrapper.light-theme .keyring-card.is-primary-card {
+      background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%) !important;
+      border: 2px solid #16a34a !important;
+      box-shadow: 0 4px 18px rgba(22, 163, 74, 0.12) !important;
+    }
+
+    .app-shell-wrapper.light-theme .keyring-name-row h4 {
+      color: #0f172a !important;
+    }
+
+    .app-shell-wrapper.light-theme .keyring-badge {
+      background: #f1f5f9 !important;
+      border-color: #cbd5e1 !important;
+      color: #475569 !important;
+    }
+
+    .app-shell-wrapper.light-theme .keyring-badge.badge-primary {
+      background: #dcfce7 !important;
+      border-color: #86efac !important;
+      color: #15803d !important;
+    }
+
+    .app-shell-wrapper.light-theme .btn-make-route {
+      background: #dcfce7 !important;
+      border-color: #86efac !important;
+      color: #15803d !important;
+    }
+
+    .app-shell-wrapper.light-theme .btn-make-route:hover {
+      background: #bbf7d0 !important;
+    }
+
+    .app-shell-wrapper.light-theme .keyring-meta-desc {
+      color: #64748b !important;
+    }
+
+    .app-shell-wrapper.light-theme .key-preview-box {
+      background: #f8fafc !important;
+      border-color: #e2e8f0 !important;
+    }
+
+    .app-shell-wrapper.light-theme .key-prefix-label {
+      color: #64748b !important;
+    }
+
+    .app-shell-wrapper.light-theme .key-code-val {
+      background: #ffffff !important;
+      color: #b45309 !important;
+      border: 1px solid #e2e8f0 !important;
+    }
+
+    .app-shell-wrapper.light-theme .key-tools-row {
+      border-top-color: #e2e8f0 !important;
+    }
+
+    .app-shell-wrapper.light-theme .btn-key-tool {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      color: #334155 !important;
+    }
+
+    .app-shell-wrapper.light-theme .btn-key-tool:hover {
+      background: #f1f5f9 !important;
+      color: #0f172a !important;
+    }
+
+    .app-shell-wrapper.light-theme .btn-change-highlight {
+      background: #fef3c7 !important;
+      border-color: #fde68a !important;
+      color: #b45309 !important;
+    }
+
+    .app-shell-wrapper.light-theme .edit-label {
+      color: #0f172a !important;
+    }
+
+    .app-shell-wrapper.light-theme .btn-cancel-inline {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      color: #475569 !important;
+    }
+
+    .app-shell-wrapper.light-theme .alert-guardian-box {
+      background: #f8fafc !important;
+      border-color: #e2e8f0 !important;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04) !important;
+    }
+
+    .app-shell-wrapper.light-theme .guardian-heading {
+      color: #0f172a !important;
+    }
+
+    .app-shell-wrapper.light-theme .guardian-sub {
+      color: #64748b !important;
+    }
+
+    .app-shell-wrapper.light-theme .guardian-status-chip {
+      background: #dcfce7 !important;
+      border-color: #86efac !important;
+      color: #15803d !important;
+    }
+
+    .app-shell-wrapper.light-theme .guardian-label {
+      color: #0f172a !important;
+    }
+
+    .app-shell-wrapper.light-theme .exec-phone-chip {
+      background: #ffffff !important;
+      border-color: #e2e8f0 !important;
+    }
+
+    .app-shell-wrapper.light-theme .exec-badge {
+      background: #fef3c7 !important;
+      border-color: #fde68a !important;
+      color: #b45309 !important;
+    }
+
+    .app-shell-wrapper.light-theme .exec-phone-chip strong {
+      color: #0f172a !important;
+    }
+
+    .app-shell-wrapper.light-theme .exec-phone-chip code {
+      color: #15803d !important;
+    }
+
+    .app-shell-wrapper.light-theme .phone-prefix-tag {
+      color: #475569 !important;
+    }
+
+    .app-shell-wrapper.light-theme .threshold-pill-btn {
+      background: #ffffff !important;
+      border-color: #cbd5e1 !important;
+      color: #334155 !important;
+    }
+
+    .app-shell-wrapper.light-theme .threshold-pill-btn:hover {
+      background: #f1f5f9 !important;
+      color: #0f172a !important;
+    }
+
+    .app-shell-wrapper.light-theme .threshold-pill-btn.active {
+      background: #fef3c7 !important;
+      border-color: #d97706 !important;
+      color: #b45309 !important;
+      box-shadow: 0 2px 8px rgba(217, 119, 6, 0.15) !important;
+    }
+
+    .app-shell-wrapper.light-theme .threshold-pill-btn.active .pill-dot {
+      background: #d97706 !important;
+    }
+
+    .app-shell-wrapper.light-theme .guardian-footer-row {
+      border-top-color: #e2e8f0 !important;
+    }
+
+    .app-shell-wrapper.light-theme .guardian-note {
+      color: #64748b !important;
+    }
+
+    .app-shell-wrapper.light-theme .showroom-identity-cell strong {
+      color: #0f172a !important;
+    }
+
+    .app-shell-wrapper.light-theme .showroom-addr-line {
+      color: #b45309 !important;
+    }
+
+    .app-shell-wrapper.light-theme .showroom-contact-meta {
+      color: #64748b !important;
+    }
+
     .app-shell-wrapper.light-theme .primary-fast-switch-bar {
       background: #f8fafc;
       border: 1px solid #e2e8f0;
@@ -9874,6 +10737,98 @@ export class AppShellComponent implements OnInit {
   hardwareFleet: HardwareFleetUnit[] = [];
 
   showEditKeyModal = signal<boolean>(false);
+  showFalKey = signal<boolean>(false);
+  showFashnKey = signal<boolean>(false);
+  showGeminiKey = signal<boolean>(false);
+
+  editingFalKey = signal<boolean>(false);
+  editingFashnKey = signal<boolean>(false);
+  editingGeminiKey = signal<boolean>(false);
+
+  newFalKeyInput = '';
+  newFashnKeyInput = '';
+  newGeminiKeyInput = '';
+
+  toggleKeyVisibility(provider: 'fal' | 'fashn' | 'gemini'): void {
+    if (provider === 'fal') this.showFalKey.update((v) => !v);
+    if (provider === 'fashn') this.showFashnKey.update((v) => !v);
+    if (provider === 'gemini') this.showGeminiKey.update((v) => !v);
+  }
+
+  startEditKey(provider: 'fal' | 'fashn' | 'gemini'): void {
+    if (provider === 'fal') {
+      this.newFalKeyInput = '';
+      this.editingFalKey.set(true);
+    }
+    if (provider === 'fashn') {
+      this.newFashnKeyInput = '';
+      this.editingFashnKey.set(true);
+    }
+    if (provider === 'gemini') {
+      this.newGeminiKeyInput = '';
+      this.editingGeminiKey.set(true);
+    }
+  }
+
+  cancelEditKey(provider: 'fal' | 'fashn' | 'gemini'): void {
+    if (provider === 'fal') this.editingFalKey.set(false);
+    if (provider === 'fashn') this.editingFashnKey.set(false);
+    if (provider === 'gemini') this.editingGeminiKey.set(false);
+  }
+
+  saveIndividualKey(provider: 'fal' | 'fashn' | 'gemini'): void {
+    let keyVal = '';
+    const payload: any = {};
+    if (provider === 'fal') {
+      keyVal = this.newFalKeyInput.trim();
+      if (!keyVal) {
+        this.notify.showToast('Please enter a valid FAL.AI key (fal_sk_...).', 'warning');
+        return;
+      }
+      payload.fal_key = keyVal;
+    } else if (provider === 'fashn') {
+      keyVal = this.newFashnKeyInput.trim();
+      if (!keyVal) {
+        this.notify.showToast('Please enter a valid Fashn.ai key (fa_prod_...).', 'warning');
+        return;
+      }
+      payload.fashn_api_key = keyVal;
+    } else if (provider === 'gemini') {
+      keyVal = this.newGeminiKeyInput.trim();
+      if (!keyVal) {
+        this.notify.showToast('Please enter a valid Gemini key (AIzaSy...).', 'warning');
+        return;
+      }
+      payload.gemini_api_key = keyVal;
+    }
+
+    this.http.post<any>(`${this.apiBase}/admin/settings`, payload, { headers: this.getAuthHeader() }).subscribe({
+      next: (res) => {
+        this.notify.showSuccess(`✓ ${provider.toUpperCase()} API key saved to database & synchronized!`);
+        this.fetchSystemSettingsFromApi();
+        this.cancelEditKey(provider);
+      },
+      error: (err) => {
+        const msg = err?.error?.detail || err?.message || 'Server error';
+        this.notify.showToast(`Error saving key: ${msg}`, 'error');
+      }
+    });
+  }
+
+  copyApiKey(provider: 'fal' | 'fashn' | 'gemini'): void {
+    let val = '';
+    if (provider === 'fal') val = this.aiProviderSettings.falKey;
+    if (provider === 'fashn') val = this.aiProviderSettings.fashnApiKey;
+    if (provider === 'gemini') val = this.aiProviderSettings.geminiApiKey;
+    if (val && navigator.clipboard) {
+      navigator.clipboard.writeText(val);
+      this.notify.showSuccess(`✓ ${provider.toUpperCase()} key copied to clipboard!`);
+    }
+  }
+
+  setThreshold(val: number): void {
+    this.aiProviderSettings.lowBalanceThreshold = val;
+  }
   selectedEngineForEdit: AiEngineModel | null = null;
   newApiKeyInput = '';
 
@@ -11562,9 +12517,25 @@ export class AppShellComponent implements OnInit {
       return;
     }
     const raw = this.newApiKeyInput.trim();
-    this.selectedEngineForEdit.apiKeyMasked = raw.substring(0, 7) + '••••••••••••••••••••' + raw.substring(raw.length - 4);
-    this.notify.showSuccess(`Updated API key for ${this.selectedEngineForEdit.name}. Kiosks re-synced!`);
-    this.closeEditKeyModal();
+    const payload: any = {};
+    if (this.selectedEngineForEdit.id === 'fal') {
+      payload.fal_key = raw;
+    } else if (this.selectedEngineForEdit.id === 'fashn') {
+      payload.fashn_api_key = raw;
+    } else if (this.selectedEngineForEdit.id === 'gemini') {
+      payload.gemini_api_key = raw;
+    }
+    this.http.post<any>(`${this.apiBase}/admin/settings`, payload, { headers: this.getAuthHeader() }).subscribe({
+      next: () => {
+        this.notify.showSuccess(`✓ Updated API key for ${this.selectedEngineForEdit?.name}. Saved to database!`);
+        this.fetchSystemSettingsFromApi();
+        this.closeEditKeyModal();
+      },
+      error: (err) => {
+        const msg = err?.error?.detail || err?.message || 'Server connection error';
+        this.notify.showToast(`Error updating key: ${msg}`, 'error');
+      }
+    });
   }
 
 
