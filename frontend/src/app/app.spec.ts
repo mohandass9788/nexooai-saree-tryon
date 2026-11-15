@@ -806,5 +806,90 @@ describe('NeXooAi Saree Kiosk App', () => {
     expect(app.newAdminPinInput()).toBe('');
     expect(app.confirmAdminPinInput()).toBe('');
   });
+
+  // =========================================================================
+  // SINGLE-SHOT (HOLD & WEAR) 1-CLICK TRY-ON TESTS
+  // =========================================================================
+
+  it('should activate single-shot mode and open consent modal on startSingleShotMode()', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    expect(app.isSingleShotMode()).toBe(false);
+    app.startSingleShotMode();
+
+    expect(app.isSingleShotMode()).toBe(true);
+    expect(app.showConsentModal()).toBe(true);
+    app.confirmConsent();
+    expect(kioskService.currentStep()).toBe('CAMERA');
+  });
+
+  it('should execute single-shot try-on flow and transition to RESULT step on success', async () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    app.isSingleShotMode.set(true);
+    const dummyBlob = new Blob(['test-photo-data'], { type: 'image/jpeg' });
+
+    const submitSpy = vi.spyOn(apiService, 'submitSingleShotTryOn').mockReturnValue(
+      of({
+        job_id: 'single_test_123',
+        status: 'completed',
+        provider: 'gemini_single_shot',
+        result_image_url: 'https://tryon.nexooai.in/media/results/single_result.jpg',
+        qr_download_url: 'https://tryon.nexooai.in/api/v1/tryon/download/tok_test',
+        download_token: 'tok_test',
+        processing_time_ms: 1200,
+        estimated_cost_usd: 0.0,
+      })
+    );
+
+    app.executeSingleShotTryOn(dummyBlob);
+
+    expect(submitSpy).toHaveBeenCalledWith(
+      dummyBlob,
+      true,
+      translationService.currentLanguage()
+    );
+    expect(kioskService.currentStep()).toBe('RESULT');
+    expect(kioskService.tryOnResult()).toBeTruthy();
+    expect(kioskService.tryOnResult()?.job_id).toBe('single_test_123');
+    expect(kioskService.tryOnResult()?.result_image_url).toBe(
+      'https://tryon.nexooai.in/media/results/single_result.jpg'
+    );
+  });
+
+  it('should handle single-shot try-on failure gracefully and transition to CAMERA', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    app.isSingleShotMode.set(true);
+    const dummyBlob = new Blob(['test-photo-data'], { type: 'image/jpeg' });
+
+    vi.spyOn(apiService, 'submitSingleShotTryOn').mockReturnValue(
+      throwError(() => ({ error: { detail: 'AI Provider single-shot timeout' } }))
+    );
+
+    app.executeSingleShotTryOn(dummyBlob);
+
+    expect(kioskService.currentStep()).toBe('CAMERA');
+  });
+
+  it('should reset single-shot mode on finishSession and goBackFromCamera', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    app.isSingleShotMode.set(true);
+    kioskService.setStep('CAMERA');
+    app.goBackFromCamera();
+    expect(app.isSingleShotMode()).toBe(false);
+    expect(kioskService.currentStep()).toBe('WELCOME');
+
+    app.isSingleShotMode.set(true);
+    kioskService.setStep('RESULT');
+    app.finishSession();
+    expect(app.isSingleShotMode()).toBe(false);
+    expect(kioskService.currentStep()).toBe('WELCOME');
+  });
 });
 
