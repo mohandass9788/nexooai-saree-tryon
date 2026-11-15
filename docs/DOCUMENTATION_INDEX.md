@@ -9,6 +9,7 @@
 3. [PROJECT_READINESS_AUDIT_2026-10-27.md](PROJECT_READINESS_AUDIT_2026-10-27.md) — evidence-based current audit and blockers.
 4. [README.md](../README.md) — public project introduction and local entry points; details may need updating against the master plan.
 5. [AGENTS.md](../AGENTS.md) — implementation rules for future coding agents.
+6. [PROJECT_PATTERNS_AND_ARCHITECTURE_2026.md](PROJECT_PATTERNS_AND_ARCHITECTURE_2026.md) — complete project architectural patterns, dual-track VTO pipelines, safety guards, and technical specification.
 
 ## Reference documentation — retain
 
