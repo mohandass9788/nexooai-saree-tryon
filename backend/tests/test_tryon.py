@@ -167,7 +167,8 @@ def create_patterned_saree() -> bytes:
 
 @pytest.mark.asyncio
 async def test_validate_garment_endpoint_valid():
-    from unittest.mock import patch
+    from unittest.mock import AsyncMock, patch
+    from backend.app.services.tryon.gemini_guard import gemini_pose_guard
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         image_bytes = create_patterned_saree()
         # Mock Gemini success
@@ -179,7 +180,8 @@ async def test_validate_garment_endpoint_valid():
             "guidance_message_en": "Saree is clearly visible.",
             "green_tick": True,
         }
-        with patch("backend.app.services.tryon.gemini_guard.gemini_pose_guard._call_gemini_multimodal", return_value=mock_response):
+        with patch.object(gemini_pose_guard, "_call_gemini_multimodal", new_callable=AsyncMock) as mock_ai:
+            mock_ai.return_value = mock_response
             response = await client.post(
                 "/api/v1/tryon/validate-garment",
                 files={"garment_image": ("saree_test.jpg", image_bytes, "image/jpeg")},
@@ -194,11 +196,13 @@ async def test_validate_garment_endpoint_valid():
 
 @pytest.mark.asyncio
 async def test_validate_garment_endpoint_fallback_on_ai_failure():
-    from unittest.mock import patch
+    from unittest.mock import AsyncMock, patch
+    from backend.app.services.tryon.gemini_guard import gemini_pose_guard
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
         image_bytes = create_patterned_saree()
         # Simulate all Gemini models failing (e.g. 503 / timeout)
-        with patch("backend.app.services.tryon.gemini_guard.gemini_pose_guard._call_gemini_multimodal", return_value=None):
+        with patch.object(gemini_pose_guard, "_call_gemini_multimodal", new_callable=AsyncMock) as mock_ai:
+            mock_ai.return_value = None
             response = await client.post(
                 "/api/v1/tryon/validate-garment",
                 files={"garment_image": ("saree_test.jpg", image_bytes, "image/jpeg")},
@@ -208,6 +212,9 @@ async def test_validate_garment_endpoint_fallback_on_ai_failure():
             data = response.json()
             # Physical checks passed -> fail open so customer is not blocked
             assert data["is_valid"] is True
+            assert data["green_tick"] is True
+            assert data["category"] == "saree"
+            assert "உறுதி செய்யப்பட்டது" in data["guidance_message_ta"]
             assert data["green_tick"] is True
             assert data["category"] == "saree"
             assert "உறுதி செய்யப்பட்டது" in data["guidance_message_ta"]
