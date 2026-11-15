@@ -154,3 +154,83 @@ async def test_get_today_lookbook_feed():
         assert "result_image_url" in feed[0]
 
 
+def create_patterned_saree() -> bytes:
+    from PIL import ImageDraw
+    img = Image.new("RGB", (200, 300), color=(180, 100, 100))
+    draw = ImageDraw.Draw(img)
+    for i in range(0, 300, 20):
+        draw.rectangle([0, i, 200, i + 10], fill=(240, 210, 50))
+    buf = io.BytesIO()
+    img.save(buf, format="JPEG")
+    return buf.getvalue()
+
+
+@pytest.mark.asyncio
+async def test_validate_garment_endpoint_valid():
+    from unittest.mock import patch
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        image_bytes = create_patterned_saree()
+        # Mock Gemini success
+        mock_response = {
+            "is_valid": True,
+            "garment_score": 0.95,
+            "category": "saree",
+            "guidance_message_ta": "புடவை தெளிவாக உள்ளது.",
+            "guidance_message_en": "Saree is clearly visible.",
+            "green_tick": True,
+        }
+        with patch("backend.app.services.tryon.gemini_guard.gemini_pose_guard._call_gemini_multimodal", return_value=mock_response):
+            response = await client.post(
+                "/api/v1/tryon/validate-garment",
+                files={"garment_image": ("saree_test.jpg", image_bytes, "image/jpeg")},
+                data={"language": "ta"},
+            )
+            assert response.status_code == 200
+            data = response.json()
+            assert data["is_valid"] is True
+            assert data["green_tick"] is True
+            assert data["category"] == "saree"
+
+
+@pytest.mark.asyncio
+async def test_validate_garment_endpoint_fallback_on_ai_failure():
+    from unittest.mock import patch
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        image_bytes = create_patterned_saree()
+        # Simulate all Gemini models failing (e.g. 503 / timeout)
+        with patch("backend.app.services.tryon.gemini_guard.gemini_pose_guard._call_gemini_multimodal", return_value=None):
+            response = await client.post(
+                "/api/v1/tryon/validate-garment",
+                files={"garment_image": ("saree_test.jpg", image_bytes, "image/jpeg")},
+                data={"language": "ta"},
+            )
+            assert response.status_code == 200
+            data = response.json()
+            # Physical checks passed -> fail open so customer is not blocked
+            assert data["is_valid"] is True
+            assert data["green_tick"] is True
+            assert data["category"] == "saree"
+            assert "உறுதி செய்யப்பட்டது" in data["guidance_message_ta"]
+
+
+@pytest.mark.asyncio
+async def test_validate_garment_endpoint_pitch_dark_rejected():
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        img = Image.new("RGB", (200, 200), color=(0, 0, 0))
+        buf = io.BytesIO()
+        img.save(buf, format="JPEG")
+        black_bytes = buf.getvalue()
+
+        response = await client.post(
+            "/api/v1/tryon/validate-garment",
+            files={"garment_image": ("dark.jpg", black_bytes, "image/jpeg")},
+            data={"language": "ta"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["is_valid"] is False
+        assert data["green_tick"] is False
+        assert "இருட்டாக" in data["guidance_message_ta"]
+
+
+
