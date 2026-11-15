@@ -29,6 +29,7 @@ _CACHE: Dict[str, Any] = {
     "custom_ai_prompt_template": "Virtual saree try-on portrait: Gracefully drape the {garment_name} ({category}, {fabric}, {color}) onto the person. Preserve facial identity, hair, skin tone, and body pose with authentic waist pleats and ornate pallu over left shoulder.",
     # B2B Client Feature Toggles (Client Add-on Packages)
     "feature_tryon_max": "false",
+    "feature_single_shot_tryon": "true",
     "feature_runway_video": "false",
     "feature_selfie_mode": "false",
     "feature_privacy_base64": "false",

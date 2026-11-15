@@ -240,4 +240,40 @@ async def test_validate_garment_endpoint_pitch_dark_rejected():
         assert "இருட்டாக" in data["guidance_message_ta"]
 
 
+@pytest.mark.asyncio
+async def test_single_shot_tryon_success():
+    from backend.app.core.system_settings import set_setting
+    await set_setting("feature_single_shot_tryon", "true")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        image_bytes = create_patterned_saree()
+        response = await client.post(
+            "/api/v1/tryon/single-shot",
+            files={"photo": ("customer_holding_saree.jpg", image_bytes, "image/jpeg")},
+            data={"consent_confirmed": "true", "language": "ta"},
+        )
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "completed"
+        assert "job_id" in data
+        assert "download_token" in data
+        assert "qr_download_url" in data
+
+
+@pytest.mark.asyncio
+async def test_single_shot_tryon_disabled_by_admin():
+    from backend.app.core.system_settings import set_setting
+    await set_setting("feature_single_shot_tryon", "false")
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as client:
+        image_bytes = create_patterned_saree()
+        response = await client.post(
+            "/api/v1/tryon/single-shot",
+            files={"photo": ("customer_holding_saree.jpg", image_bytes, "image/jpeg")},
+            data={"consent_confirmed": "true", "language": "ta"},
+        )
+        assert response.status_code == 403
+        assert "disabled by administrator" in response.json()["detail"].lower()
+    # Reset back to true
+    await set_setting("feature_single_shot_tryon", "true")
+
+
 

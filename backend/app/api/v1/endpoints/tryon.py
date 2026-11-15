@@ -572,6 +572,181 @@ async def create_tryon_job(
     return res_payload
 
 
+@router.post("/single-shot", response_model=TryOnJobResponse, summary="Submit Single-Shot Hold & Wear Try-On")
+async def create_single_shot_tryon_job(
+    photo: UploadFile = File(..., description="Customer holding garment photo"),
+    consent_confirmed: bool = Form(True, description="Customer photo consent confirmation"),
+    language: str = Form("ta", description="Interface language ('ta' or 'en')"),
+    session_id: Optional[str] = Form(None, description="Optional Kiosk session ID"),
+    kiosk_id: Optional[str] = Form("KIOSK-TN-CHN-01", description="Identifier of the physical kiosk hardware"),
+    shop_id: Optional[str] = Form(None, description="Showroom / Shop Tenant Identifier"),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Single-Shot 'Hold & Wear' Virtual Try-On:
+    The customer holds the garment in hand facing the camera.
+    In one single shot, the AI validates both person and fabric, then drapes the garment onto the customer.
+    Controlled by the 'feature_single_shot_tryon' Super Admin setting.
+    """
+    # 0. Check Super Admin Feature Toggle
+    is_enabled = str(get_setting("feature_single_shot_tryon", "true")).lower() == "true"
+    if not is_enabled:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Single-Shot Try-On feature is currently disabled by administrator (ஒற்றைப் புகைப்பட ட்ரை-ஆன் வசதி தற்காலிகமாக முடக்கப்பட்டுள்ளது).",
+        )
+
+    # 1. Enforce Explicit Photo Consent
+    if not consent_confirmed:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Photo consent is required to process the virtual try-on session.",
+        )
+
+    # 2. Validate MIME type
+    if photo.content_type not in ALLOWED_MIME_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"Unsupported format '{photo.content_type}'. Allowed: JPEG, PNG, WEBP.",
+        )
+
+    # 3. Read and auto-compress
+    image_bytes = await photo.read()
+    if len(image_bytes) == 0:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Uploaded photo is empty.",
+        )
+    if len(image_bytes) > MAX_FILE_SIZE_BYTES:
+        image_bytes = auto_compress_image(image_bytes)
+
+    # 4. Resolve Shop / Kiosk
+    active_shop_id = shop_id or "shop_default"
+    active_session_id = session_id or f"sess_{secrets.token_hex(8)}"
+
+    # 5. Resolve AI Engine: for single-shot, prefer Gemini or active engine
+    engine = get_tryon_engine(shop_id=active_shop_id)
+    gemini_key = get_setting("gemini_api_key") or getattr(settings, "GEMINI_API_KEY", "")
+    if gemini_key and engine.__class__.__name__ == "MockTryOnEngine" and settings.APP_ENV != "testing":
+        from backend.app.services.tryon.gemini_engine import GeminiTryOnEngine
+        engine = GeminiTryOnEngine(api_key=gemini_key)
+
+    options = {
+        "name_en": "Single-Shot Saree Drape",
+        "name_ta": "கையில் பிடித்த சேலை ட்ரையல்",
+        "category": "Handloom Silk Saree",
+        "language": language,
+        "price": "Showroom Special",
+    }
+
+    engine_result = await engine.process_single_shot_tryon(
+        single_image_bytes=image_bytes,
+        options=options,
+    )
+
+    if engine_result.status == "failed":
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"{engine_result.error_message or 'Single-shot try-on failed'}. Please stand upright facing the camera holding the garment and tap 'Retry'.",
+        )
+
+    job_id = engine_result.provider_job_id
+    result_bytes = engine_result.result_image_bytes or image_bytes
+
+    # Apply boutique luxury showroom watermark
+    try:
+        from backend.app.services.image.watermark_service import apply_showroom_watermark
+        result_bytes = apply_showroom_watermark(result_bytes)
+    except Exception as e:
+        logger.warning(f"Could not apply watermark: {e}")
+
+    # Retention
+    try:
+        retention_mins = int(get_setting("photo_retention_minutes", settings.MEDIA_RETENTION_HOURS * 60))
+    except Exception:
+        retention_mins = settings.MEDIA_RETENTION_HOURS * 60
+
+    # Persist customer original portrait photo
+    await storage_service.save_media(
+        file_id=f"person_{job_id}",
+        data=image_bytes,
+        media_type="image/jpeg",
+        retention_minutes=retention_mins,
+    )
+
+    # Persist result
+    stored_media = await storage_service.save_media(
+        file_id=job_id,
+        data=result_bytes,
+        media_type="image/jpeg",
+        retention_minutes=retention_mins,
+    )
+
+    # Generate token
+    token_meta = token_service.create_download_token(job_id=job_id, max_downloads=5)
+    now = datetime.utcnow()
+    expires_at = now + timedelta(minutes=retention_mins)
+    token_exp = token_meta.expires_at.replace(tzinfo=None) if getattr(token_meta.expires_at, "tzinfo", None) else token_meta.expires_at
+
+    # Persist in DB
+    try:
+        target_product_id = "custom_product"
+        check_p = await db.execute(select(ProductModel.id).where(ProductModel.id == "custom_product"))
+        if not check_p.scalar_one_or_none():
+            any_p = await db.execute(select(ProductModel.id).limit(1))
+            target_product_id = any_p.scalar_one_or_none() or "prod_kan_001"
+
+        job_record = TryOnJobModel(
+            id=job_id,
+            session_id=active_session_id,
+            product_id=target_product_id,
+            shop_id=active_shop_id,
+            kiosk_id=kiosk_id,
+            status=engine_result.status,
+            provider=engine_result.provider_name,
+            person_image_path=f"/api/v1/tryon/jobs/{job_id}/customer-photo",
+            result_image_path=stored_media.file_path if stored_media else f"media/{job_id}.jpg",
+            download_token=token_meta.raw_token,
+            download_token_expires_at=token_exp,
+            processing_time_ms=engine_result.processing_time_ms,
+            estimated_cost_usd=engine_result.estimated_cost_usd,
+            expires_at=expires_at,
+            created_at=now,
+        )
+        db.add(job_record)
+
+        token_record = DownloadTokenModel(
+            id=f"tok_{secrets.token_hex(8)}",
+            job_id=job_id,
+            raw_token=token_meta.raw_token,
+            token_hash=token_meta.token_hash,
+            expires_at=token_exp,
+            download_count=0,
+            max_downloads=5,
+            created_at=now,
+        )
+        db.add(token_record)
+        await db.commit()
+    except Exception as e:
+        logger.warning(f"Could not persist single-shot tryon job into database: {e}")
+        await db.rollback()
+
+    public_base_url = settings.PUBLIC_BASE_URL.rstrip("/")
+    result_url = f"{public_base_url}/api/v1/tryon/jobs/{job_id}/result"
+    qr_url = f"{public_base_url}/api/v1/tryon/download/{token_meta.raw_token}"
+
+    return TryOnJobResponse(
+        job_id=job_id,
+        status=engine_result.status,
+        provider=engine_result.provider_name,
+        result_image_url=result_url,
+        download_token=token_meta.raw_token,
+        qr_download_url=qr_url,
+        processing_time_ms=engine_result.processing_time_ms,
+        estimated_cost_usd=engine_result.estimated_cost_usd,
+    )
+
+
 @router.get("/jobs/{job_id}/customer-photo", summary="Retrieve Customer Original Photo")
 async def get_customer_photo(job_id: str, current_user: AuthenticatedUser = Depends(require_staff)):
     media_bytes = await storage_service.get_media(f"person_{job_id}")

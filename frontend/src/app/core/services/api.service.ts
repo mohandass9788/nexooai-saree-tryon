@@ -157,6 +157,7 @@ export interface SystemSettingsDTO {
   custom_ai_prompt_template: string;
   // B2B Client Feature Toggles
   feature_tryon_max?: boolean;
+  feature_single_shot_tryon?: boolean;
   feature_runway_video?: boolean;
   feature_selfie_mode?: boolean;
   feature_privacy_base64?: boolean;
@@ -172,6 +173,7 @@ export interface SystemSettingsDTO {
 
 export interface PublicKioskFeatures {
   tryon_max: boolean;
+  feature_single_shot_tryon?: boolean;
   runway_video: boolean;
   selfie_mode: boolean;
   privacy_base64: boolean;
@@ -349,6 +351,48 @@ export class ApiService {
     }
 
     return this.http.post<TryOnJobResponse>(`${this.baseUrl}/tryon`, formData).pipe(
+      map(res => ({
+        ...res,
+        result_image_url: res.result_image_url && res.result_image_url.startsWith('http')
+          ? res.result_image_url
+          : (res.result_image_url ? `${this.apiHost}${res.result_image_url}` : ''),
+        qr_download_url: res.qr_download_url && res.qr_download_url.startsWith('http')
+          ? res.qr_download_url
+          : (res.qr_download_url ? `${this.apiHost}${res.qr_download_url}` : ''),
+      }))
+    );
+  }
+
+  /**
+   * Submits Customer Holding Garment Photo for 1-Click Single-Shot Try-On.
+   * Both person and garment are captured in one shot and processed together.
+   */
+  submitSingleShotTryOn(
+    photoBlob: Blob,
+    consent: boolean = true,
+    language: string = 'ta',
+    kioskId?: string,
+    shopId?: string
+  ): Observable<TryOnJobResponse> {
+    const formData = new FormData();
+    formData.append('photo', photoBlob, 'single_shot_holding_garment.jpg');
+    formData.append('consent_confirmed', String(consent));
+    formData.append('language', language);
+
+    const resolvedKioskId = kioskId
+      || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('nexooai_kiosk_code') : null)
+      || (typeof localStorage !== 'undefined' ? localStorage.getItem('nexooai_paired_kiosk_id') || localStorage.getItem('nexooai_kiosk_id') : null)
+      || 'KIOSK-TN-CHN-01';
+    formData.append('kiosk_id', resolvedKioskId);
+
+    const resolvedShopId = shopId
+      || (typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('nexooai_shop_id') : null)
+      || (typeof localStorage !== 'undefined' ? localStorage.getItem('nexooai_shop_id') : null);
+    if (resolvedShopId) {
+      formData.append('shop_id', resolvedShopId);
+    }
+
+    return this.http.post<TryOnJobResponse>(`${this.baseUrl}/tryon/single-shot`, formData).pipe(
       map(res => ({
         ...res,
         result_image_url: res.result_image_url && res.result_image_url.startsWith('http')

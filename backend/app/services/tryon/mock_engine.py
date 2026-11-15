@@ -119,3 +119,49 @@ class MockTryOnEngine(BaseTryOnEngine):
                 error_message=str(e),
                 processing_time_ms=int((time.time() - start_time) * 1000),
             )
+
+    async def process_single_shot_tryon(
+        self,
+        single_image_bytes: bytes,
+        options: Optional[Dict[str, Any]] = None,
+    ) -> TryOnEngineResult:
+        """
+        Mock implementation of single-shot tryon for tests and demo runs.
+        """
+        start_time = time.time()
+        try:
+            person_img = Image.open(io.BytesIO(single_image_bytes)).convert("RGB")
+            width, height = person_img.size
+            draw = ImageDraw.Draw(person_img)
+            banner_height = max(40, int(height * 0.08))
+            draw.rectangle(
+                [(0, height - banner_height), (width, height)],
+                fill=(40, 20, 60),
+            )
+            draw.text(
+                (20, height - banner_height + 10),
+                "NeXooAi Single-Shot Saree Drape [INSTANT 1-CLICK]",
+                fill=(255, 215, 0),
+            )
+            output_buffer = io.BytesIO()
+            person_img.save(output_buffer, format="JPEG", quality=90)
+            result_bytes = output_buffer.getvalue()
+            duration_ms = int((time.time() - start_time) * 1000)
+
+            return TryOnEngineResult(
+                status="completed",
+                provider_name="mock_single_shot",
+                provider_job_id=f"mock_single_{uuid.uuid4().hex[:12]}",
+                result_image_bytes=result_bytes,
+                processing_time_ms=duration_ms,
+                estimated_cost_usd=0.0,
+            )
+        except Exception as e:
+            return TryOnEngineResult(
+                status="failed",
+                provider_name="mock_single_shot",
+                provider_job_id=f"mock_single_err_{uuid.uuid4().hex[:8]}",
+                error_code="MOCK_PROCESSING_ERROR",
+                error_message=str(e),
+                processing_time_ms=int((time.time() - start_time) * 1000),
+            )

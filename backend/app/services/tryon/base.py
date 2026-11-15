@@ -27,3 +27,19 @@ class BaseTryOnEngine(ABC):
         Returns a TryOnEngineResult.
         """
         pass
+
+    async def process_single_shot_tryon(
+        self,
+        single_image_bytes: bytes,
+        options: Optional[Dict[str, Any]] = None,
+    ) -> TryOnEngineResult:
+        """
+        Single-shot virtual try-on where the customer is holding or displaying
+        the garment in their hands. Drapes the garment onto the customer in one pass.
+        Default implementation delegates to process_tryon using the single image.
+        """
+        return await self.process_tryon(
+            person_image_bytes=single_image_bytes,
+            saree_image_bytes=single_image_bytes,
+            options=options,
+        )

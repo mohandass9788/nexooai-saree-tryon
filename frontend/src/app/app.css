@@ -18715,3 +18715,38 @@
   font-size: 0.88rem !important;
   white-space: nowrap !important;
 }
+
+
+/* --- Single-Shot 1-Click Hold & Wear Mode --- */
+.btn-single-shot-cta {
+  background: linear-gradient(135deg, #7c1a36 0%, #a82046 50%, #d4af37 100%) !important;
+  box-shadow: 0 8px 24px rgba(168, 32, 70, 0.4), inset 0 1px 2px rgba(255, 255, 255, 0.3) !important;
+}
+.btn-single-shot-cta:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 12px 28px rgba(212, 175, 55, 0.5) !important;
+}
+
+.single-shot-camera-banner {
+  position: absolute;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 22px;
+  border-radius: 30px;
+  background: rgba(18, 12, 28, 0.90);
+  border: 1.5px solid rgba(212, 175, 55, 0.85);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  pointer-events: none;
+}
+.single-shot-camera-banner .pulse-glyph {
+  font-size: 20px;
+  color: #ffd700;
+}

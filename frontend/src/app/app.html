@@ -1237,6 +1237,36 @@
                   </div>
                 </div>
 
+                <!-- Module: Single-Shot Hold & Wear Try-On -->
+                <div class="b2b-module-card" [class.module-active]="adminSettings()?.feature_single_shot_tryon ?? true">
+                  <div class="module-card-header">
+                    <div class="module-icon-wrap">⚡</div>
+                    <div class="module-header-text">
+                      <div class="module-title-row">
+                        <h4>Single-Shot (Hold & Wear) Try-On</h4>
+                        <span class="module-tier-pill ultra">1-Click Instant</span>
+                      </div>
+                      <span class="module-status-chip" [class.active]="adminSettings()?.feature_single_shot_tryon ?? true">
+                        {{ (adminSettings()?.feature_single_shot_tryon ?? true) ? '● KIOSK ACTIVE' : '○ DISABLED' }}
+                      </span>
+                    </div>
+                  </div>
+                  <p class="module-desc">
+                    வாடிக்கையாளர் ஆடையை கையில் பிடித்தபடி நிற்கும் ஒற்றைப் புகைப்படத்தை (Single Shot) எடுத்து, உடனுக்குடன் மெய்நிகர் சேலையை அணிவித்து ரிசல்ட் காட்டும் அதிவேக வசதி.
+                  </p>
+                  <div class="module-toggle-footer">
+                    <label class="clean-switch">
+                      <input
+                        type="checkbox"
+                        [checked]="adminSettings()?.feature_single_shot_tryon ?? true"
+                        (change)="toggleB2BFeature('feature_single_shot_tryon', adminSettings()?.feature_single_shot_tryon ?? true)"
+                      />
+                      <span class="slider round"></span>
+                    </label>
+                    <span class="toggle-action-label">{{ (adminSettings()?.feature_single_shot_tryon ?? true) ? 'சேர்க்கப்பட்டுள்ளது (Active)' : 'முடக்கு (Off)' }}</span>
+                  </div>
+                </div>
+
                 <!-- Module 2: 5-Second Runway Fashion Video -->
                 <div class="b2b-module-card" [class.module-active]="adminSettings()?.feature_runway_video">
                   <div class="module-card-header">
@@ -2793,6 +2823,14 @@
                     <span class="btn-label-text">Begin Virtual Trial</span>
                     <span class="arrow-glyph">➔</span>
                   </button>
+
+                  @if (publicFeatures().feature_single_shot_tryon ?? true) {
+                    <button class="btn-begin-trial-grand btn-single-shot-cta" (click)="startSingleShotMode()" id="btn-start-single-shot">
+                      <span class="sparkle-glyph">⚡</span>
+                      <span class="btn-label-text">{{ t().singleShotQuickBtn }}</span>
+                      <span class="arrow-glyph">➔</span>
+                    </button>
+                  }
                 </div>
               </div>
             </div>
@@ -2870,6 +2908,13 @@
                     <div class="silhouette-head"></div>
                     <div class="silhouette-torso"></div>
                   </div>
+
+                  @if (isSingleShotMode()) {
+                    <div class="single-shot-camera-banner glass-panel">
+                      <span class="pulse-glyph">⚡</span>
+                      <span>{{ t().singleShotCameraGuidance }}</span>
+                    </div>
+                  }
 
                   <!-- Gemini Live Pose Validation Pill -->
                   @if (isValidatingPose()) {
@@ -3581,6 +3626,17 @@
                     <span>✨📷</span>
                     <span>{{ t().uploadCustomProduct }}</span>
                   </button>
+                  @if (publicFeatures().feature_single_shot_tryon ?? true) {
+                    <button
+                      class="btn-mode-tab"
+                      [class.active]="productSelectionMode() === 'single_shot'"
+                      (click)="setProductSelectionMode('single_shot')"
+                      id="tab-single-shot"
+                    >
+                      <span>⚡</span>
+                      <span>{{ t().singleShotModeTitle }}</span>
+                    </button>
+                  }
                 </div>
 
                 <!-- Customer Portrait Pill -->

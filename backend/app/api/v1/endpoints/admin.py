@@ -122,6 +122,7 @@ class SystemSettingsDTO(BaseModel):
     custom_ai_prompt_template: str
     # B2B Client Feature Toggles
     feature_tryon_max: bool = False
+    feature_single_shot_tryon: bool = True
     feature_runway_video: bool = False
     feature_selfie_mode: bool = False
     feature_privacy_base64: bool = False
@@ -174,6 +175,7 @@ class UpdateSettingsRequest(BaseModel):
     custom_ai_prompt_template: Optional[str] = None
     # B2B Client Feature Toggles
     feature_tryon_max: Optional[bool] = None
+    feature_single_shot_tryon: Optional[bool] = None
     feature_runway_video: Optional[bool] = None
     feature_selfie_mode: Optional[bool] = None
     feature_privacy_base64: Optional[bool] = None
@@ -749,6 +751,7 @@ async def get_system_settings(
 
     # B2B Client Feature Toggles
     feat_tryon_max = str(get_setting("feature_tryon_max", "false")).lower() == "true"
+    feat_single_shot = str(get_setting("feature_single_shot_tryon", "true")).lower() == "true"
     feat_runway_video = str(get_setting("feature_runway_video", "false")).lower() == "true"
     feat_selfie_mode = str(get_setting("feature_selfie_mode", "false")).lower() == "true"
     feat_privacy_base64 = str(get_setting("feature_privacy_base64", "false")).lower() == "true"
@@ -814,6 +817,7 @@ async def get_system_settings(
         kiosk_admin_pin=admin_pin,
         custom_ai_prompt_template=custom_prompt,
         feature_tryon_max=feat_tryon_max,
+        feature_single_shot_tryon=feat_single_shot,
         feature_runway_video=feat_runway_video,
         feature_selfie_mode=feat_selfie_mode,
         feature_privacy_base64=feat_privacy_base64,
@@ -894,6 +898,8 @@ async def update_system_settings(
     # B2B Client Feature Toggles
     if req.feature_tryon_max is not None:
         await set_setting("feature_tryon_max", "true" if req.feature_tryon_max else "false", db)
+    if req.feature_single_shot_tryon is not None:
+        await set_setting("feature_single_shot_tryon", "true" if req.feature_single_shot_tryon else "false", db)
     if req.feature_runway_video is not None:
         await set_setting("feature_runway_video", "true" if req.feature_runway_video else "false", db)
     if req.feature_selfie_mode is not None:
@@ -939,6 +945,7 @@ async def get_public_kiosk_features():
     """Unauthenticated lightweight endpoint for touchscreen Kiosk to discover enabled modules."""
     return {
         "tryon_max": str(get_setting("feature_tryon_max", "false")).lower() == "true",
+        "feature_single_shot_tryon": str(get_setting("feature_single_shot_tryon", "true")).lower() == "true",
         "runway_video": str(get_setting("feature_runway_video", "false")).lower() == "true",
         "selfie_mode": str(get_setting("feature_selfie_mode", "false")).lower() == "true",
         "privacy_base64": str(get_setting("feature_privacy_base64", "false")).lower() == "true",

@@ -172,6 +172,12 @@ export interface Translations {
   // Custom Product Workflow & Combination Preview
   selectFromCatalog: string;
   uploadCustomProduct: string;
+  singleShotModeTitle: string;
+  singleShotQuickBtn: string;
+  singleShotCameraGuidance: string;
+  singleShotCaptureBtn: string;
+  singleShotProcessing: string;
+  singleShotToggleAdmin: string;
   customGarmentTitle: string;
   customGarmentSubtitle: string;
   takeProductPhotoBtn: string;

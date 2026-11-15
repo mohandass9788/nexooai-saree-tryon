@@ -121,7 +121,8 @@ export class App implements OnInit, OnDestroy {
   readonly productValidationError = signal<string | null>(null);
   readonly isValidatingGarment = signal<boolean>(false);
   readonly isCustomGarmentValid = signal<boolean>(false);
-  readonly productSelectionMode = signal<'catalog' | 'custom'>('catalog');
+  readonly isSingleShotMode = signal<boolean>(false);
+  readonly productSelectionMode = signal<'catalog' | 'custom' | 'single_shot'>('catalog');
   readonly productFacingMode = signal<'user' | 'environment'>('environment');
   readonly isProductTorchOn = signal<boolean>(false);
   readonly catalogSearchQuery = signal<string>('');
@@ -1225,6 +1226,10 @@ export class App implements OnInit, OnDestroy {
         (blob) => {
           if (blob) {
             this.kioskService.setCustomerPhoto(dataUrl, blob);
+            if (this.isSingleShotMode()) {
+              this.executeSingleShotTryOn(blob);
+              return;
+            }
             this.evaluateCapturedPose(blob);
           }
         },
@@ -1319,6 +1324,7 @@ export class App implements OnInit, OnDestroy {
     this.stopCamera();
     this.cancelCountdown();
     this.capturedPreviewUrl.set(null);
+    this.isSingleShotMode.set(false);
     this.kioskService.setStep('WELCOME');
   }
 
@@ -1495,14 +1501,69 @@ export class App implements OnInit, OnDestroy {
   }
 
   // --- Custom Product Camera & Upload Handlers ---
-  setProductSelectionMode(mode: 'catalog' | 'custom'): void {
+  setProductSelectionMode(mode: 'catalog' | 'custom' | 'single_shot'): void {
     this.productSelectionMode.set(mode);
     this.productValidationError.set(null);
-    if (mode === 'custom') {
+    if (mode === 'single_shot') {
+      this.isSingleShotMode.set(true);
+      this.stopProductCamera();
+      this.kioskService.setStep('CAMERA');
+      this.startCamera();
+    } else if (mode === 'custom') {
+      this.isSingleShotMode.set(false);
       this.productCameraError.set(null);
     } else {
+      this.isSingleShotMode.set(false);
       this.stopProductCamera();
     }
+  }
+
+  startSingleShotMode(): void {
+    this.isSingleShotMode.set(true);
+    this.openConsentModal();
+  }
+
+  executeSingleShotTryOn(blob: Blob): void {
+    this.kioskService.setStep('PROCESSING');
+    this.processingProgress.set(20);
+    this.processingStageText.set(
+      this.translationService.currentLanguage() === 'ta'
+        ? 'கையில் உள்ள ஆடையை ஆய்வு செய்து மெய்நிகர் சேலை அணிவிக்கப்படுகிறது...'
+        : 'Analyzing held garment & draping virtual saree with AI...'
+    );
+
+    const progressTimer = setInterval(() => {
+      this.processingProgress.update(p => (p < 90 ? p + 15 : p));
+    }, 400);
+
+    this.apiService.submitSingleShotTryOn(
+      blob,
+      true,
+      this.translationService.currentLanguage()
+    ).subscribe({
+      next: (res) => {
+        clearInterval(progressTimer);
+        this.processingProgress.set(100);
+        this.kioskService.tryOnResult.set(res);
+        this.kioskService.setStep('RESULT');
+        this.notificationService.showSuccess(
+          this.translationService.currentLanguage() === 'ta'
+            ? '🎉 உடனடி மெய்நிகர் சேலை ட்ரையல் தயார்!'
+            : '🎉 Instant 1-Click Try-On Ready!'
+        );
+      },
+      error: (err) => {
+        clearInterval(progressTimer);
+        const msg = err?.error?.detail || (
+          this.translationService.currentLanguage() === 'ta'
+            ? 'ட்ரை-ஆன் செய்வதில் சிக்கல் ஏற்பட்டது. மீண்டும் படம் எடுக்கவும்.'
+            : 'Try-on processing failed. Please retake photo.'
+        );
+        this.notificationService.showError(msg);
+        this.kioskService.setStep('CAMERA');
+        this.startCamera();
+      }
+    });
   }
 
   async startProductCamera(): Promise<void> {
@@ -1869,6 +1930,7 @@ export class App implements OnInit, OnDestroy {
   finishSession(): void {
     this.stopCamera();
     this.stopProductCamera();
+    this.isSingleShotMode.set(false);
     this.kioskService.resetSession();
     this.capturedPreviewUrl.set(null);
   }
