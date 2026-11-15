@@ -109,6 +109,8 @@ export class App implements OnInit, OnDestroy {
   readonly isCameraActive = signal<boolean>(false);
   readonly cameraError = signal<string | null>(null);
   readonly capturedPreviewUrl = signal<string | null>(null);
+  readonly userFacingMode = signal<'user' | 'environment'>('user');
+  readonly isUserTorchOn = signal<boolean>(false);
 
   // Custom Product Camera & Selection state
   @ViewChild('productVideoElement') productVideoElement?: ElementRef<HTMLVideoElement>;
@@ -120,6 +122,9 @@ export class App implements OnInit, OnDestroy {
   readonly isValidatingGarment = signal<boolean>(false);
   readonly isCustomGarmentValid = signal<boolean>(false);
   readonly productSelectionMode = signal<'catalog' | 'custom'>('catalog');
+  readonly productFacingMode = signal<'user' | 'environment'>('environment');
+  readonly isProductTorchOn = signal<boolean>(false);
+  readonly catalogSearchQuery = signal<string>('');
 
   // Processing state
   readonly processingProgress = signal<number>(25);
@@ -205,16 +210,38 @@ export class App implements OnInit, OnDestroy {
     };
   });
 
-  // Filtered catalogue computed signal
+  // Filtered catalogue computed signal (Category + Barcode/SKU/Keyword search)
   readonly displayedCatalog = computed(() => {
     const cat = this.activeCategory();
-    const list = this.sarees();
-    if (!cat || cat === 'all') return list;
-    const cleanCat = cat.toLowerCase().replace(/[-_]/g, ' ').trim();
-    return list.filter((item) => {
-      const itemCat = (item.category || '').toLowerCase().replace(/[-_]/g, ' ').trim();
-      return itemCat.includes(cleanCat) || cleanCat.includes(itemCat);
-    });
+    const query = this.catalogSearchQuery().toLowerCase().trim();
+    let list = this.sarees();
+
+    if (cat && cat !== 'all') {
+      const cleanCat = cat.toLowerCase().replace(/[-_]/g, ' ').trim();
+      list = list.filter((item) => {
+        const itemCat = (item.category || '').toLowerCase().replace(/[-_]/g, ' ').trim();
+        return itemCat.includes(cleanCat) || cleanCat.includes(itemCat);
+      });
+    }
+
+    if (query) {
+      list = list.filter((item) => {
+        const sku = (item.sku || '').toLowerCase();
+        const nameEn = (item.name_en || '').toLowerCase();
+        const nameTa = (item.name_ta || '').toLowerCase();
+        const fabric = (item.fabric || '').toLowerCase();
+        const color = (item.color || '').toLowerCase();
+        return (
+          sku.includes(query) ||
+          nameEn.includes(query) ||
+          nameTa.includes(query) ||
+          fabric.includes(query) ||
+          color.includes(query)
+        );
+      });
+    }
+
+    return list;
   });
 
   readonly Math = Math;
@@ -991,7 +1018,7 @@ export class App implements OnInit, OnDestroy {
     try {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         this.mediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: { facingMode: { ideal: this.userFacingMode() }, width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false,
         });
 
@@ -1012,7 +1039,37 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
+  toggleUserCameraFacing(): void {
+    const next = this.userFacingMode() === 'user' ? 'environment' : 'user';
+    this.userFacingMode.set(next);
+    this.isUserTorchOn.set(false);
+    this.stopCamera();
+    this.startCamera();
+  }
+
+  toggleUserTorch(): void {
+    if (this.mediaStream) {
+      const track = this.mediaStream.getVideoTracks()[0];
+      if (track) {
+        const next = !this.isUserTorchOn();
+        (track.applyConstraints as any)({ advanced: [{ torch: next }] })
+          .then(() => {
+            this.isUserTorchOn.set(next);
+          })
+          .catch((err: any) => {
+            console.warn('Torch failed or not supported:', err);
+            this.notificationService.showToast(
+              this.translationService.currentLanguage() === 'ta'
+                ? '⚠️ இந்த சாதனத்தில் ஃபிளாஷ்லைட் ஆதரிக்கப்படவில்லை.'
+                : '⚠️ Flashlight/torch is not supported on this camera.'
+            );
+          });
+      }
+    }
+  }
+
   stopCamera(): void {
+    this.isUserTorchOn.set(false);
     if (this.mediaStream) {
       this.mediaStream.getTracks().forEach((track) => {
         try {
@@ -1034,6 +1091,92 @@ export class App implements OnInit, OnDestroy {
     this.isCameraActive.set(false);
   }
 
+  async checkImageBrightness(dataUrl: string): Promise<boolean> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 64;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          resolve(true);
+          return;
+        }
+        ctx.drawImage(img, 0, 0, 64, 64);
+        try {
+          const imgData = ctx.getImageData(0, 0, 64, 64);
+          const d = imgData.data;
+          let totalBrightness = 0;
+          for (let i = 0; i < d.length; i += 4) {
+            totalBrightness += d[i] * 0.299 + d[i + 1] * 0.587 + d[i + 2] * 0.114;
+          }
+          const avgBrightness = totalBrightness / (64 * 64);
+          resolve(avgBrightness >= 14);
+        } catch {
+          resolve(true);
+        }
+      };
+      img.onerror = () => resolve(true);
+      img.src = dataUrl;
+    });
+  }
+
+  async compressImageFile(
+    fileOrBlob: Blob | File,
+    maxWidth = 1920,
+    maxHeight = 1920,
+    quality = 0.85
+  ): Promise<{ blob: Blob; dataUrl: string }> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const objectUrl = URL.createObjectURL(fileOrBlob);
+      img.onload = () => {
+        URL.revokeObjectURL(objectUrl);
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth || height > maxHeight) {
+          if (width / height > maxWidth / maxHeight) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          } else {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          reject(new Error('Canvas context unavailable'));
+          return;
+        }
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        canvas.toBlob(
+          (blob) => {
+            if (blob) {
+              resolve({ blob, dataUrl });
+            } else {
+              reject(new Error('Blob conversion failed'));
+            }
+          },
+          'image/jpeg',
+          quality
+        );
+      };
+      img.onerror = (err) => {
+        URL.revokeObjectURL(objectUrl);
+        reject(err);
+      };
+      img.src = objectUrl;
+    });
+  }
+
   capturePhoto(): void {
     if (!this.videoElement?.nativeElement || !this.canvasElement?.nativeElement) {
       return;
@@ -1042,17 +1185,39 @@ export class App implements OnInit, OnDestroy {
     const video = this.videoElement.nativeElement;
     const canvas = this.canvasElement.nativeElement;
 
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    let targetW = video.videoWidth || 640;
+    let targetH = video.videoHeight || 480;
+    if (targetW > 1920 || targetH > 1920) {
+      if (targetW > targetH) {
+        targetH = Math.round((targetH * 1920) / targetW);
+        targetW = 1920;
+      } else {
+        targetW = Math.round((targetW * 1920) / targetH);
+        targetH = 1920;
+      }
+    }
+
+    canvas.width = targetW;
+    canvas.height = targetH;
 
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
       this.capturedPreviewUrl.set(dataUrl);
 
       // Immediately shut off camera hardware stream so indicator light turns off
       this.stopCamera();
+
+      this.checkImageBrightness(dataUrl).then((isBright) => {
+        if (!isBright) {
+          this.notificationService.showWarning(
+            this.translationService.currentLanguage() === 'ta'
+              ? '⚠️ புகைப்படம் மிக இருட்டாக உள்ளது! வெளிச்சமுள்ள இடத்தில் மீண்டும் எடுக்கவும்.'
+              : '⚠️ Photo is too dark! Please stand in better lighting.'
+          );
+        }
+      });
 
       this.kioskService.tryOnResult.set(null);
       // Convert to Blob for API submission and Gemini Pose Validation
@@ -1064,7 +1229,7 @@ export class App implements OnInit, OnDestroy {
           }
         },
         'image/jpeg',
-        0.92
+        0.90
       );
     }
   }
@@ -1251,15 +1416,32 @@ export class App implements OnInit, OnDestroy {
       const file = await this.convertHeicToJpeg(rawFile);
       input.value = '';
 
-      const reader = new FileReader();
-      reader.onload = () => {
-        const dataUrl = reader.result as string;
+      try {
+        const { blob, dataUrl } = await this.compressImageFile(file);
         this.capturedPreviewUrl.set(dataUrl);
         this.kioskService.tryOnResult.set(null);
-        this.kioskService.setCustomerPhoto(dataUrl, file);
-        this.evaluateCapturedPose(file);
-      };
-      reader.readAsDataURL(file);
+        this.kioskService.setCustomerPhoto(dataUrl, blob);
+        this.checkImageBrightness(dataUrl).then((isBright) => {
+          if (!isBright) {
+            this.notificationService.showWarning(
+              this.translationService.currentLanguage() === 'ta'
+                ? '⚠️ புகைப்படம் மிக இருட்டாக உள்ளது! வெளிச்சமுள்ள புகைப்படத்தைத் தேர்ந்தெடுக்கவும்.'
+                : '⚠️ Photo is too dark! Please select a clearer photo.'
+            );
+          }
+        });
+        this.evaluateCapturedPose(blob);
+      } catch {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const dataUrl = reader.result as string;
+          this.capturedPreviewUrl.set(dataUrl);
+          this.kioskService.tryOnResult.set(null);
+          this.kioskService.setCustomerPhoto(dataUrl, file);
+          this.evaluateCapturedPose(file);
+        };
+        reader.readAsDataURL(file);
+      }
     }
   }
 
@@ -1330,7 +1512,7 @@ export class App implements OnInit, OnDestroy {
     try {
       if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
         this.productMediaStream = await navigator.mediaDevices.getUserMedia({
-          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+          video: { facingMode: { ideal: this.productFacingMode() }, width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: false,
         });
 
@@ -1351,7 +1533,37 @@ export class App implements OnInit, OnDestroy {
     }
   }
 
+  toggleProductCameraFacing(): void {
+    const next = this.productFacingMode() === 'environment' ? 'user' : 'environment';
+    this.productFacingMode.set(next);
+    this.isProductTorchOn.set(false);
+    this.stopProductCamera();
+    this.startProductCamera();
+  }
+
+  toggleProductTorch(): void {
+    if (this.productMediaStream) {
+      const track = this.productMediaStream.getVideoTracks()[0];
+      if (track) {
+        const next = !this.isProductTorchOn();
+        (track.applyConstraints as any)({ advanced: [{ torch: next }] })
+          .then(() => {
+            this.isProductTorchOn.set(next);
+          })
+          .catch((err: any) => {
+            console.warn('Torch failed or not supported:', err);
+            this.notificationService.showToast(
+              this.translationService.currentLanguage() === 'ta'
+                ? '⚠️ இந்த சாதனத்தில் ஃபிளாஷ்லைட் ஆதரிக்கப்படவில்லை.'
+                : '⚠️ Flashlight/torch is not supported on this camera.'
+            );
+          });
+      }
+    }
+  }
+
   stopProductCamera(): void {
+    this.isProductTorchOn.set(false);
     if (this.productMediaStream) {
       this.productMediaStream.getTracks().forEach((track) => {
         try {
@@ -1381,16 +1593,38 @@ export class App implements OnInit, OnDestroy {
     const video = this.productVideoElement.nativeElement;
     const canvas = this.productCanvasElement.nativeElement;
 
-    canvas.width = video.videoWidth || 640;
-    canvas.height = video.videoHeight || 480;
+    let targetW = video.videoWidth || 640;
+    let targetH = video.videoHeight || 480;
+    if (targetW > 1920 || targetH > 1920) {
+      if (targetW > targetH) {
+        targetH = Math.round((targetH * 1920) / targetW);
+        targetW = 1920;
+      } else {
+        targetW = Math.round((targetW * 1920) / targetH);
+        targetH = 1920;
+      }
+    }
+
+    canvas.width = targetW;
+    canvas.height = targetH;
 
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-      const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
+      const dataUrl = canvas.toDataURL('image/jpeg', 0.90);
 
       // Immediately shut off product camera hardware stream
       this.stopProductCamera();
+
+      this.checkImageBrightness(dataUrl).then((isBright) => {
+        if (!isBright) {
+          this.notificationService.showWarning(
+            this.translationService.currentLanguage() === 'ta'
+              ? '⚠️ ஆடை புகைப்படம் மிக இருட்டாக உள்ளது! வெளிச்சமுள்ள இடத்தில் படம் எடுக்கவும்.'
+              : '⚠️ Garment photo is too dark! Please ensure bright showroom lighting.'
+          );
+        }
+      });
 
       canvas.toBlob(
         (blob) => {
@@ -1399,7 +1633,7 @@ export class App implements OnInit, OnDestroy {
           }
         },
         'image/jpeg',
-        0.92
+        0.90
       );
     }
   }
@@ -1541,7 +1775,25 @@ export class App implements OnInit, OnDestroy {
   private async executeTryOn(saree: SareeItem | null): Promise<void> {
     this.tryOnError.set(null);
     this.processingProgress.set(15);
-    this.processingStageText.set(this.t().stepAnalysis);
+
+    const catName = ((saree?.category || '') + ' ' + (saree?.name_en || '')).toLowerCase();
+    const isMensAttire = /dhoti|kurta|suit|shirt|sherwani|men/.test(catName);
+    const isTamil = this.translationService.currentLanguage() === 'ta';
+
+    const stage1 = isMensAttire
+      ? (isTamil ? 'உடல் தோற்றம் பகுப்பாய்வு செய்யப்படுகிறது...' : 'Analyzing Posture & Silhouette...')
+      : this.t().stepAnalysis;
+    const stage2 = isMensAttire
+      ? (isTamil ? 'ஆடை வடிவம் பொருத்தப்படுகிறது...' : 'Tailoring Silhouette & Fit...')
+      : this.t().stepAlignment;
+    const stage3 = isMensAttire
+      ? (isTamil ? 'காலர் மற்றும் மடிப்புகள் சீரமைக்கப்படுகின்றன...' : 'Refining Creases & Finish...')
+      : this.t().stepRendering;
+    const stage4 = isMensAttire
+      ? (isTamil ? 'நேர்த்தியான லைட்டிங் & பினிஷிங்...' : 'Perfecting Studio Lighting...')
+      : this.t().stepFinalizing;
+
+    this.processingStageText.set(stage1);
 
     // Simulate animated progress while API executes
     this.stopProgressSimulation();
@@ -1549,13 +1801,13 @@ export class App implements OnInit, OnDestroy {
       const current = this.processingProgress();
       if (current < 40) {
         this.processingProgress.set(current + 10);
-        this.processingStageText.set(this.t().stepAlignment);
+        this.processingStageText.set(stage2);
       } else if (current < 75) {
         this.processingProgress.set(current + 8);
-        this.processingStageText.set(this.t().stepRendering);
+        this.processingStageText.set(stage3);
       } else if (current < 90) {
         this.processingProgress.set(current + 4);
-        this.processingStageText.set(this.t().stepFinalizing);
+        this.processingStageText.set(stage4);
       }
     }, 450);
 

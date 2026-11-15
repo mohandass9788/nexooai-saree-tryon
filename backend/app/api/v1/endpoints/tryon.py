@@ -1,9 +1,11 @@
+import io
 import os
 import uuid
 import time
 import secrets
 import hashlib
 import logging
+from PIL import Image
 from datetime import datetime, timedelta
 from typing import Optional, List, Dict, Any
 from pydantic import BaseModel
@@ -46,6 +48,35 @@ MAX_FILE_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB limit
 ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/webp"}
 
 
+def auto_compress_image(image_bytes: bytes, max_dim: int = 1920, target_size: int = 5 * 1024 * 1024) -> bytes:
+    """
+    Auto-resizes and compresses images that exceed size limits in-memory using Pillow.
+    Ensures 10MB+ phone and 4K camera captures succeed transparently without HTTP 413.
+    """
+    if len(image_bytes) <= target_size:
+        return image_bytes
+    try:
+        with Image.open(io.BytesIO(image_bytes)) as img:
+            img = img.convert("RGB")
+            w, h = img.size
+            if w > max_dim or h > max_dim:
+                if w > h:
+                    new_w = max_dim
+                    new_h = int(h * (max_dim / w))
+                else:
+                    new_h = max_dim
+                    new_w = int(w * (max_dim / h))
+                img = img.resize((new_w, new_h), Image.Resampling.LANCZOS)
+            out_buf = io.BytesIO()
+            img.save(out_buf, format="JPEG", quality=85, optimize=True)
+            compressed = out_buf.getvalue()
+            logger.info(f"Auto-compressed image from {len(image_bytes)} bytes down to {len(compressed)} bytes.")
+            return compressed
+    except Exception as exc:
+        logger.warning(f"Image auto-compression failed, preserving original: {exc}")
+        return image_bytes
+
+
 @router.post("/validate-pose", response_model=PoseValidationResult, summary="Pre-validate customer pose using Gemini Vision")
 async def validate_customer_pose(
     person_image: UploadFile = File(..., description="Customer portrait photo to evaluate"),
@@ -63,6 +94,8 @@ async def validate_customer_pose(
     image_bytes = await person_image.read()
     if len(image_bytes) == 0:
         raise HTTPException(status_code=400, detail="Empty image uploaded.")
+    if len(image_bytes) > MAX_FILE_SIZE_BYTES:
+        image_bytes = auto_compress_image(image_bytes)
 
     result = await gemini_pose_guard.validate_pose(image_bytes)
     return result
@@ -85,6 +118,8 @@ async def validate_customer_garment(
     image_bytes = await garment_image.read()
     if len(image_bytes) == 0:
         raise HTTPException(status_code=400, detail="Empty image uploaded.")
+    if len(image_bytes) > MAX_FILE_SIZE_BYTES:
+        image_bytes = auto_compress_image(image_bytes)
 
     result = await gemini_pose_guard.validate_garment(image_bytes)
     return result
@@ -118,6 +153,8 @@ async def create_tryon_job(
 
     # 3. Read and validate person file size
     person_image_bytes = await person_image.read()
+    if len(person_image_bytes) > MAX_FILE_SIZE_BYTES:
+        person_image_bytes = auto_compress_image(person_image_bytes)
     if len(person_image_bytes) > MAX_FILE_SIZE_BYTES:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
@@ -268,6 +305,8 @@ async def create_tryon_job(
                 detail=f"Unsupported garment format '{garment_image.content_type}'. Allowed: JPEG, PNG, WEBP.",
             )
         saree_image_bytes = await garment_image.read()
+        if len(saree_image_bytes) > MAX_FILE_SIZE_BYTES:
+            saree_image_bytes = auto_compress_image(saree_image_bytes)
         if len(saree_image_bytes) > MAX_FILE_SIZE_BYTES:
             raise HTTPException(
                 status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,

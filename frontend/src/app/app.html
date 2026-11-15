@@ -3011,7 +3011,7 @@
               <!-- ACCESSIBLE BOTTOM CAMERA CONTROLS (Waist-Height for 55" Totem & Desktop) -->
               @if (!capturedPreviewUrl()) {
                 <div class="camera-floating-dock-stack">
-                  <!-- Tier 1: Timer Strip (Sitting cleanly above the action buttons with a small gap) -->
+                  <!-- Tier 1: Timer & Camera Controls Strip (Timer, Flip Camera, Flashlight) -->
                   <div class="camera-timer-pill-strip">
                     <span class="timer-mini-label">⏱️</span>
                     <button
@@ -3042,9 +3042,36 @@
                       (click)="setTimerDuration(10)"
                       id="btn-timer-10s"
                     >10s</button>
+
+                    <span style="width: 1px; height: 16px; background: rgba(255,255,255,0.25); margin: 0 4px;"></span>
+
+                    <!-- Flip Camera (Front / Back) -->
+                    <button
+                      type="button"
+                      class="btn-timer-pill-floating"
+                      (click)="toggleUserCameraFacing()"
+                      id="btn-flip-user-camera"
+                      [title]="translationService.currentLanguage() === 'ta' ? 'கேமரா மாற்று (முன் / பின்)' : 'Flip Camera (Front / Back)'"
+                    >
+                      <span>🔄</span>
+                      <span>{{ userFacingMode() === 'user' ? 'Front' : 'Back' }}</span>
+                    </button>
+
+                    <!-- Torch / Flashlight Toggle -->
+                    <button
+                      type="button"
+                      class="btn-timer-pill-floating"
+                      [class.active]="isUserTorchOn()"
+                      (click)="toggleUserTorch()"
+                      id="btn-torch-user-camera"
+                      [title]="translationService.currentLanguage() === 'ta' ? 'ஃபிளாஷ்லைட்' : 'Torch / Flash'"
+                    >
+                      <span>⚡</span>
+                      <span>{{ isUserTorchOn() ? 'On' : 'Flash' }}</span>
+                    </button>
                   </div>
 
-                  <!-- Tier 2: The 4 Accessible Action Buttons (Icon-Only, Floating Directly over Camera Feed) -->
+                  <!-- Tier 2: The Accessible Action Buttons (Icon-Only, Floating Directly over Camera Feed) -->
                   <div class="camera-floating-controls-bottom">
                     <!-- 1. Back Button (Accessible at waist height without reaching 6 feet up!) -->
                     <button
@@ -3130,16 +3157,17 @@
                     <span class="circle-btn-icon">🔄</span>
                   </button>
 
-                  <!-- Adjust Crop & Frame (Icon Button) -->
+                  <!-- Prominent Crop / Group Photo Person Select Button -->
                   <button
                     type="button"
-                    class="camera-circle-icon-btn crop-icon-btn"
+                    class="btn-gold crop-featured-btn"
                     (click)="openCropper(capturedPreviewUrl()!, 'customer')"
-                    id="btn-camera-crop"
-                    [title]="translationService.currentLanguage() === 'ta' ? 'படம் வெட்டு & அளவு' : 'Adjust Crop & Frame'"
-                    aria-label="Crop Photo"
+                    id="btn-camera-crop-featured"
+                    [title]="translationService.currentLanguage() === 'ta' ? 'குழுப் படத்திலிருந்து ஒருவரை மட்டும் தேர்ந்தெடு / வெட்டு' : 'Crop & Select Single Person from Group Photo'"
+                    style="display: flex; align-items: center; gap: 8px; padding: 0.75rem 1.4rem; border-radius: 999px; font-weight: 600; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.35);"
                   >
-                    <span class="circle-btn-icon">✂️</span>
+                    <span style="font-size: 1.1rem;">✂️</span>
+                    <span>{{ translationService.currentLanguage() === 'ta' ? 'ஒருவரை மட்டும் தேர்ந்தெடு (Crop)' : 'Select Person (Crop)' }}</span>
                   </button>
 
                   <!-- Upload Different File (Icon Button) -->
@@ -3222,6 +3250,38 @@
 
               <!-- MODE A: SHOWROOM PRODUCT CATALOGUE -->
               @if (productSelectionMode() === 'catalog') {
+                <!-- Real-time SKU / Barcode / Search Filter Bar -->
+                <div class="catalogue-search-bar-wrap" style="margin-bottom: 1.2rem; display: flex; gap: 10px; align-items: center;">
+                  <div style="flex: 1; position: relative;">
+                    <input
+                      type="text"
+                      class="catalog-search-input"
+                      [placeholder]="translationService.currentLanguage() === 'ta' ? '🔍 பார்கோட் / SKU எண் அல்லது சேலை பெயர் உள்ளிடவும்...' : '🔍 Enter SKU, Barcode, or Saree Name...'"
+                      [value]="catalogSearchQuery()"
+                      (input)="catalogSearchQuery.set($any($event.target).value)"
+                      style="width: 100%; padding: 0.75rem 1rem 0.75rem 2.4rem; background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(212, 175, 55, 0.35); border-radius: 999px; color: #fff; font-size: 0.95rem; outline: none; box-sizing: border-box;"
+                    />
+                    <span style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); opacity: 0.7;">🏷️</span>
+                    @if (catalogSearchQuery()) {
+                      <button
+                        type="button"
+                        (click)="catalogSearchQuery.set('')"
+                        style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); background: none; border: none; color: #fff; opacity: 0.6; cursor: pointer; font-size: 1rem;"
+                      >✕</button>
+                    }
+                  </div>
+                  <button
+                    type="button"
+                    class="btn-gold"
+                    (click)="setProductSelectionMode('custom')"
+                    style="padding: 0.75rem 1.2rem; border-radius: 999px; font-size: 0.9rem; white-space: nowrap; display: flex; align-items: center; gap: 6px;"
+                    [title]="translationService.currentLanguage() === 'ta' ? 'துணியை கேமராவில் படம் எடு / ஸ்கேன் செய்' : 'Snap Garment Photo / Scan'"
+                  >
+                    <span>📷</span>
+                    <span>{{ translationService.currentLanguage() === 'ta' ? 'நேரடி சேலை கேமரா' : 'Snap Garment' }}</span>
+                  </button>
+                </div>
+
                 @if (displayedCatalog().length === 0) {
                   <div class="catalog-empty-card glass-panel">
                     <span class="empty-icon">🥻</span>
@@ -3337,6 +3397,27 @@
                             >
                               <span>📸</span>
                               <span>{{ t().takeProductPhotoBtn }}</span>
+                            </button>
+                            <button
+                              type="button"
+                              class="btn-outline"
+                              (click)="toggleProductCameraFacing()"
+                              id="btn-flip-product-cam"
+                              [title]="translationService.currentLanguage() === 'ta' ? 'கேமரா மாற்று (Flip)' : 'Flip Camera'"
+                            >
+                              <span>🔄</span>
+                              <span>{{ productFacingMode() === 'environment' ? 'Back' : 'Front' }}</span>
+                            </button>
+                            <button
+                              type="button"
+                              class="btn-outline"
+                              [class.active]="isProductTorchOn()"
+                              (click)="toggleProductTorch()"
+                              id="btn-torch-product-cam"
+                              [title]="translationService.currentLanguage() === 'ta' ? 'ஃபிளாஷ்லைட்' : 'Torch / Flash'"
+                            >
+                              <span>⚡</span>
+                              <span>{{ isProductTorchOn() ? 'On' : 'Flash' }}</span>
                             </button>
                             <button
                               class="btn-outline"

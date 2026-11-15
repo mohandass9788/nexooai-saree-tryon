@@ -3066,3 +3066,55 @@
   color: #ffd700;
   margin-left: 0.5rem;
 }
+
+/* =========================================================================
+   SCROLL-TRIGGERED ENTRANCE ANIMATIONS
+   ========================================================================= */
+.reveal-on-scroll,
+.section-header,
+.feature-card,
+.spec-card,
+.roi-card,
+.pricing-card,
+.testimonial-card,
+.hardware-card,
+.step-card,
+.market-stat-card,
+.workflow-step,
+.faq-item {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity, transform;
+}
+
+.reveal-on-scroll.is-revealed,
+.section-header.is-revealed,
+.feature-card.is-revealed,
+.spec-card.is-revealed,
+.roi-card.is-revealed,
+.pricing-card.is-revealed,
+.testimonial-card.is-revealed,
+.hardware-card.is-revealed,
+.step-card.is-revealed,
+.market-stat-card.is-revealed,
+.workflow-step.is-revealed,
+.faq-item.is-revealed {
+  opacity: 1 !important;
+  transform: translateY(0) !important;
+}
+
+/* Smooth progressive delays for staggered card columns */
+.feature-card:nth-child(2) { transition-delay: 0.08s; }
+.feature-card:nth-child(3) { transition-delay: 0.16s; }
+.feature-card:nth-child(4) { transition-delay: 0.24s; }
+
+.pricing-card:nth-child(2) { transition-delay: 0.12s; }
+.pricing-card:nth-child(3) { transition-delay: 0.24s; }
+
+.step-card:nth-child(2) { transition-delay: 0.1s; }
+.step-card:nth-child(3) { transition-delay: 0.2s; }
+.step-card:nth-child(4) { transition-delay: 0.3s; }
+
+.hardware-card:nth-child(2) { transition-delay: 0.12s; }
+.hardware-card:nth-child(3) { transition-delay: 0.24s; }

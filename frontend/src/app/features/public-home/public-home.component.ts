@@ -1,6 +1,7 @@
 import {
   Component,
   OnInit,
+  AfterViewInit,
   OnDestroy,
   signal,
   computed,
@@ -72,7 +73,7 @@ export interface DemoLeadRecord {
   templateUrl: './public-home.component.html',
   styleUrls: ['./public-home.component.css'],
 })
-export class PublicHomeComponent implements OnInit, OnDestroy {
+export class PublicHomeComponent implements OnInit, AfterViewInit, OnDestroy {
   readonly i18n = HOME_I18N;
 
   t(key: string): string {
@@ -769,6 +770,29 @@ export class PublicHomeComponent implements OnInit, OnDestroy {
       },
       error: () => {}
     });
+  }
+
+  ngAfterViewInit(): void {
+    if (typeof window !== 'undefined' && 'IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              entry.target.classList.add('is-revealed');
+              observer.unobserve(entry.target);
+            }
+          });
+        },
+        { threshold: 0.12, rootMargin: '0px 0px -30px 0px' }
+      );
+
+      setTimeout(() => {
+        const targets = document.querySelectorAll(
+          '.reveal-on-scroll, .section-header, .feature-card, .spec-card, .roi-card, .pricing-card, .testimonial-card, .hardware-card, .step-card, .market-stat-card, .workflow-step, .faq-item'
+        );
+        targets.forEach((el) => observer.observe(el));
+      }, 100);
+    }
   }
 
   ngOnDestroy() {
