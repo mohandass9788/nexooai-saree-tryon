@@ -1226,10 +1226,6 @@ export class App implements OnInit, OnDestroy {
         (blob) => {
           if (blob) {
             this.kioskService.setCustomerPhoto(dataUrl, blob);
-            if (this.isSingleShotMode()) {
-              this.executeSingleShotTryOn(blob);
-              return;
-            }
             this.evaluateCapturedPose(blob);
           }
         },
@@ -1317,6 +1313,16 @@ export class App implements OnInit, OnDestroy {
       return;
     }
     this.stopCamera();
+
+    // In Single-Shot Mode: bypass Catalogue completely and drape immediately!
+    if (this.isSingleShotMode()) {
+      const blob = this.kioskService.customerPhotoBlob();
+      if (blob) {
+        this.executeSingleShotTryOn(blob);
+        return;
+      }
+    }
+
     this.kioskService.setStep('CATALOGUE');
   }
 

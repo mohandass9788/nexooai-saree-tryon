@@ -81,11 +81,14 @@ def render_realistic_tryon_drape(
     color_hint = (180, 40, 40)
     has_custom_texture = False
 
-    if saree_image_bytes and len(saree_image_bytes) > 0:
+    # Protect against accidental duplication if person image was passed as saree image
+    if saree_image_bytes and len(saree_image_bytes) > 0 and saree_image_bytes != person_image_bytes:
         try:
             saree_img = Image.open(io.BytesIO(saree_image_bytes))
-            color_hint = extract_dominant_garment_color(saree_img)
-            has_custom_texture = True
+            # Also verify saree image is not just a copy of the person image
+            if saree_img.size != person_img.size or saree_img.tobytes() != person_img.tobytes():
+                color_hint = extract_dominant_garment_color(saree_img)
+                has_custom_texture = True
         except Exception as e:
             logger.warning(f"Could not parse saree image: {e}")
 

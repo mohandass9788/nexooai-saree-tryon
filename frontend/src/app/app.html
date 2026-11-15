@@ -2820,7 +2820,7 @@
                 <div class="welcome-cta-row">
                   <button class="btn-begin-trial-grand" (click)="openConsentModal()" id="btn-start-trial">
                     <span class="sparkle-glyph">✨</span>
-                    <span class="btn-label-text">Begin Virtual Trial</span>
+                    <span class="btn-label-text">{{ t().startBtn }}</span>
                     <span class="arrow-glyph">➔</span>
                   </button>
 
@@ -3227,18 +3227,33 @@
                     <span class="circle-btn-icon">📁</span>
                   </button>
 
-                  <!-- Confirm & Proceed (Gold Button - only enabled when valid) -->
-                  <button
-                    type="button"
-                    class="camera-circle-icon-btn confirm-icon-btn btn-gold"
-                    [class.disabled-pose]="poseValidation() && !isCapturedPoseValid()"
-                    (click)="confirmPhotoAndProceed()"
-                    id="btn-camera-confirm"
-                    [title]="translationService.currentLanguage() === 'ta' ? 'சேலையைத் தேர்வு செய்யவும்' : t().confirmPhotoBtn"
-                    aria-label="Confirm Photo"
-                  >
-                    <span class="circle-btn-icon">✓</span>
-                  </button>
+                  <!-- Confirm & Proceed (Single-Shot Direct 1-Click Drape or 2-Step Confirm) -->
+                  @if (isSingleShotMode()) {
+                    <button
+                      type="button"
+                      class="btn-gold single-shot-direct-drape-btn"
+                      [class.disabled-pose]="poseValidation() && !isCapturedPoseValid()"
+                      (click)="confirmPhotoAndProceed()"
+                      id="btn-camera-confirm-single-shot"
+                      style="display: flex; align-items: center; gap: 8px; padding: 0.75rem 1.6rem; border-radius: 999px; font-weight: 700; font-size: 1rem; box-shadow: 0 4px 18px rgba(212, 175, 55, 0.45); cursor: pointer;"
+                    >
+                      <span>⚡</span>
+                      <span>{{ t().singleShotGenerateCta }}</span>
+                      <span>➔</span>
+                    </button>
+                  } @else {
+                    <button
+                      type="button"
+                      class="camera-circle-icon-btn confirm-icon-btn btn-gold"
+                      [class.disabled-pose]="poseValidation() && !isCapturedPoseValid()"
+                      (click)="confirmPhotoAndProceed()"
+                      id="btn-camera-confirm"
+                      [title]="t().confirmPhotoBtn"
+                      aria-label="Confirm Photo"
+                    >
+                      <span class="circle-btn-icon">✓</span>
+                    </button>
+                  }
                 </div>
               }
 
@@ -3626,17 +3641,6 @@
                     <span>✨📷</span>
                     <span>{{ t().uploadCustomProduct }}</span>
                   </button>
-                  @if (publicFeatures().feature_single_shot_tryon ?? true) {
-                    <button
-                      class="btn-mode-tab"
-                      [class.active]="productSelectionMode() === 'single_shot'"
-                      (click)="setProductSelectionMode('single_shot')"
-                      id="tab-single-shot"
-                    >
-                      <span>⚡</span>
-                      <span>{{ t().singleShotModeTitle }}</span>
-                    </button>
-                  }
                 </div>
 
                 <!-- Customer Portrait Pill -->

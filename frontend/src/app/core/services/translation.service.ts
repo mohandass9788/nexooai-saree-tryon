@@ -176,6 +176,7 @@ export interface Translations {
   singleShotQuickBtn: string;
   singleShotCameraGuidance: string;
   singleShotCaptureBtn: string;
+  singleShotGenerateCta: string;
   singleShotProcessing: string;
   singleShotToggleAdmin: string;
   customGarmentTitle: string;

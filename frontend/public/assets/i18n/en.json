@@ -152,6 +152,7 @@
   "singleShotQuickBtn": "⚡ Instant Hold & Wear",
   "singleShotCameraGuidance": "Hold the saree/garment in your hand or against your body facing the camera",
   "singleShotCaptureBtn": "📸 Capture & Instant Try-On",
+  "singleShotGenerateCta": "⚡ Drape Saree Now (1-Click)",
   "singleShotProcessing": "Analyzing held garment & draping virtual saree with AI...",
   "singleShotToggleAdmin": "Single-Shot Try-On (Hold & Wear - 1-Click)",
   "generateTryOnBtn": "✨ Generate Virtual Try-On",

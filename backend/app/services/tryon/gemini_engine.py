@@ -293,21 +293,40 @@ class GeminiTryOnEngine(BaseTryOnEngine):
             if cloud_res:
                 return cloud_res
 
-        # 2. Resilient local synthesis fallback
+        # 2. Check if FAL / Fashn is available to drape the held garment
+        fal_key = get_setting("fal_key") or getattr(settings, "FAL_KEY", "") or os.getenv("FAL_KEY", "")
+        if fal_key and not fal_key.startswith("mock_"):
+            try:
+                img = Image.open(io.BytesIO(single_image_bytes))
+                w, h = img.size
+                garment_crop = img.crop((int(w * 0.15), int(h * 0.45), int(w * 0.85), int(h * 0.95)))
+                g_buf = io.BytesIO()
+                garment_crop.save(g_buf, format="JPEG", quality=92)
+                garment_bytes = g_buf.getvalue()
+
+                from backend.app.services.tryon.cloud_engine import CloudApiTryOnEngine
+                cloud_engine = CloudApiTryOnEngine(provider_name="fal-fashn", api_key=fal_key)
+                fal_res = await cloud_engine.process_tryon(
+                    person_image_bytes=single_image_bytes,
+                    saree_image_bytes=garment_bytes,
+                    options=options,
+                )
+                if fal_res and fal_res.status == "completed":
+                    fal_res.provider_name = "fal_single_shot"
+                    return fal_res
+            except Exception as e:
+                logger.warning(f"FAL Single-shot attempt failed, using realistic drape: {e}")
+
+        # 3. Resilient realistic drape synthesis (Face, neck, smile 100% protected)
         try:
-            person_img = Image.open(io.BytesIO(single_image_bytes)).convert("RGBA")
-            result_img = self._synthesize_seamless_drape(
-                person_img=person_img,
-                saree_img=person_img,
+            from backend.app.services.image.drape_renderer import render_realistic_tryon_drape
+            result_bytes = render_realistic_tryon_drape(
+                person_image_bytes=single_image_bytes,
+                saree_image_bytes=None,  # Do not pass customer image as saree to prevent duplication
                 category=category,
-                name_en=name_en,
-                name_ta=name_ta,
+                garment_name=name_ta if language == "ta" else name_en,
                 price=price,
-                language=language,
             )
-            buf = io.BytesIO()
-            result_img.save(buf, format="JPEG", quality=92)
-            result_bytes = buf.getvalue()
             duration_ms = int((time.time() - start_time) * 1000)
             return TryOnEngineResult(
                 status="completed",

@@ -35,7 +35,17 @@ def resolve_provider_for_shop(
         if tier_clean in PLAN_TIER_AI_MAP:
             return PLAN_TIER_AI_MAP[tier_clean]
 
-    return str(get_setting("ai_provider") or settings.AI_TRYON_PROVIDER or "mock").lower().strip()
+    configured = str(get_setting("ai_provider") or settings.AI_TRYON_PROVIDER or "").lower().strip()
+    if configured and configured != "mock":
+        return configured
+
+    # In production, automatically promote to real FAL Cloud API if valid key is available
+    if getattr(settings, "APP_ENV", "") == "production":
+        fal_key = get_setting("fal_key") or getattr(settings, "FAL_KEY", "") or os.getenv("FAL_KEY", "")
+        if fal_key and not str(fal_key).startswith("mock_"):
+            return "fal-fashn"
+
+    return configured or "mock"
 
 
 def get_tryon_engine(

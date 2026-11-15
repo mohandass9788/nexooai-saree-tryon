@@ -875,6 +875,43 @@ describe('NeXooAi Saree Kiosk App', () => {
     expect(kioskService.currentStep()).toBe('CAMERA');
   });
 
+  it('should directly trigger single-shot try-on and bypass catalogue when confirmPhotoAndProceed is called in single-shot mode', () => {
+    const fixture = TestBed.createComponent(App);
+    const app = fixture.componentInstance;
+
+    app.isSingleShotMode.set(true);
+    const dummyBlob = new Blob(['test-photo-data'], { type: 'image/jpeg' });
+    kioskService.setCustomerPhoto('data:image/jpeg;base64,data', dummyBlob);
+    app.isValidatingPose.set(false);
+    app.poseValidation.set({
+      is_valid: true,
+      pose_score: 0.95,
+      view_type: 'front',
+      green_tick: true,
+      guidance_message_ta: 'தோரணை சரியானது',
+      guidance_message_en: 'Pose valid',
+    });
+
+    const submitSpy = vi.spyOn(apiService, 'submitSingleShotTryOn').mockReturnValue(
+      of({
+        job_id: 'single_test_confirm',
+        status: 'completed',
+        provider: 'gemini_single_shot',
+        result_image_url: 'https://tryon.nexooai.in/media/results/confirm.jpg',
+        qr_download_url: 'https://tryon.nexooai.in/api/v1/tryon/download/tok_confirm',
+        download_token: 'tok_confirm',
+        processing_time_ms: 900,
+        estimated_cost_usd: 0.0,
+      })
+    );
+
+    app.confirmPhotoAndProceed();
+
+    expect(submitSpy).toHaveBeenCalled();
+    expect(kioskService.currentStep()).toBe('RESULT');
+    expect(kioskService.currentStep()).not.toBe('CATALOGUE');
+  });
+
   it('should reset single-shot mode on finishSession and goBackFromCamera', () => {
     const fixture = TestBed.createComponent(App);
     const app = fixture.componentInstance;
